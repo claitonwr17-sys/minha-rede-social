@@ -1,24 +1,14 @@
+@"
 "use client";
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
 
 export default function Home() {
 
   const router = useRouter();
 
-  const [email, setEmail] = useState("");
-  const [senha, setSenha] = useState("");
-
-  function fazerLogin() {
-
-    if (!email || !senha) {
-      alert("Digite email e senha");
-      return;
-    }
-
-    // futuramente aqui vamos conectar com Xano
+  function irParaFeed() {
     router.push("/pag2");
   }
 
@@ -42,43 +32,34 @@ export default function Home() {
       </header>
 
       {/* CONTEÚDO */}
-      <main className="min-h-screen bg-gray-100 flex items-center justify-center">
+      <main className="min-h-screen bg-gray-100">
+        <div className="max-w-2xl mx-auto px-4 py-10 text-center">
 
-        <div className="bg-white p-8 rounded-xl shadow-md w-full max-w-md">
-
-          <h1 className="text-2xl font-bold mb-6 text-center">
-            Entrar no Conrad
+          <h1 className="text-3xl font-bold mb-4">
+            Conrad – Sua Consciência Digital
           </h1>
 
-          {/* EMAIL */}
-          <input
-            type="email"
-            placeholder="Email"
-            className="w-full border border-gray-300 rounded-lg px-4 py-3 mb-4"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
+          <p className="text-gray-700 mb-6">
+            Conrad é uma rede social de inteligência artificial criada para ajudar
+            você a pensar antes de postar.
+          </p>
 
-          {/* SENHA */}
-          <input
-            type="password"
-            placeholder="Senha"
-            className="w-full border border-gray-300 rounded-lg px-4 py-3 mb-6"
-            value={senha}
-            onChange={(e) => setSenha(e.target.value)}
-          />
+          <p className="text-gray-700 mb-6">
+            O sistema analisa o sentimento das postagens e ajuda você a refletir
+            antes de publicar.
+          </p>
 
-          {/* BOTÃO */}
+          {/* BOTÃO LOGIN */}
           <button
-            onClick={fazerLogin}
-            className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition"
+            onClick={irParaFeed}
+            className="bg-blue-500 text-white px-6 py-3 rounded-lg text-lg font-medium hover:bg-blue-600 transition"
           >
             Fazer login
           </button>
 
         </div>
-
       </main>
     </>
   );
 }
+"@ | Set-Content page.tsx -Encoding utf8
