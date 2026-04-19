@@ -1,3 +1,5 @@
+meu código dia 19/04/2026
+
 "use client";
 
 import Image from "next/image";
@@ -43,54 +45,6 @@ export default function Home() {
       }
 
       alert("Conta criada com sucesso!");
-
-      router.push("/pag2");
-
-    } catch (erro) {
-
-      console.error("Erro:", erro);
-      alert("Erro ao conectar com o servidor");
-
-    }
-
-  }
-
-  async function fazerLogin() {
-
-    if (!email || !senha) {
-      alert("Digite email e senha");
-      return;
-    }
-
-    try {
-
-      const resposta = await fetch("https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        credentials: "include",
-        body: JSON.stringify({
-          email: email,
-          senha: senha
-        })
-      });
-
-      const dados = await resposta.json();
-
-      console.log("Login status:", resposta.status);
-      console.log("Login dados:", dados);
-
-      if (!resposta.ok) {
-        alert(dados.message || "Email ou senha inválidos");
-        return;
-      }
-
-      // salvar usuário logado
-      localStorage.setItem("user", JSON.stringify(dados.user));
-      localStorage.setItem("token", dados.authToken);
-
-      alert("Login realizado com sucesso!");
 
       router.push("/pag2");
 
@@ -155,7 +109,7 @@ export default function Home() {
 
             </div>
 
-            {/* CADASTRO / LOGIN */}
+            {/* CADASTRO */}
             <div className="bg-white p-6 rounded-lg shadow-md">
 
               <h2 className="text-xl font-semibold mb-4 text-center">
@@ -183,17 +137,6 @@ export default function Home() {
                 className="w-full bg-black text-white py-2 rounded hover:bg-gray-800 transition"
               >
                 Criar conta
-              </button>
-
-              <p className="text-center text-sm text-gray-500 mt-4 mb-2">
-                Já tem uma conta?
-              </p>
-
-              <button
-                onClick={fazerLogin}
-                className="w-full border border-black text-black py-2 rounded hover:bg-gray-100 transition"
-              >
-                Fazer login
               </button>
 
             </div>
