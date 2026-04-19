@@ -25,7 +25,6 @@ export default function Home() {
         headers: {
           "Content-Type": "application/json"
         },
-        credentials: "include",
         body: JSON.stringify({
           email: email,
           senha: senha
@@ -69,7 +68,6 @@ export default function Home() {
         headers: {
           "Content-Type": "application/json"
         },
-        credentials: "include",
         body: JSON.stringify({
           email: email,
           senha: senha
@@ -138,19 +136,7 @@ export default function Home() {
 
               <p className="text-gray-700 mb-4">
                 Conrad é uma rede social de inteligência artificial criada para ajudar
-                você a pensar antes de postar. O app analisa o sentimento e o tom
-                emocional das suas postagens — identificando se são positivas,
-                negativas ou neutras — e oferece uma resposta humanizada.
-              </p>
-
-              <p className="text-gray-700 mb-4">
-                Com a tecnologia do Google Cloud e Gemini AI, o Conrad atua como uma
-                consciência digital que ajuda você a se expressar melhor online.
-              </p>
-
-              <p className="text-gray-700">
-                Evite publicações impulsivas, desenvolva consciência emocional e
-                compartilhe mensagens mais positivas.
+                você a pensar antes de postar.
               </p>
 
             </div>
