@@ -63,13 +63,13 @@ export default function Home() {
 
     try {
 
-      const resposta = await fetch("https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/auth/login", {
+      const resposta = await fetch("https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          email: email,
+          login_email: email,
           senha: senha
         })
       });
@@ -80,13 +80,9 @@ export default function Home() {
       console.log("Login dados:", dados);
 
       if (!resposta.ok) {
-        alert(dados.message || "Email ou senha inválidos");
+        alert(dados.mensagem || "Email ou senha inválidos");
         return;
       }
-
-      // salvar usuário logado
-      localStorage.setItem("user", JSON.stringify(dados.user));
-      localStorage.setItem("token", dados.authToken);
 
       alert("Login realizado com sucesso!");
 
@@ -136,7 +132,11 @@ export default function Home() {
 
               <p className="text-gray-700 mb-4">
                 Conrad é uma rede social de inteligência artificial criada para ajudar
-                você a pensar antes de postar.
+                você a pensar antes de postar. O app analisa o sentimento e o tom
+                emocional das suas postagens — identificando se são positivas,
+                negativas ou neutras — e oferece uma resposta humanizada, ajudando
+                você a refletir sobre o impacto das suas palavras antes de
+                compartilhá-las.
               </p>
 
             </div>
