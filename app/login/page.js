@@ -79,57 +79,79 @@ export default function Pag2() {
   }
 
   return (
-    <div style={{ padding: "40px" }}>
+    <div
+      style={{
+        minHeight: "100vh",
+        display: "flex",
+        flexDirection: "column",
+        padding: "40px",
+        fontFamily: "Arial"
+      }}
+    >
 
       <h1>Página 2 (logado)</h1>
 
       <p>Você está autenticado ✔️</p>
 
-      <br />
-
-      {/* textarea */}
-      <textarea
-        value={texto}
-        onChange={(e) => setTexto(e.target.value)}
-        placeholder="No que você está pensando?"
+      {/* área central */}
+      <div
         style={{
-          width: "400px",
-          height: "120px",
-          padding: "10px"
-        }}
-      />
-
-      <br />
-      <br />
-
-      {/* botão publicar */}
-      <button
-        onClick={publicarPost}
-        style={{
-          padding: "10px 20px",
-          backgroundColor: "blue",
-          color: "white",
-          border: "none",
-          borderRadius: "5px",
-          cursor: "pointer"
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          marginTop: "20px"
         }}
       >
-        Publicar
-      </button>
 
-      <br />
-      <br />
+        {/* textarea */}
+        <textarea
+          value={texto}
+          onChange={(e) => setTexto(e.target.value)}
+          placeholder="No que você está pensando?"
+          style={{
+            width: "500px",
+            height: "140px",
+            padding: "15px",
+            fontSize: "16px",
+            borderRadius: "8px",
+            border: "2px solid black",
+            resize: "none"
+          }}
+        />
 
-      {/* logout */}
+        <br />
+
+        {/* botão publicar */}
+        <button
+          onClick={publicarPost}
+          style={{
+            padding: "12px 25px",
+            backgroundColor: "black",
+            color: "white",
+            border: "none",
+            borderRadius: "8px",
+            cursor: "pointer",
+            fontSize: "18px"
+          }}
+        >
+          Publicar
+        </button>
+
+      </div>
+
+      {/* botão sair no final */}
       <button
         onClick={logout}
         style={{
-          padding: "10px 20px",
+          marginTop: "auto",
+          width: "120px",
+          padding: "12px 20px",
           backgroundColor: "black",
           color: "white",
           border: "none",
-          borderRadius: "5px",
-          cursor: "pointer"
+          borderRadius: "8px",
+          cursor: "pointer",
+          fontSize: "18px"
         }}
       >
         Sair
