@@ -116,14 +116,14 @@ export default function Pag2() {
 
         </div>
 
-        {/* FEED LIMPO */}
+        {/* FEED IA */}
         <div style={{ marginTop: "20px" }}>
 
           {posts
-            .filter(post => post && (post.texto || post.resposta))
+            .filter(post => post && post.resposta)
             .map((post) => (
               <div key={post.id} style={styles.postCard}>
-                <p>{post.resposta ?? post.texto}</p>
+                <p>{post.resposta}</p>
               </div>
             ))
           }
