@@ -6,33 +6,19 @@ import { useRouter } from "next/navigation"
 export default function Pag2() {
 
   const router = useRouter()
-
-  // estado do textarea
   const [texto, setTexto] = useState("")
 
-  // 🔒 Proteção da página
   useEffect(() => {
-
     const token = localStorage.getItem("token")
-
-    if (!token) {
-      router.push("/login")
-    }
-
+    if (!token) router.push("/login")
   }, [])
 
-  // 🚪 Logout
   function logout() {
-
     localStorage.removeItem("token")
     router.push("/login")
-
   }
 
-  // 🚀 publicar post
   async function publicarPost() {
-
-    console.log("TEXTO:", texto)
 
     if (!texto.trim()) {
       alert("Digite alguma coisa")
@@ -45,114 +31,126 @@ export default function Pag2() {
         "https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/sentimento-gemini",
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            texto: texto
-          })
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ texto })
         }
       )
 
-      const data = await response.json()
-
-      console.log("STATUS:", response.status)
-      console.log("RESPOSTA:", data)
-
       if (!response.ok) {
-        alert("Erro no servidor")
+        alert("Erro ao publicar")
         return
       }
 
-      alert("Post publicado com sucesso!")
-
-      // limpa textarea
+      alert("Post publicado!")
       setTexto("")
 
-    } catch (error) {
-
-      console.error(error)
-
-      alert("Erro ao publicar")
-
+    } catch (err) {
+      alert("Erro na requisição")
     }
   }
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        display: "flex",
-        flexDirection: "column",
-        padding: "20px",
-        fontFamily: "Arial"
-      }}
-    >
+    <div style={styles.page}>
 
-      {/* área central */}
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          marginTop: "20px"
-        }}
-      >
+      {/* CONTAINER CENTRAL (tipo feed) */}
+      <div style={styles.feed}>
 
-        {/* textarea */}
-        <textarea
-          value={texto}
-          onChange={(e) => setTexto(e.target.value)}
-          placeholder="No que você está pensando?"
-          style={{
-            width: "320px",
-            height: "90px",
-            padding: "12px",
-            fontSize: "15px",
-            borderRadius: "8px",
-            border: "2px solid black",
-            resize: "none"
-          }}
-        />
+        {/* CARD DE POST */}
+        <div style={styles.card}>
 
-        <br />
+          <textarea
+            value={texto}
+            onChange={(e) => setTexto(e.target.value)}
+            placeholder="No que você está pensando?"
+            style={styles.textarea}
+          />
 
-        {/* botão publicar */}
-        <button
-          onClick={publicarPost}
-          style={{
-            padding: "10px 18px",
-            backgroundColor: "black",
-            color: "white",
-            border: "none",
-            borderRadius: "8px",
-            cursor: "pointer",
-            fontSize: "15px"
-          }}
-        >
-          Publicar
-        </button>
+          <button onClick={publicarPost} style={styles.postButton}>
+            Publicar
+          </button>
+
+        </div>
+
+        {/* AQUI DEPOIS VAI ENTRAR O FEED */}
+        <div style={styles.placeholderFeed}>
+          Seus posts aparecerão aqui...
+        </div>
 
       </div>
 
-      {/* botão sair no final */}
-      <button
-        onClick={logout}
-        style={{
-          marginTop: "auto",
-          width: "90px",
-          padding: "10px",
-          backgroundColor: "black",
-          color: "white",
-          border: "none",
-          borderRadius: "8px",
-          cursor: "pointer",
-          fontSize: "15px"
-        }}
-      >
+      {/* logout fixo */}
+      <button onClick={logout} style={styles.logout}>
         Sair
       </button>
 
     </div>
   )
+}
+
+const styles = {
+
+  page: {
+    minHeight: "100vh",
+    backgroundColor: "#f5f6f8",
+    display: "flex",
+    justifyContent: "center",
+    fontFamily: "Arial"
+  },
+
+  feed: {
+    width: "500px",
+    marginTop: "40px"
+  },
+
+  card: {
+    backgroundColor: "white",
+    padding: "15px",
+    borderRadius: "12px",
+    boxShadow: "0 2px 10px rgba(0,0,0,0.08)",
+    display: "flex",
+    flexDirection: "column",
+    gap: "10px"
+  },
+
+  textarea: {
+    width: "100%",
+    height: "100px",
+    borderRadius: "10px",
+    border: "1px solid #ddd",
+    padding: "10px",
+    resize: "none",
+    fontSize: "14px",
+    outline: "none"
+  },
+
+  postButton: {
+    alignSelf: "flex-end",
+    backgroundColor: "#111",
+    color: "white",
+    border: "none",
+    padding: "8px 16px",
+    borderRadius: "8px",
+    cursor: "pointer",
+    fontSize: "14px"
+  },
+
+  placeholderFeed: {
+    marginTop: "20px",
+    textAlign: "center",
+    color: "#888",
+    fontSize: "14px"
+  },
+
+  logout: {
+    position: "fixed",
+    bottom: "20px",
+    left: "20px",
+    backgroundColor: "#111",
+    color: "white",
+    border: "none",
+    padding: "10px 14px",
+    borderRadius: "10px",
+    cursor: "pointer"
+  }
+
 }
