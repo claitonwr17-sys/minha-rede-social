@@ -6,9 +6,11 @@ import { useRouter } from "next/navigation"
 export default function Pag2() {
 
   const router = useRouter()
+
   const [texto, setTexto] = useState("")
   const [posts, setPosts] = useState([])
 
+  // 🔒 proteção + carregar feed
   useEffect(() => {
 
     const token = localStorage.getItem("token")
@@ -22,7 +24,7 @@ export default function Pag2() {
 
   }, [])
 
-  // 📥 buscar posts no Xano
+  // 📥 buscar posts
   async function buscarPosts() {
 
     try {
@@ -33,7 +35,6 @@ export default function Pag2() {
 
       const data = await response.json()
 
-      // mais recentes primeiro
       const ordenado = data.sort((a, b) => b.id - a.id)
 
       setPosts(ordenado)
@@ -43,12 +44,13 @@ export default function Pag2() {
     }
   }
 
+  // 🚪 logout
   function logout() {
     localStorage.removeItem("token")
     router.push("/login")
   }
 
-  // 🚀 publicar post
+  // 🚀 publicar post (VERSÃO SIMPLES)
   async function publicarPost() {
 
     if (!texto.trim()) {
@@ -62,7 +64,9 @@ export default function Pag2() {
         "https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/sentimento-gemini",
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json"
+          },
           body: JSON.stringify({ texto })
         }
       )
@@ -73,9 +77,10 @@ export default function Pag2() {
       }
 
       setTexto("")
-      buscarPosts() // 🔥 atualiza feed na hora
+      buscarPosts()
 
-    } catch (err) {
+    } catch (error) {
+      console.error(error)
       alert("Erro na requisição")
     }
   }
@@ -83,7 +88,6 @@ export default function Pag2() {
   return (
     <div style={styles.page}>
 
-      {/* CONTAINER CENTRAL */}
       <div style={styles.feed}>
 
         {/* CARD DE POST */}
@@ -102,7 +106,7 @@ export default function Pag2() {
 
         </div>
 
-        {/* FEED REAL */}
+        {/* FEED */}
         <div style={{ marginTop: "20px" }}>
 
           {posts.length === 0 ? (
@@ -112,7 +116,7 @@ export default function Pag2() {
           ) : (
             posts.map((post) => (
               <div key={post.id} style={styles.postCard}>
-                <p>{post.texto}</p>
+                <p>{post.resposta || post.texto}</p>
               </div>
             ))
           )}
@@ -121,7 +125,7 @@ export default function Pag2() {
 
       </div>
 
-      {/* logout fixo */}
+      {/* logout */}
       <button onClick={logout} style={styles.logout}>
         Sair
       </button>
