@@ -123,23 +123,23 @@ export default function Pag2() {
           />
 
           <button
-            onClick={() => {
-              console.log("CLICOU")
-              publicarPost()
-            }}
+  onClick={() => {
+    console.log("CLICOU")
+    publicarPost()
+  }}
 
-            onMouseDown={(e) => {
-              e.target.style.transform = "scale(0.95)"
-            }}
+  onMouseDown={(e) => {
+    e.currentTarget.style.transform = "scale(0.95)"
+  }}
 
-            onMouseUp={(e) => {
-              e.target.style.transform = "scale(1)"
-            }}
+  onMouseUp={(e) => {
+    e.currentTarget.style.transform = "scale(1)"
+  }}
 
-            style={styles.postButton}
-          >
-            {loading ? "Publicando..." : "Publicar"}
-          </button>
+  style={styles.postButton}
+>
+  {loading ? "Publicando..." : "Publicar"}
+</button>
 
         </div>
 
