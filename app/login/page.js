@@ -86,12 +86,8 @@ export default function Pag2() {
         return
       }
 
-      // 🔥 pega resposta da IA
-      const resposta =
-        data?.response?.result ||
-        data?.resposta ||
-        data?.result ||
-        "Resposta recebida com sucesso"
+      // 🔥 mostra JSON completo da resposta
+      const resposta = JSON.stringify(data, null, 2)
 
       setRespostaIA(resposta)
 
@@ -123,23 +119,23 @@ export default function Pag2() {
           />
 
           <button
-  onClick={() => {
-    console.log("CLICOU")
-    publicarPost()
-  }}
+            onClick={() => {
+              console.log("CLICOU")
+              publicarPost()
+            }}
 
-  onMouseDown={(e) => {
-    e.currentTarget.style.transform = "scale(0.95)"
-  }}
+            onMouseDown={(e) => {
+              e.currentTarget.style.transform = "scale(0.95)"
+            }}
 
-  onMouseUp={(e) => {
-    e.currentTarget.style.transform = "scale(1)"
-  }}
+            onMouseUp={(e) => {
+              e.currentTarget.style.transform = "scale(1)"
+            }}
 
-  style={styles.postButton}
->
-  {loading ? "Publicando..." : "Publicar"}
-</button>
+            style={styles.postButton}
+          >
+            {loading ? "Publicando..." : "Publicar"}
+          </button>
 
         </div>
 
@@ -151,7 +147,9 @@ export default function Pag2() {
               🤖 Conrad AI
             </div>
 
-            <p>{respostaIA}</p>
+            <pre style={{ whiteSpace: "pre-wrap" }}>
+              {respostaIA}
+            </pre>
 
           </div>
         )}
