@@ -7,17 +7,48 @@ export default function Pag2() {
 
   const router = useRouter()
   const [texto, setTexto] = useState("")
+  const [posts, setPosts] = useState([])
 
   useEffect(() => {
+
     const token = localStorage.getItem("token")
-    if (!token) router.push("/login")
+
+    if (!token) {
+      router.push("/login")
+      return
+    }
+
+    buscarPosts()
+
   }, [])
+
+  // 📥 buscar posts no Xano
+  async function buscarPosts() {
+
+    try {
+
+      const response = await fetch(
+        "https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/posts"
+      )
+
+      const data = await response.json()
+
+      // mais recentes primeiro
+      const ordenado = data.sort((a, b) => b.id - a.id)
+
+      setPosts(ordenado)
+
+    } catch (error) {
+      console.error("Erro ao buscar posts", error)
+    }
+  }
 
   function logout() {
     localStorage.removeItem("token")
     router.push("/login")
   }
 
+  // 🚀 publicar post
   async function publicarPost() {
 
     if (!texto.trim()) {
@@ -41,8 +72,8 @@ export default function Pag2() {
         return
       }
 
-      alert("Post publicado!")
       setTexto("")
+      buscarPosts() // 🔥 atualiza feed na hora
 
     } catch (err) {
       alert("Erro na requisição")
@@ -52,7 +83,7 @@ export default function Pag2() {
   return (
     <div style={styles.page}>
 
-      {/* CONTAINER CENTRAL (tipo feed) */}
+      {/* CONTAINER CENTRAL */}
       <div style={styles.feed}>
 
         {/* CARD DE POST */}
@@ -71,9 +102,21 @@ export default function Pag2() {
 
         </div>
 
-        {/* AQUI DEPOIS VAI ENTRAR O FEED */}
-        <div style={styles.placeholderFeed}>
-          Seus posts aparecerão aqui...
+        {/* FEED REAL */}
+        <div style={{ marginTop: "20px" }}>
+
+          {posts.length === 0 ? (
+            <p style={styles.placeholderFeed}>
+              Nenhum post ainda...
+            </p>
+          ) : (
+            posts.map((post) => (
+              <div key={post.id} style={styles.postCard}>
+                <p>{post.texto}</p>
+              </div>
+            ))
+          )}
+
         </div>
 
       </div>
@@ -134,8 +177,15 @@ const styles = {
     fontSize: "14px"
   },
 
+  postCard: {
+    backgroundColor: "white",
+    padding: "15px",
+    borderRadius: "10px",
+    marginBottom: "10px",
+    boxShadow: "0 2px 8px rgba(0,0,0,0.05)"
+  },
+
   placeholderFeed: {
-    marginTop: "20px",
     textAlign: "center",
     color: "#888",
     fontSize: "14px"
