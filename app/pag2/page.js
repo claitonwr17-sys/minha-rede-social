@@ -9,6 +9,8 @@ export default function Pag2() {
 
   const [texto, setTexto] = useState("")
   const [posts, setPosts] = useState([])
+  const [respostaIA, setRespostaIA] = useState("")
+  const [loading, setLoading] = useState(false)
 
   // 🔒 proteção + carregar feed
   useEffect(() => {
@@ -58,6 +60,9 @@ export default function Pag2() {
       return
     }
 
+    setLoading(true)
+    setRespostaIA("Conrad AI está pensando...")
+
     try {
 
       const response = await fetch(
@@ -77,16 +82,29 @@ export default function Pag2() {
 
       if (!response.ok) {
         alert("Erro ao publicar")
+        setLoading(false)
         return
       }
 
+      // 🔥 pega resposta da IA
+      const resposta =
+        data?.response?.result ||
+        data?.resposta ||
+        data?.result ||
+        "Resposta recebida com sucesso"
+
+      setRespostaIA(resposta)
+
       setTexto("")
+
       buscarPosts()
 
     } catch (error) {
       console.error(error)
       alert("Erro na requisição")
     }
+
+    setLoading(false)
   }
 
   return (
@@ -109,12 +127,34 @@ export default function Pag2() {
               console.log("CLICOU")
               publicarPost()
             }}
+
+            onMouseDown={(e) => {
+              e.target.style.transform = "scale(0.95)"
+            }}
+
+            onMouseUp={(e) => {
+              e.target.style.transform = "scale(1)"
+            }}
+
             style={styles.postButton}
           >
-            Publicar
+            {loading ? "Publicando..." : "Publicar"}
           </button>
 
         </div>
+
+        {/* RESPOSTA IA IMEDIATA */}
+        {respostaIA && (
+          <div style={styles.postCard}>
+
+            <div style={styles.aiHeader}>
+              🤖 Conrad AI
+            </div>
+
+            <p>{respostaIA}</p>
+
+          </div>
+        )}
 
         {/* FEED IA */}
         <div style={{ marginTop: "20px" }}>
@@ -123,7 +163,13 @@ export default function Pag2() {
             .filter(post => post && post.resposta)
             .map((post) => (
               <div key={post.id} style={styles.postCard}>
+
+                <div style={styles.aiHeader}>
+                  🤖 Conrad AI
+                </div>
+
                 <p>{post.resposta}</p>
+
               </div>
             ))
           }
@@ -182,18 +228,26 @@ const styles = {
     backgroundColor: "#111",
     color: "white",
     border: "none",
-    padding: "8px 16px",
+    padding: "10px 18px",
     borderRadius: "8px",
     cursor: "pointer",
-    fontSize: "14px"
+    fontSize: "14px",
+    transition: "0.15s"
   },
 
   postCard: {
     backgroundColor: "white",
     padding: "15px",
-    borderRadius: "10px",
+    borderRadius: "12px",
+    marginTop: "20px",
+    boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
+    lineHeight: "1.5"
+  },
+
+  aiHeader: {
+    fontWeight: "bold",
     marginBottom: "10px",
-    boxShadow: "0 2px 8px rgba(0,0,0,0.05)"
+    color: "#444"
   },
 
   logout: {
