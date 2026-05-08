@@ -86,8 +86,8 @@ export default function Pag2() {
         return
       }
 
-      // 🔥 mostra JSON completo da resposta
-      const resposta = JSON.stringify(data, null, 2)
+      // 🔥 pega apenas interpretação da IA
+      const resposta = data.response.result.interpretacao
 
       setRespostaIA(resposta)
 
@@ -147,9 +147,9 @@ export default function Pag2() {
               🤖 Conrad AI
             </div>
 
-            <pre style={{ whiteSpace: "pre-wrap" }}>
+            <p style={{ whiteSpace: "pre-wrap" }}>
               {respostaIA}
-            </pre>
+            </p>
 
           </div>
         )}
