@@ -84,14 +84,10 @@ export default function Pag2() {
         minHeight: "100vh",
         display: "flex",
         flexDirection: "column",
-        padding: "40px",
+        padding: "20px",
         fontFamily: "Arial"
       }}
     >
-
-      <h1>Página 2 (logado)</h1>
-
-      <p>Você está autenticado ✔️</p>
 
       {/* área central */}
       <div
@@ -109,10 +105,10 @@ export default function Pag2() {
           onChange={(e) => setTexto(e.target.value)}
           placeholder="No que você está pensando?"
           style={{
-            width: "500px",
-            height: "140px",
-            padding: "15px",
-            fontSize: "16px",
+            width: "320px",
+            height: "90px",
+            padding: "12px",
+            fontSize: "15px",
             borderRadius: "8px",
             border: "2px solid black",
             resize: "none"
@@ -125,13 +121,13 @@ export default function Pag2() {
         <button
           onClick={publicarPost}
           style={{
-            padding: "12px 25px",
+            padding: "10px 18px",
             backgroundColor: "black",
             color: "white",
             border: "none",
             borderRadius: "8px",
             cursor: "pointer",
-            fontSize: "18px"
+            fontSize: "15px"
           }}
         >
           Publicar
@@ -144,14 +140,14 @@ export default function Pag2() {
         onClick={logout}
         style={{
           marginTop: "auto",
-          width: "120px",
-          padding: "12px 20px",
+          width: "90px",
+          padding: "10px",
           backgroundColor: "black",
           color: "white",
           border: "none",
           borderRadius: "8px",
           cursor: "pointer",
-          fontSize: "18px"
+          fontSize: "15px"
         }}
       >
         Sair
