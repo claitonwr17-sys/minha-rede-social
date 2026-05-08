@@ -104,7 +104,6 @@ export default function Pag2() {
             style={styles.textarea}
           />
 
-          {/* BOTÃO COM DEBUG */}
           <button
             onClick={() => {
               console.log("CLICOU")
@@ -117,20 +116,17 @@ export default function Pag2() {
 
         </div>
 
-        {/* FEED */}
+        {/* FEED LIMPO */}
         <div style={{ marginTop: "20px" }}>
 
-          {posts.length === 0 ? (
-            <p style={styles.placeholderFeed}>
-              Nenhum post ainda...
-            </p>
-          ) : (
-            posts.map((post) => (
+          {posts
+            .filter(post => post && (post.texto || post.resposta))
+            .map((post) => (
               <div key={post.id} style={styles.postCard}>
-                <p>{post.resposta || post.texto}</p>
+                <p>{post.resposta ?? post.texto}</p>
               </div>
             ))
-          )}
+          }
 
         </div>
 
@@ -198,12 +194,6 @@ const styles = {
     borderRadius: "10px",
     marginBottom: "10px",
     boxShadow: "0 2px 8px rgba(0,0,0,0.05)"
-  },
-
-  placeholderFeed: {
-    textAlign: "center",
-    color: "#888",
-    fontSize: "14px"
   },
 
   logout: {
