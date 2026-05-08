@@ -50,7 +50,7 @@ export default function Pag2() {
     router.push("/login")
   }
 
-  // 🚀 publicar post (VERSÃO SIMPLES)
+  // 🚀 publicar post
   async function publicarPost() {
 
     if (!texto.trim()) {
@@ -70,6 +70,10 @@ export default function Pag2() {
           body: JSON.stringify({ texto })
         }
       )
+
+      const data = await response.json()
+
+      console.log("RESPOSTA IA:", data)
 
       if (!response.ok) {
         alert("Erro ao publicar")
@@ -100,7 +104,14 @@ export default function Pag2() {
             style={styles.textarea}
           />
 
-          <button onClick={publicarPost} style={styles.postButton}>
+          {/* BOTÃO COM DEBUG */}
+          <button
+            onClick={() => {
+              console.log("CLICOU")
+              publicarPost()
+            }}
+            style={styles.postButton}
+          >
             Publicar
           </button>
 
