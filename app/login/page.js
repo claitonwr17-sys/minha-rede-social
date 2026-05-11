@@ -107,14 +107,19 @@ export default function Pag2() {
 
   return (
 
-    <div style={styles.page}>
+   <div style={styles.logoArea}>
 
-      {/* NAVBAR */}
-      <div style={styles.navbar}>
+  <img
+    src="/logo.png"
+    alt="Conrad"
+    style={styles.logoImage}
+  />
 
-        <div style={styles.logo}>
-          Conrad
-        </div>
+  <span style={styles.logoText}>
+    Conrad
+  </span>
+
+</div>
 
         <input
           placeholder="Pesquisar"

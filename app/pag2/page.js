@@ -112,8 +112,18 @@ export default function Pag2() {
       {/* NAVBAR */}
       <div style={styles.navbar}>
 
-        <div style={styles.logo}>
-          Conrad
+        <div style={styles.logoArea}>
+
+          <img
+            src="/logo.png"
+            alt="Conrad"
+            style={styles.logoImage}
+          />
+
+          <span style={styles.logoText}>
+            Conrad
+          </span>
+
         </div>
 
         <input
@@ -242,12 +252,26 @@ const styles = {
     zIndex: 1000
   },
 
-  logo: {
+  // LOGO
+  logoArea: {
+    display: "flex",
+    alignItems: "center",
+    gap: "12px"
+  },
+
+  logoImage: {
+    width: "42px",
+    height: "42px",
+    objectFit: "contain"
+  },
+
+  logoText: {
     fontSize: "22px",
     fontWeight: "700",
     color: "#111"
   },
 
+  // SEARCH
   search: {
     width: "240px",
     padding: "10px 14px",
