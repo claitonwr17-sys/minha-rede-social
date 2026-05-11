@@ -49,10 +49,10 @@ export default function Pag2() {
   }
 
   // 🚪 logout
-function logout() {
-  localStorage.removeItem("token")
-  router.push("/")
-}
+  function logout() {
+    localStorage.removeItem("token")
+    router.push("/")
+  }
 
   // 🚀 publicar post
   async function publicarPost() {
@@ -98,8 +98,10 @@ function logout() {
       buscarPosts()
 
     } catch (error) {
+
       console.error(error)
       alert("Erro na requisição")
+
     }
 
     setLoading(false)
@@ -136,65 +138,65 @@ function logout() {
       {/* SIDEBAR */}
       <div style={styles.sidebar}>
 
-       <div
-  style={styles.sidebarItem}
-  onMouseEnter={(e) => {
-    e.currentTarget.style.backgroundColor = "#eaeaea"
-  }}
-  onMouseLeave={(e) => {
-    e.currentTarget.style.backgroundColor = "transparent"
-  }}
->
-  🏠 Home
-</div>
+        <div
+          style={styles.sidebarItem}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = "#eaeaea"
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = "transparent"
+          }}
+        >
+          🏠 Home
+        </div>
 
-<div
-  style={styles.sidebarItem}
-  onMouseEnter={(e) => {
-    e.currentTarget.style.backgroundColor = "#eaeaea"
-  }}
-  onMouseLeave={(e) => {
-    e.currentTarget.style.backgroundColor = "transparent"
-  }}
->
-  🤖 IA
-</div>
+        <div
+          style={styles.sidebarItem}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = "#eaeaea"
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = "transparent"
+          }}
+        >
+          🤖 IA
+        </div>
 
-<div
-  style={styles.sidebarItem}
-  onMouseEnter={(e) => {
-    e.currentTarget.style.backgroundColor = "#eaeaea"
-  }}
-  onMouseLeave={(e) => {
-    e.currentTarget.style.backgroundColor = "transparent"
-  }}
->
-  🔍 Explorar
-</div>
+        <div
+          style={styles.sidebarItem}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = "#eaeaea"
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = "transparent"
+          }}
+        >
+          🔍 Explorar
+        </div>
 
-<div
-  style={styles.sidebarItem}
-  onMouseEnter={(e) => {
-    e.currentTarget.style.backgroundColor = "#eaeaea"
-  }}
-  onMouseLeave={(e) => {
-    e.currentTarget.style.backgroundColor = "transparent"
-  }}
->
-  👤 Perfil
-</div>
+        <div
+          style={styles.sidebarItem}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = "#eaeaea"
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = "transparent"
+          }}
+        >
+          👤 Perfil
+        </div>
 
-<div
-  style={styles.sidebarItem}
-  onMouseEnter={(e) => {
-    e.currentTarget.style.backgroundColor = "#eaeaea"
-  }}
-  onMouseLeave={(e) => {
-    e.currentTarget.style.backgroundColor = "transparent"
-  }}
->
-  ⚙️ Configurações
-</div>
+        <div
+          style={styles.sidebarItem}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = "#eaeaea"
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = "transparent"
+          }}
+        >
+          ⚙️ Configurações
+        </div>
 
         <button onClick={logout} style={styles.logout}>
           Sair
@@ -235,27 +237,12 @@ function logout() {
 
         </div>
 
-        {/* RESPOSTA IA IMEDIATA */}
-        {respostaIA && (
-          <div style={styles.postCard}>
-
-            <div style={styles.aiHeader}>
-              🤖 Conrad AI
-            </div>
-
-            <p style={styles.postText}>
-              {respostaIA}
-            </p>
-
-          </div>
-        )}
-
         {/* FEED IA */}
         <div style={{ marginTop: "20px" }}>
 
           {posts
-  .filter(post => post && post.resposta_da_api)
-  .map((post) => (
+            .filter(post => post && post.resposta_da_api)
+            .map((post) => (
 
               <div key={post.id} style={styles.postCard}>
 
