@@ -254,8 +254,8 @@ function logout() {
         <div style={{ marginTop: "20px" }}>
 
           {posts
-            .filter(post => post && post.resposta)
-            .map((post) => (
+  .filter(post => post && post.resposta_da_api)
+  .map((post) => (
 
               <div key={post.id} style={styles.postCard}>
 
@@ -264,7 +264,7 @@ function logout() {
                 </div>
 
                 <p style={styles.postText}>
-                  {post.resposta}
+                  {post.resposta_da_api}
                 </p>
 
               </div>

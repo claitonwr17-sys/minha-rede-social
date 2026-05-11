@@ -1,0 +1,23 @@
+próximos passos Os próximos upgrades que fariam bastante diferença agora seriam:
+
+Hover nos botões da sidebar
+mudar cor ao passar mouse
+Feed real de posts
+mostrar texto publicado pelo usuário
+não apenas resposta da IA
+Perfil do usuário
+foto
+nome
+bio
+Sistema de curtidas
+❤️ like
+comentários
+Responsividade mobile
+adaptar para celular
+Página Home pública
+antes do login
+estilo tipo rede social moderna
+Análise IA visual
+positivo 🟢
+neutro 🟡
+ofensivo
