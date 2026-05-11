@@ -49,10 +49,10 @@ export default function Pag2() {
   }
 
   // 🚪 logout
-  function logout() {
-    localStorage.removeItem("token")
-    router.push("/login")
-  }
+function logout() {
+  localStorage.removeItem("token")
+  router.push("/")
+}
 
   // 🚀 publicar post
   async function publicarPost() {
