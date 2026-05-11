@@ -1,5 +1,7 @@
 "use client"
 
+import "@fontsource/inter"
+
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 
@@ -104,8 +106,39 @@ export default function Pag2() {
   }
 
   return (
+
     <div style={styles.page}>
 
+      {/* NAVBAR */}
+      <div style={styles.navbar}>
+
+        <div style={styles.logo}>
+          Conrad
+        </div>
+
+        <input
+          placeholder="Pesquisar"
+          style={styles.search}
+        />
+
+      </div>
+
+      {/* SIDEBAR */}
+      <div style={styles.sidebar}>
+
+        <div style={styles.sidebarItem}>🏠 Home</div>
+        <div style={styles.sidebarItem}>🤖 IA</div>
+        <div style={styles.sidebarItem}>🔍 Explorar</div>
+        <div style={styles.sidebarItem}>👤 Perfil</div>
+        <div style={styles.sidebarItem}>⚙️ Configurações</div>
+
+        <button onClick={logout} style={styles.logout}>
+          Sair
+        </button>
+
+      </div>
+
+      {/* FEED */}
       <div style={styles.feed}>
 
         {/* CARD DE POST */}
@@ -120,12 +153,11 @@ export default function Pag2() {
 
           <button
             onClick={() => {
-              console.log("CLICOU")
               publicarPost()
             }}
 
             onMouseDown={(e) => {
-              e.currentTarget.style.transform = "scale(0.95)"
+              e.currentTarget.style.transform = "scale(0.96)"
             }}
 
             onMouseUp={(e) => {
@@ -147,7 +179,7 @@ export default function Pag2() {
               🤖 Conrad AI
             </div>
 
-            <p style={{ whiteSpace: "pre-wrap" }}>
+            <p style={styles.postText}>
               {respostaIA}
             </p>
 
@@ -160,26 +192,25 @@ export default function Pag2() {
           {posts
             .filter(post => post && post.resposta)
             .map((post) => (
+
               <div key={post.id} style={styles.postCard}>
 
                 <div style={styles.aiHeader}>
                   🤖 Conrad AI
                 </div>
 
-                <p>{post.resposta}</p>
+                <p style={styles.postText}>
+                  {post.resposta}
+                </p>
 
               </div>
+
             ))
           }
 
         </div>
 
       </div>
-
-      {/* logout */}
-      <button onClick={logout} style={styles.logout}>
-        Sair
-      </button>
 
     </div>
   )
@@ -189,36 +220,94 @@ const styles = {
 
   page: {
     minHeight: "100vh",
-    backgroundColor: "#f5f6f8",
+    backgroundColor: "#f5f5f5",
     display: "flex",
     justifyContent: "center",
-    fontFamily: "Arial"
+    fontFamily: "Inter, sans-serif"
   },
 
-  feed: {
-    width: "500px",
-    marginTop: "40px"
-  },
-
-  card: {
+  // NAVBAR
+  navbar: {
+    position: "fixed",
+    top: 0,
+    left: 0,
+    right: 0,
+    height: "65px",
     backgroundColor: "white",
-    padding: "15px",
+    borderBottom: "1px solid #e5e5e5",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: "0 30px",
+    zIndex: 1000
+  },
+
+  logo: {
+    fontSize: "22px",
+    fontWeight: "700",
+    color: "#111"
+  },
+
+  search: {
+    width: "240px",
+    padding: "10px 14px",
     borderRadius: "12px",
-    boxShadow: "0 2px 10px rgba(0,0,0,0.08)",
+    border: "1px solid #ddd",
+    outline: "none",
+    backgroundColor: "#f7f7f7",
+    fontSize: "14px"
+  },
+
+  // SIDEBAR
+  sidebar: {
+    position: "fixed",
+    left: "20px",
+    top: "100px",
+    width: "220px",
     display: "flex",
     flexDirection: "column",
     gap: "10px"
   },
 
+  sidebarItem: {
+    padding: "14px 16px",
+    borderRadius: "14px",
+    cursor: "pointer",
+    fontWeight: "500",
+    color: "#111",
+    transition: "0.2s",
+    backgroundColor: "transparent"
+  },
+
+  // FEED
+  feed: {
+    width: "680px",
+    marginTop: "100px"
+  },
+
+  // CARD DE POST
+  card: {
+    backgroundColor: "white",
+    padding: "18px",
+    borderRadius: "18px",
+    border: "1px solid #e5e5e5",
+    boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+    display: "flex",
+    flexDirection: "column",
+    gap: "14px"
+  },
+
   textarea: {
     width: "100%",
-    height: "100px",
-    borderRadius: "10px",
+    height: "110px",
+    borderRadius: "14px",
     border: "1px solid #ddd",
-    padding: "10px",
+    padding: "14px",
     resize: "none",
-    fontSize: "14px",
-    outline: "none"
+    fontSize: "16px",
+    outline: "none",
+    fontFamily: "inherit",
+    backgroundColor: "#fff"
   },
 
   postButton: {
@@ -226,38 +315,48 @@ const styles = {
     backgroundColor: "#111",
     color: "white",
     border: "none",
-    padding: "10px 18px",
-    borderRadius: "8px",
+    padding: "12px 22px",
+    borderRadius: "12px",
     cursor: "pointer",
     fontSize: "14px",
+    fontWeight: "600",
     transition: "0.15s"
   },
 
+  // POSTS IA
   postCard: {
     backgroundColor: "white",
-    padding: "15px",
-    borderRadius: "12px",
+    padding: "18px",
+    borderRadius: "18px",
     marginTop: "20px",
-    boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
-    lineHeight: "1.5"
+    border: "1px solid #e9e9e9",
+    boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+    lineHeight: "1.7"
   },
 
   aiHeader: {
-    fontWeight: "bold",
-    marginBottom: "10px",
-    color: "#444"
+    fontWeight: "700",
+    marginBottom: "14px",
+    color: "#111",
+    fontSize: "16px"
+  },
+
+  postText: {
+    whiteSpace: "pre-wrap",
+    fontSize: "15px",
+    color: "#222"
   },
 
   logout: {
-    position: "fixed",
-    bottom: "20px",
-    left: "20px",
+    marginTop: "20px",
     backgroundColor: "#111",
     color: "white",
     border: "none",
-    padding: "10px 14px",
-    borderRadius: "10px",
-    cursor: "pointer"
+    padding: "12px 16px",
+    borderRadius: "12px",
+    cursor: "pointer",
+    width: "100px",
+    fontWeight: "600"
   }
 
 }
