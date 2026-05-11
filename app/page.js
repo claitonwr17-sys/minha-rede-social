@@ -43,7 +43,8 @@ export default function Home() {
 
       alert("Conta criada com sucesso!");
 
-      router.push("/pag2");
+      // 🔥 REDIRECIONA PARA O FEED
+      router.push("/feed");
 
     } catch (erro) {
 
@@ -86,7 +87,8 @@ export default function Home() {
 
       alert("Login realizado com sucesso!");
 
-      router.push("/pag2");
+      // 🔥 REDIRECIONA PARA O FEED
+      router.push("/feed");
 
     } catch (erro) {
 
