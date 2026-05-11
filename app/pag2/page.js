@@ -235,7 +235,7 @@ export default function Pag2() {
             {loading ? "Publicando..." : "Publicar"}
           </button>
 
-           </div>
+        </div>
 
       </div>
 

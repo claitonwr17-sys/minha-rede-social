@@ -237,10 +237,6 @@ export default function Pag2() {
 
         </div>
 
-        
-
-        </div>
-
       </div>
 
     </div>
