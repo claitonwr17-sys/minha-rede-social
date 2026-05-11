@@ -20,16 +20,19 @@ export default function Home() {
 
     try {
 
-      const resposta = await fetch("https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/auth/signup", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          email: email,
-          senha: senha
-        })
-      });
+      const resposta = await fetch(
+        "https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/auth/signup",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            email: email,
+            senha: senha
+          })
+        }
+      );
 
       const dados = await resposta.json();
 
@@ -41,9 +44,14 @@ export default function Home() {
         return;
       }
 
+      // ✅ SALVA TOKEN
+      if (dados.authToken) {
+        localStorage.setItem("token", dados.authToken);
+      }
+
       alert("Conta criada com sucesso!");
 
-      // 🔥 REDIRECIONA PARA O FEED
+      // ✅ REDIRECIONA PARA O FEED
       router.push("/feed");
 
     } catch (erro) {
@@ -64,16 +72,19 @@ export default function Home() {
 
     try {
 
-      const resposta = await fetch("https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          login_email: email,
-          senha: senha
-        })
-      });
+      const resposta = await fetch(
+        "https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/login",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            login_email: email,
+            senha: senha
+          })
+        }
+      );
 
       const dados = await resposta.json();
 
@@ -85,9 +96,14 @@ export default function Home() {
         return;
       }
 
+      // ✅ SALVA TOKEN
+      if (dados.authToken) {
+        localStorage.setItem("token", dados.authToken);
+      }
+
       alert("Login realizado com sucesso!");
 
-      // 🔥 REDIRECIONA PARA O FEED
+      // ✅ REDIRECIONA PARA O FEED
       router.push("/feed");
 
     } catch (erro) {
@@ -105,6 +121,7 @@ export default function Home() {
       <header className="bg-white border-b sticky top-0 z-10">
         <div className="max-w-5xl mx-auto px-4 py-3">
           <div className="flex items-center text-2xl font-bold tracking-tight">
+
             <Image
               src="/logo/logo-simbolo.png"
               alt="Logo Conrad"
@@ -113,7 +130,9 @@ export default function Home() {
               className="mr-1"
               priority
             />
+
             <span>onrad</span>
+
           </div>
         </div>
       </header>
@@ -136,9 +155,7 @@ export default function Home() {
                 Conrad é uma rede social de inteligência artificial criada para ajudar
                 você a pensar antes de postar. O app analisa o sentimento e o tom
                 emocional das suas postagens — identificando se são positivas,
-                negativas ou neutras — e oferece uma resposta humanizada, ajudando
-                você a refletir sobre o impacto das suas palavras antes de
-                compartilhá-las.
+                negativas ou neutras — e oferece uma resposta humanizada.
               </p>
 
             </div>
