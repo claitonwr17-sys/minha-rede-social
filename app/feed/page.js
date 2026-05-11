@@ -23,8 +23,9 @@ export default function Pag2() {
 
     const token = localStorage.getItem("token")
 
+    // ✅ CORREÇÃO AQUI
     if (!token) {
-      router.push("/login")
+      router.push("/")
       return
     }
 
@@ -349,7 +350,6 @@ const styles = {
     fontFamily: "Inter, sans-serif"
   },
 
-  // NAVBAR
   navbar: {
     position: "fixed",
     top: 0,
@@ -393,7 +393,6 @@ const styles = {
     fontSize: "14px"
   },
 
-  // SIDEBAR
   sidebar: {
     position: "fixed",
     left: "20px",
@@ -414,14 +413,12 @@ const styles = {
     backgroundColor: "transparent"
   },
 
-  // FEED
   feed: {
     width: "680px",
     marginTop: "100px",
     paddingBottom: "40px"
   },
 
-  // CARD DE POST
   card: {
     backgroundColor: "white",
     padding: "18px",
@@ -459,7 +456,6 @@ const styles = {
     transition: "0.15s"
   },
 
-  // POSTS
   postCard: {
     backgroundColor: "white",
     padding: "18px",
@@ -495,7 +491,6 @@ const styles = {
     fontWeight: "600"
   },
 
-  // 🔥 MODAL
   modalOverlay: {
     position: "fixed",
     top: 0,
