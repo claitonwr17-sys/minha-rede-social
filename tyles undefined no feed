@@ -179,28 +179,3 @@ export default function Pag2() {
     </div>
   )
 }
-const styles = {
-  page: {},
-  navbar: {},
-  logoArea: {},
-  logoImage: {},
-  logoText: {},
-  search: {},
-  sidebar: {},
-  sidebarItem: {},
-  logout: {},
-  feed: {},
-  card: {},
-  textarea: {},
-  postButton: {},
-  postCard: {},
-  aiHeader: {},
-  postText: {},
-  modalOverlay: {},
-  modal: {},
-  modalTitle: {},
-  modalText: {},
-  modalButtons: {},
-  cancelButton: {},
-  confirmButton: {}
-}
