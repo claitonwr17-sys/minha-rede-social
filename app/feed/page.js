@@ -179,11 +179,16 @@ export default function Pag2() {
     </div>
   )
 }
+
 const styles = {
   page: {},
   navbar: {},
   logoArea: {},
-  logoImage: {},
+  logoImage: {
+    width: 45,
+    height: 45,
+    objectFit: "contain"
+  },
   logoText: {},
   search: {},
   sidebar: {},
