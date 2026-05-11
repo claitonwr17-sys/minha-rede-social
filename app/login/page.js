@@ -237,27 +237,7 @@ export default function Pag2() {
 
         </div>
 
-        {/* FEED IA */}
-        <div style={{ marginTop: "20px" }}>
-
-          {posts
-            .filter(post => post && post.resposta_da_api)
-            .map((post) => (
-
-              <div key={post.id} style={styles.postCard}>
-
-                <div style={styles.aiHeader}>
-                  🤖 Conrad AI
-                </div>
-
-                <p style={styles.postText}>
-                  {post.resposta_da_api}
-                </p>
-
-              </div>
-
-            ))
-          }
+        
 
         </div>
 
