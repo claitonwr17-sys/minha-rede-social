@@ -14,6 +14,10 @@ export default function Pag2() {
   const [respostaIA, setRespostaIA] = useState("")
   const [loading, setLoading] = useState(false)
 
+  // 🔥 novos states
+  const [mostrarModal, setMostrarModal] = useState(false)
+  const [textoPendente, setTextoPendente] = useState("")
+
   // 🔒 proteção + carregar feed
   useEffect(() => {
 
@@ -54,7 +58,7 @@ export default function Pag2() {
     router.push("/")
   }
 
-  // 🚀 publicar post
+  // 🚀 ANALISA O POST
   async function publicarPost() {
 
     if (!texto.trim()) {
@@ -63,7 +67,6 @@ export default function Pag2() {
     }
 
     setLoading(true)
-    setRespostaIA("Conrad AI está pensando...")
 
     try {
 
@@ -86,16 +89,18 @@ export default function Pag2() {
 
       console.log("RESPOSTA IA:", data)
 
-      // 🔥 resposta segura
       const resposta =
         data?.response?.result?.interpretacao ||
         "Sem resposta da IA"
 
+      // 🔥 salva resposta
       setRespostaIA(resposta)
 
-      setTexto("")
+      // 🔥 guarda texto temporário
+      setTextoPendente(texto)
 
-      buscarPosts()
+      // 🔥 abre modal
+      setMostrarModal(true)
 
     } catch (error) {
 
@@ -105,6 +110,39 @@ export default function Pag2() {
     }
 
     setLoading(false)
+  }
+
+  // ✅ CONFIRMAR POSTAGEM
+  async function confirmarPostagem() {
+
+    try {
+
+      await fetch(
+        "https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/posts",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            texto: textoPendente
+          })
+        }
+      )
+
+      buscarPosts()
+
+      setTexto("")
+      setTextoPendente("")
+      setMostrarModal(false)
+      setRespostaIA("")
+
+    } catch (error) {
+
+      console.error(error)
+      alert("Erro ao salvar post")
+
+    }
   }
 
   return (
@@ -232,25 +270,10 @@ export default function Pag2() {
 
             style={styles.postButton}
           >
-            {loading ? "Publicando..." : "Publicar"}
+            {loading ? "Analisando..." : "Publicar"}
           </button>
 
         </div>
-
-        {/* RESPOSTA DA IA */}
-        {respostaIA && (
-          <div style={styles.postCard}>
-
-            <div style={styles.aiHeader}>
-              🤖 Conrad AI
-            </div>
-
-            <div style={styles.postText}>
-              {respostaIA}
-            </div>
-
-          </div>
-        )}
 
         {/* POSTS DO FEED */}
         {posts.map((post) => (
@@ -270,6 +293,47 @@ export default function Pag2() {
         ))}
 
       </div>
+
+      {/* 🔥 MODAL IA */}
+      {mostrarModal && (
+
+        <div style={styles.modalOverlay}>
+
+          <div style={styles.modal}>
+
+            <div style={styles.modalTitle}>
+              🤖 Conrad AI
+            </div>
+
+            <div style={styles.modalText}>
+              {respostaIA}
+            </div>
+
+            <div style={styles.modalButtons}>
+
+              <button
+                onClick={() => {
+                  setMostrarModal(false)
+                }}
+                style={styles.cancelButton}
+              >
+                Cancelar postagem
+              </button>
+
+              <button
+                onClick={confirmarPostagem}
+                style={styles.confirmButton}
+              >
+                Postar mesmo assim
+              </button>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      )}
 
     </div>
   )
@@ -428,6 +492,67 @@ const styles = {
     borderRadius: "12px",
     cursor: "pointer",
     width: "100px",
+    fontWeight: "600"
+  },
+
+  // 🔥 MODAL
+  modalOverlay: {
+    position: "fixed",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0,0,0,0.45)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 9999
+  },
+
+  modal: {
+    width: "520px",
+    backgroundColor: "white",
+    borderRadius: "24px",
+    padding: "28px",
+    boxShadow: "0 15px 45px rgba(0,0,0,0.2)"
+  },
+
+  modalTitle: {
+    fontSize: "24px",
+    fontWeight: "700",
+    marginBottom: "18px"
+  },
+
+  modalText: {
+    fontSize: "15px",
+    lineHeight: "1.8",
+    color: "#333",
+    whiteSpace: "pre-wrap"
+  },
+
+  modalButtons: {
+    display: "flex",
+    justifyContent: "flex-end",
+    gap: "12px",
+    marginTop: "28px"
+  },
+
+  cancelButton: {
+    backgroundColor: "#e5e5e5",
+    border: "none",
+    padding: "12px 18px",
+    borderRadius: "12px",
+    cursor: "pointer",
+    fontWeight: "600"
+  },
+
+  confirmButton: {
+    backgroundColor: "#111",
+    color: "white",
+    border: "none",
+    padding: "12px 18px",
+    borderRadius: "12px",
+    cursor: "pointer",
     fontWeight: "600"
   }
 
