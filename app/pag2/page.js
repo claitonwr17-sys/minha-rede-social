@@ -115,7 +115,7 @@ export default function Pag2() {
         <div style={styles.logoArea}>
 
           <img
-            src="/logo.png"
+            src="/logo/logo-simbolo.png"
             alt="Conrad"
             style={styles.logoImage}
           />
@@ -252,16 +252,15 @@ const styles = {
     zIndex: 1000
   },
 
-  // LOGO
   logoArea: {
     display: "flex",
     alignItems: "center",
-    gap: "12px"
+    gap: "10px"
   },
 
   logoImage: {
-    width: "42px",
-    height: "42px",
+    width: "38px",
+    height: "38px",
     objectFit: "contain"
   },
 
@@ -271,7 +270,6 @@ const styles = {
     color: "#111"
   },
 
-  // SEARCH
   search: {
     width: "240px",
     padding: "10px 14px",

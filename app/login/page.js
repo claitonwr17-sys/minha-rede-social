@@ -107,19 +107,24 @@ export default function Pag2() {
 
   return (
 
-   <div style={styles.logoArea}>
+    <div style={styles.page}>
 
-  <img
-    src="/logo.png"
-    alt="Conrad"
-    style={styles.logoImage}
-  />
+      {/* NAVBAR */}
+      <div style={styles.navbar}>
 
-  <span style={styles.logoText}>
-    Conrad
-  </span>
+        <div style={styles.logoArea}>
 
-</div>
+          <img
+            src="/logo/logo-simbolo.png"
+            alt="Conrad"
+            style={styles.logoImage}
+          />
+
+          <span style={styles.logoText}>
+            Conrad
+          </span>
+
+        </div>
 
         <input
           placeholder="Pesquisar"
@@ -247,7 +252,19 @@ const styles = {
     zIndex: 1000
   },
 
-  logo: {
+  logoArea: {
+    display: "flex",
+    alignItems: "center",
+    gap: "10px"
+  },
+
+  logoImage: {
+    width: "38px",
+    height: "38px",
+    objectFit: "contain"
+  },
+
+  logoText: {
     fontSize: "22px",
     fontWeight: "700",
     color: "#111"
