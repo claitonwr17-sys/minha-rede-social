@@ -78,18 +78,18 @@ export default function Pag2() {
         }
       )
 
+      if (!response.ok) {
+        throw new Error("Erro na API")
+      }
+
       const data = await response.json()
 
       console.log("RESPOSTA IA:", data)
 
-      if (!response.ok) {
-        alert("Erro ao publicar")
-        setLoading(false)
-        return
-      }
-
-      // 🔥 pega apenas interpretação da IA
-      const resposta = data.response.result.interpretacao
+      // 🔥 resposta segura
+      const resposta =
+        data?.response?.result?.interpretacao ||
+        "Sem resposta da IA"
 
       setRespostaIA(resposta)
 
@@ -237,6 +237,38 @@ export default function Pag2() {
 
         </div>
 
+        {/* RESPOSTA DA IA */}
+        {respostaIA && (
+          <div style={styles.postCard}>
+
+            <div style={styles.aiHeader}>
+              🤖 Conrad AI
+            </div>
+
+            <div style={styles.postText}>
+              {respostaIA}
+            </div>
+
+          </div>
+        )}
+
+        {/* POSTS DO FEED */}
+        {posts.map((post) => (
+
+          <div key={post.id} style={styles.postCard}>
+
+            <div style={styles.aiHeader}>
+              👤 {post.nome || "Usuário"}
+            </div>
+
+            <div style={styles.postText}>
+              {post.texto || post.content || "Post sem conteúdo"}
+            </div>
+
+          </div>
+
+        ))}
+
       </div>
 
     </div>
@@ -321,7 +353,8 @@ const styles = {
   // FEED
   feed: {
     width: "680px",
-    marginTop: "100px"
+    marginTop: "100px",
+    paddingBottom: "40px"
   },
 
   // CARD DE POST
@@ -362,7 +395,7 @@ const styles = {
     transition: "0.15s"
   },
 
-  // POSTS IA
+  // POSTS
   postCard: {
     backgroundColor: "white",
     padding: "18px",
