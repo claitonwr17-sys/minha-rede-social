@@ -136,11 +136,65 @@ function logout() {
       {/* SIDEBAR */}
       <div style={styles.sidebar}>
 
-        <div style={styles.sidebarItem}>🏠 Home</div>
-        <div style={styles.sidebarItem}>🤖 IA</div>
-        <div style={styles.sidebarItem}>🔍 Explorar</div>
-        <div style={styles.sidebarItem}>👤 Perfil</div>
-        <div style={styles.sidebarItem}>⚙️ Configurações</div>
+       <div
+  style={styles.sidebarItem}
+  onMouseEnter={(e) => {
+    e.currentTarget.style.backgroundColor = "#eaeaea"
+  }}
+  onMouseLeave={(e) => {
+    e.currentTarget.style.backgroundColor = "transparent"
+  }}
+>
+  🏠 Home
+</div>
+
+<div
+  style={styles.sidebarItem}
+  onMouseEnter={(e) => {
+    e.currentTarget.style.backgroundColor = "#eaeaea"
+  }}
+  onMouseLeave={(e) => {
+    e.currentTarget.style.backgroundColor = "transparent"
+  }}
+>
+  🤖 IA
+</div>
+
+<div
+  style={styles.sidebarItem}
+  onMouseEnter={(e) => {
+    e.currentTarget.style.backgroundColor = "#eaeaea"
+  }}
+  onMouseLeave={(e) => {
+    e.currentTarget.style.backgroundColor = "transparent"
+  }}
+>
+  🔍 Explorar
+</div>
+
+<div
+  style={styles.sidebarItem}
+  onMouseEnter={(e) => {
+    e.currentTarget.style.backgroundColor = "#eaeaea"
+  }}
+  onMouseLeave={(e) => {
+    e.currentTarget.style.backgroundColor = "transparent"
+  }}
+>
+  👤 Perfil
+</div>
+
+<div
+  style={styles.sidebarItem}
+  onMouseEnter={(e) => {
+    e.currentTarget.style.backgroundColor = "#eaeaea"
+  }}
+  onMouseLeave={(e) => {
+    e.currentTarget.style.backgroundColor = "transparent"
+  }}
+>
+  ⚙️ Configurações
+</div>
 
         <button onClick={logout} style={styles.logout}>
           Sair
