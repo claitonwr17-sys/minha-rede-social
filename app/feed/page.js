@@ -16,18 +16,23 @@ export default function Pag2() {
   const [mostrarModal, setMostrarModal] = useState(false)
   const [textoPendente, setTextoPendente] = useState("")
 
+  const [hoverItem, setHoverItem] = useState("")
+
   useEffect(() => {
     buscarPosts()
   }, [])
 
   async function buscarPosts() {
     try {
+
       const response = await fetch(
         "https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/posts"
       )
 
       const data = await response.json()
+
       const ordenado = data.sort((a, b) => b.id - a.id)
+
       setPosts(ordenado)
 
     } catch (error) {
@@ -54,7 +59,9 @@ export default function Pag2() {
         "https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/sentimento-gemini",
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json"
+          },
           body: JSON.stringify({ texto })
         }
       )
@@ -66,12 +73,17 @@ export default function Pag2() {
         "Sem resposta da IA"
 
       setRespostaIA(resposta)
+
       setTextoPendente(texto)
+
       setMostrarModal(true)
 
     } catch (error) {
+
       console.error(error)
+
       alert("Erro na requisição")
+
     }
 
     setLoading(false)
@@ -85,8 +97,12 @@ export default function Pag2() {
         "https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/posts",
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ texto: textoPendente })
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            texto: textoPendente
+          })
         }
       )
 
@@ -98,7 +114,9 @@ export default function Pag2() {
       setRespostaIA("")
 
     } catch (error) {
+
       console.error(error)
+
       alert("Erro ao salvar post")
     }
   }
@@ -109,31 +127,98 @@ export default function Pag2() {
 
       {/* NAVBAR */}
       <div style={styles.navbar}>
+
         <div style={styles.logoArea}>
-          <img src="/logo/logo-simbolo.png" style={styles.logoImage} />
-          <span style={styles.logoText}>Conrad</span>
+          <img
+            src="/logo/logo-simbolo.png"
+            style={styles.logoImage}
+          />
+
+          <span style={styles.logoText}>
+            Conrad
+          </span>
         </div>
 
-        <input placeholder="Pesquisar" style={styles.search} />
+        <input
+          placeholder="Pesquisar"
+          style={styles.search}
+        />
+
       </div>
 
       {/* SIDEBAR */}
       <div style={styles.sidebar}>
-        <div style={styles.sidebarItem}>🏠 Home</div>
-        <div style={styles.sidebarItem}>🤖 IA</div>
-        <div style={styles.sidebarItem}>🔍 Explorar</div>
-        <div style={styles.sidebarItem}>👤 Perfil</div>
-        <div style={styles.sidebarItem}>⚙️ Configurações</div>
 
-        <button onClick={logout} style={styles.logout}>
+        <div
+          style={{
+            ...styles.sidebarItem,
+            ...(hoverItem === "home" && styles.sidebarItemHover)
+          }}
+          onMouseEnter={() => setHoverItem("home")}
+          onMouseLeave={() => setHoverItem("")}
+        >
+          🏠 Home
+        </div>
+
+        <div
+          style={{
+            ...styles.sidebarItem,
+            ...(hoverItem === "ia" && styles.sidebarItemHover)
+          }}
+          onMouseEnter={() => setHoverItem("ia")}
+          onMouseLeave={() => setHoverItem("")}
+        >
+          🤖 IA
+        </div>
+
+        <div
+          style={{
+            ...styles.sidebarItem,
+            ...(hoverItem === "explorar" && styles.sidebarItemHover)
+          }}
+          onMouseEnter={() => setHoverItem("explorar")}
+          onMouseLeave={() => setHoverItem("")}
+        >
+          🔍 Explorar
+        </div>
+
+        <div
+          style={{
+            ...styles.sidebarItem,
+            ...(hoverItem === "perfil" && styles.sidebarItemHover)
+          }}
+          onMouseEnter={() => setHoverItem("perfil")}
+          onMouseLeave={() => setHoverItem("")}
+        >
+          👤 Perfil
+        </div>
+
+        <div
+          style={{
+            ...styles.sidebarItem,
+            ...(hoverItem === "config" && styles.sidebarItemHover)
+          }}
+          onMouseEnter={() => setHoverItem("config")}
+          onMouseLeave={() => setHoverItem("")}
+        >
+          ⚙️ Configurações
+        </div>
+
+        <button
+          onClick={logout}
+          style={styles.logout}
+        >
           Sair
         </button>
+
       </div>
 
       {/* FEED */}
       <div style={styles.feed}>
 
+        {/* CARD PUBLICAÇÃO */}
         <div style={styles.card}>
+
           <textarea
             value={texto}
             onChange={(e) => setTexto(e.target.value)}
@@ -141,43 +226,74 @@ export default function Pag2() {
             style={styles.textarea}
           />
 
-          <button onClick={publicarPost} style={styles.postButton}>
+          <button
+            onClick={publicarPost}
+            style={styles.postButton}
+          >
             {loading ? "Analisando..." : "Publicar"}
           </button>
+
         </div>
 
+        {/* POSTS */}
         {posts.map((post) => (
-          <div key={post.id} style={styles.postCard}>
-            <div style={styles.aiHeader}>👤 Usuário</div>
-            <div style={styles.postText}>{post.texto}</div>
+
+          <div
+            key={post.id}
+            style={styles.postCard}
+          >
+
+            <div style={styles.aiHeader}>
+              👤 Usuário
+            </div>
+
+            <div style={styles.postText}>
+              {post.texto}
+            </div>
+
           </div>
+
         ))}
 
       </div>
 
       {/* MODAL */}
       {mostrarModal && (
+
         <div style={styles.modalOverlay}>
+
           <div style={styles.modal}>
 
-            <div style={styles.modalTitle}>🤖 Conrad AI</div>
+            <div style={styles.modalTitle}>
+              🤖 Conrad AI
+            </div>
 
-            <div style={styles.modalText}>{respostaIA}</div>
+            <div style={styles.modalText}>
+              {respostaIA}
+            </div>
 
             <div style={styles.modalButtons}>
 
-              <button onClick={() => setMostrarModal(false)} style={styles.cancelButton}>
+              <button
+                onClick={() => setMostrarModal(false)}
+                style={styles.cancelButton}
+              >
                 Cancelar
               </button>
 
-              <button onClick={confirmarPostagem} style={styles.confirmButton}>
+              <button
+                onClick={confirmarPostagem}
+                style={styles.confirmButton}
+              >
                 Postar
               </button>
 
             </div>
 
           </div>
+
         </div>
+
       )}
 
     </div>
@@ -185,6 +301,7 @@ export default function Pag2() {
 }
 
 const styles = {
+
   page: {
     display: "flex",
     backgroundColor: "#f0f2f5",
@@ -225,10 +342,11 @@ const styles = {
   },
 
   search: {
-    padding: 8,
+    padding: 10,
     borderRadius: 20,
     border: "1px solid #ddd",
-    width: 250
+    width: 250,
+    outline: "none"
   },
 
   sidebar: {
@@ -243,20 +361,31 @@ const styles = {
   },
 
   sidebarItem: {
-    padding: "12px 10px",
+    padding: "12px 14px",
     cursor: "pointer",
-    borderRadius: 8,
-    marginBottom: 5
+    borderRadius: 10,
+    marginBottom: 8,
+    transition: "all 0.2s ease",
+    fontWeight: 500,
+    color: "#333"
+  },
+
+  sidebarItemHover: {
+    backgroundColor: "#e7f3ff",
+    color: "#1877f2",
+    transform: "translateX(5px)"
   },
 
   logout: {
     marginTop: 20,
-    backgroundColor: "red",
+    backgroundColor: "#ff4d4f",
     color: "white",
     border: "none",
-    padding: 10,
-    borderRadius: 8,
-    cursor: "pointer"
+    padding: "12px 16px",
+    borderRadius: 10,
+    cursor: "pointer",
+    transition: "0.2s",
+    fontWeight: "bold"
   },
 
   feed: {
@@ -264,48 +393,58 @@ const styles = {
     marginTop: 80,
     padding: 20,
     width: "100%",
-    maxWidth: 600
+    maxWidth: 650
   },
 
   card: {
     backgroundColor: "white",
-    padding: 15,
-    borderRadius: 10,
-    marginBottom: 15
+    padding: 18,
+    borderRadius: 16,
+    marginBottom: 20,
+    boxShadow: "0 1px 4px rgba(0,0,0,0.05)"
   },
 
   textarea: {
     width: "100%",
-    minHeight: 80,
-    borderRadius: 10,
+    minHeight: 90,
+    borderRadius: 12,
     border: "1px solid #ddd",
-    padding: 10
+    padding: 12,
+    resize: "none",
+    outline: "none",
+    fontSize: 16
   },
 
   postButton: {
-    marginTop: 10,
+    marginTop: 12,
     backgroundColor: "#1877f2",
     color: "white",
     border: "none",
-    padding: 10,
-    borderRadius: 8,
-    cursor: "pointer"
+    padding: "12px 18px",
+    borderRadius: 10,
+    cursor: "pointer",
+    fontWeight: "bold",
+    transition: "0.2s"
   },
 
   postCard: {
     backgroundColor: "white",
-    padding: 15,
-    borderRadius: 10,
-    marginBottom: 10
+    padding: 18,
+    borderRadius: 16,
+    marginBottom: 14,
+    boxShadow: "0 1px 4px rgba(0,0,0,0.05)"
   },
 
   aiHeader: {
     fontWeight: "bold",
-    marginBottom: 5
+    marginBottom: 10,
+    fontSize: 18
   },
 
   postText: {
-    color: "#333"
+    color: "#333",
+    fontSize: 16,
+    lineHeight: 1.5
   },
 
   modalOverlay: {
@@ -317,23 +456,26 @@ const styles = {
     backgroundColor: "rgba(0,0,0,0.5)",
     display: "flex",
     alignItems: "center",
-    justifyContent: "center"
+    justifyContent: "center",
+    zIndex: 2000
   },
 
   modal: {
     backgroundColor: "white",
-    padding: 20,
-    borderRadius: 10,
+    padding: 25,
+    borderRadius: 16,
     width: 400
   },
 
   modalTitle: {
     fontWeight: "bold",
-    marginBottom: 10
+    marginBottom: 15,
+    fontSize: 20
   },
 
   modalText: {
-    marginBottom: 20
+    marginBottom: 20,
+    lineHeight: 1.5
   },
 
   modalButtons: {
@@ -342,18 +484,20 @@ const styles = {
   },
 
   cancelButton: {
-    backgroundColor: "gray",
+    backgroundColor: "#999",
     color: "white",
     border: "none",
-    padding: 10,
-    borderRadius: 8
+    padding: "10px 16px",
+    borderRadius: 10,
+    cursor: "pointer"
   },
 
   confirmButton: {
-    backgroundColor: "green",
+    backgroundColor: "#22c55e",
     color: "white",
     border: "none",
-    padding: 10,
-    borderRadius: 8
+    padding: "10px 16px",
+    borderRadius: 10,
+    cursor: "pointer"
   }
 }
