@@ -1,8 +1,18 @@
 'use client'
 
 import "@fontsource/inter"
+import { useRouter } from "next/navigation"
+import { useState } from "react"
 
 export default function Perfil() {
+
+  const router = useRouter()
+
+  const [hoverItem, setHoverItem] = useState("")
+
+  function logout() {
+    router.push("/pag2")
+  }
 
   return (
 
@@ -11,35 +21,75 @@ export default function Perfil() {
       {/* SIDEBAR */}
       <div style={styles.sidebar}>
 
-        <div style={styles.logo}>
-          🚀 Conrad
+        <div>
+
+          <div style={styles.logo}>
+            🚀 Conrad
+          </div>
+
+          <div style={styles.menu}>
+
+            <div
+              style={{
+                ...styles.menuItem,
+                ...(hoverItem === "home" && styles.menuHover)
+              }}
+              onMouseEnter={() => setHoverItem("home")}
+              onMouseLeave={() => setHoverItem("")}
+            >
+              🏠 Home
+            </div>
+
+            <div
+              style={{
+                ...styles.menuItem,
+                ...(hoverItem === "ia" && styles.menuHover)
+              }}
+              onMouseEnter={() => setHoverItem("ia")}
+              onMouseLeave={() => setHoverItem("")}
+            >
+              🤖 IA
+            </div>
+
+            <div
+              style={{
+                ...styles.menuItem,
+                ...(hoverItem === "explorar" && styles.menuHover)
+              }}
+              onMouseEnter={() => setHoverItem("explorar")}
+              onMouseLeave={() => setHoverItem("")}
+            >
+              🔍 Explorar
+            </div>
+
+            <div style={styles.menuAtivo}>
+              👤 Perfil
+            </div>
+
+            <div
+              style={{
+                ...styles.menuItem,
+                ...(hoverItem === "config" && styles.menuHover)
+              }}
+              onMouseEnter={() => setHoverItem("config")}
+              onMouseLeave={() => setHoverItem("")}
+            >
+              ⚙️ Configurações
+            </div>
+
+          </div>
+
         </div>
 
-        <div style={styles.menu}>
-
-          <div style={styles.menuItem}>
-            🏠 Home
-          </div>
-
-          <div style={styles.menuItem}>
-            🤖 IA
-          </div>
-
-          <div style={styles.menuItem}>
-            🔍 Explorar
-          </div>
-
-          <div style={styles.menuAtivo}>
-            👤 Perfil
-          </div>
-
-          <div style={styles.menuItem}>
-            ⚙️ Configurações
-          </div>
-
-        </div>
-
-        <div style={styles.logout}>
+        <div
+          style={{
+            ...styles.logout,
+            ...(hoverItem === "logout" && styles.logoutHover)
+          }}
+          onMouseEnter={() => setHoverItem("logout")}
+          onMouseLeave={() => setHoverItem("")}
+          onClick={logout}
+        >
           🚪 Sair
         </div>
 
@@ -168,7 +218,14 @@ const styles = {
     borderRadius: 12,
     cursor: "pointer",
     color: "#444",
-    fontSize: 18
+    fontSize: 18,
+    transition: "0.2s"
+  },
+
+  menuHover: {
+    backgroundColor: "#edf3ff",
+    color: "#1877f2",
+    transform: "translateX(5px)"
   },
 
   menuAtivo: {
@@ -183,7 +240,13 @@ const styles = {
   logout: {
     color: "red",
     fontSize: 18,
-    cursor: "pointer"
+    cursor: "pointer",
+    transition: "0.2s"
+  },
+
+  logoutHover: {
+    transform: "translateX(5px)",
+    opacity: 0.8
   },
 
   content: {
