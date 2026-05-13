@@ -502,10 +502,4 @@ const styles = {
     borderRadius: 10,
     cursor: "pointer"
   }
-}"white",
-    border: "none",
-    padding: "10px 16px",
-    borderRadius: 10,
-    cursor: "pointer"
-  }
 }
