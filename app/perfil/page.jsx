@@ -1,5 +1,7 @@
 'use client'
 
+import "@fontsource/inter"
+
 export default function Perfil() {
 
   return (
@@ -8,24 +10,33 @@ export default function Perfil() {
 
       <div style={styles.card}>
 
-        <img
-          src="/avatar.png"
-          style={styles.avatar}
-        />
+        <div style={styles.profileArea}>
 
-        <h1 style={styles.nome}>
-          Claiton
-        </h1>
+          <img
+            src="/usuario.png"
+            alt="Usuário"
+            style={styles.avatar}
+          />
 
-        <p style={styles.username}>
-          @claitonwr
-        </p>
+          <div>
 
-        <p style={styles.bio}>
+            <div style={styles.nome}>
+              Usuário
+            </div>
+
+            <div style={styles.usuario}>
+              @usuario
+            </div>
+
+          </div>
+
+        </div>
+
+        <div style={styles.bio}>
           Construindo uma rede social com IA 🚀
-        </p>
+        </div>
 
-        <button style={styles.button}>
+        <button style={styles.botao}>
           Editar perfil
         </button>
 
@@ -38,54 +49,63 @@ export default function Perfil() {
 const styles = {
 
   page: {
-    minHeight: '100vh',
-    backgroundColor: '#f0f2f5',
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    fontFamily: 'Inter, sans-serif'
+    minHeight: "100vh",
+    backgroundColor: "#f0f2f5",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    fontFamily: "Inter, sans-serif"
   },
 
   card: {
-    backgroundColor: 'white',
+    backgroundColor: "white",
+    width: 500,
+    borderRadius: 24,
     padding: 40,
-    borderRadius: 20,
-    width: 400,
-    textAlign: 'center',
-    boxShadow: '0 2px 10px rgba(0,0,0,0.08)'
+    boxShadow: "0 4px 15px rgba(0,0,0,0.08)",
+    textAlign: "center"
+  },
+
+  profileArea: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 20,
+    marginBottom: 30
   },
 
   avatar: {
-    width: 120,
-    height: 120,
-    borderRadius: '50%',
-    objectFit: 'cover',
-    marginBottom: 20
+    width: 80,
+    height: 80,
+    objectFit: "contain"
   },
 
   nome: {
-    margin: 0,
-    fontSize: 28
+    fontSize: 36,
+    fontWeight: "bold",
+    color: "#222"
   },
 
-  username: {
-    color: '#666',
+  usuario: {
+    fontSize: 20,
+    color: "#666",
     marginTop: 5
   },
 
   bio: {
-    marginTop: 20,
-    lineHeight: 1.5
+    fontSize: 20,
+    color: "#333",
+    marginBottom: 35
   },
 
-  button: {
-    marginTop: 25,
-    backgroundColor: '#1877f2',
-    color: 'white',
-    border: 'none',
-    padding: '12px 20px',
-    borderRadius: 10,
-    cursor: 'pointer',
-    fontWeight: 'bold'
+  botao: {
+    backgroundColor: "#1877f2",
+    color: "white",
+    border: "none",
+    padding: "14px 28px",
+    borderRadius: 14,
+    fontSize: 18,
+    fontWeight: "bold",
+    cursor: "pointer"
   }
 }
