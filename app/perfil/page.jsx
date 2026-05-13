@@ -364,8 +364,9 @@ const styles = {
     color: "#222"
   },
 
-  statTexto: {
+   statTexto: {
     marginTop: 5,
     color: "#666",
     fontSize: 18
   }
+}
