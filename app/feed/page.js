@@ -132,6 +132,7 @@ export default function Pag2() {
           <img
             src="/logo/logo-simbolo.png"
             style={styles.logoImage}
+            alt="Logo"
           />
 
           <span style={styles.logoText}>
@@ -189,17 +190,18 @@ export default function Pag2() {
           }}
           onMouseEnter={() => setHoverItem("perfil")}
           onMouseLeave={() => setHoverItem("")}
-        ><div
-  style={{
-    ...styles.sidebarItem,
-    ...(hoverItem === "perfil" && styles.sidebarItemHover)
-  }}
-  onMouseEnter={() => setHoverItem("perfil")}
-  onMouseLeave={() => setHoverItem("")}
-  onClick={() => router.push("/perfil")}
->
-  👤 Perfil
-</div>
+          onClick={() => router.push("/perfil")}
+        >
+          👤 Perfil
+        </div>
+
+        <div
+          style={{
+            ...styles.sidebarItem,
+            ...(hoverItem === "config" && styles.sidebarItemHover)
+          }}
+          onMouseEnter={() => setHoverItem("config")}
+          onMouseLeave={() => setHoverItem("")}
         >
           ⚙️ Configurações
         </div>
@@ -495,6 +497,12 @@ const styles = {
   confirmButton: {
     backgroundColor: "#22c55e",
     color: "white",
+    border: "none",
+    padding: "10px 16px",
+    borderRadius: 10,
+    cursor: "pointer"
+  }
+}"white",
     border: "none",
     padding: "10px 16px",
     borderRadius: 10,
