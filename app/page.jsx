@@ -370,4 +370,3 @@ const styles = {
     fontSize: 18
   }
 }
-}

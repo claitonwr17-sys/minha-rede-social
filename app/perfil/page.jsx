@@ -369,4 +369,3 @@ const styles = {
     color: "#666",
     fontSize: 18
   }
-}
