@@ -189,17 +189,17 @@ export default function Pag2() {
           }}
           onMouseEnter={() => setHoverItem("perfil")}
           onMouseLeave={() => setHoverItem("")}
-        >
-          👤 Perfil
-        </div>
-
-        <div
-          style={{
-            ...styles.sidebarItem,
-            ...(hoverItem === "config" && styles.sidebarItemHover)
-          }}
-          onMouseEnter={() => setHoverItem("config")}
-          onMouseLeave={() => setHoverItem("")}
+        ><div
+  style={{
+    ...styles.sidebarItem,
+    ...(hoverItem === "perfil" && styles.sidebarItemHover)
+  }}
+  onMouseEnter={() => setHoverItem("perfil")}
+  onMouseLeave={() => setHoverItem("")}
+  onClick={() => router.push("/perfil")}
+>
+  👤 Perfil
+</div>
         >
           ⚙️ Configurações
         </div>
