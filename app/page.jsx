@@ -11,7 +11,7 @@ export default function Perfil() {
   const [hoverItem, setHoverItem] = useState("")
 
   function logout() {
-    router.push("/pag2")
+    router.push("/feed")
   }
 
   return (
@@ -144,7 +144,17 @@ export default function Perfil() {
 
             </div>
 
-            <button style={styles.botao}>
+            <button
+              style={styles.botao}
+              onMouseEnter={(e) => {
+                e.target.style.backgroundColor = "#1664d9"
+                e.target.style.transform = "scale(1.03)"
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.backgroundColor = "#1877f2"
+                e.target.style.transform = "scale(1)"
+              }}
+            >
               Editar perfil
             </button>
 
@@ -326,7 +336,8 @@ const styles = {
     borderRadius: 14,
     fontSize: 18,
     fontWeight: "bold",
-    cursor: "pointer"
+    cursor: "pointer",
+    transition: "0.2s"
   },
 
   bio: {
@@ -358,4 +369,5 @@ const styles = {
     color: "#666",
     fontSize: 18
   }
+}
 }
