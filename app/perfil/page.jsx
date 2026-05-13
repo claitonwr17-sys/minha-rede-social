@@ -10,6 +10,12 @@ export default function Perfil() {
 
       <div style={styles.card}>
 
+        <img
+          src="/terra.jpg"
+          alt="Capa"
+          style={styles.capa}
+        />
+
         <div style={styles.profileArea}>
 
           <img
@@ -61,9 +67,16 @@ const styles = {
     backgroundColor: "white",
     width: 500,
     borderRadius: 24,
-    padding: 40,
+    overflow: "hidden",
     boxShadow: "0 4px 15px rgba(0,0,0,0.08)",
-    textAlign: "center"
+    textAlign: "center",
+    paddingBottom: 40
+  },
+
+  capa: {
+    width: "100%",
+    height: 180,
+    objectFit: "cover"
   },
 
   profileArea: {
@@ -71,13 +84,17 @@ const styles = {
     alignItems: "center",
     justifyContent: "center",
     gap: 20,
+    marginTop: -40,
     marginBottom: 30
   },
 
   avatar: {
-    width: 80,
-    height: 80,
-    objectFit: "contain"
+    width: 90,
+    height: 90,
+    objectFit: "contain",
+    backgroundColor: "white",
+    borderRadius: "50%",
+    padding: 6
   },
 
   nome: {
@@ -95,7 +112,8 @@ const styles = {
   bio: {
     fontSize: 20,
     color: "#333",
-    marginBottom: 35
+    marginBottom: 35,
+    padding: "0 20px"
   },
 
   botao: {
