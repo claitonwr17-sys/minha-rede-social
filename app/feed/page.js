@@ -289,24 +289,28 @@ async function reagirPost(id, tipo) {
 
             <div style={styles.actions}>
 
-              <button
-                style={styles.actionButton}
-                onClick={() => reagirPost(post.id, "curtir")}
-              >
+             <button
+  type="button"
+  style={styles.actionButton}
+  onClick={() => reagirPost(post.id, "curtir")}
+>
+              
                 🖒 Curtir {post.curtir || 0}
               </button>
 
               <button
-                style={styles.actionButton}
-                onClick={() => reagirPost(post.id, "amei")}
-              >
+  type="button"
+  style={styles.actionButton}
+  onClick={() => reagirPost(post.id, "amei")}
+>
+              
                 ❤ Amei {post.amei || 0}
               </button>
 
-             <button
+            <button
+  type="button"
   style={styles.actionButton}
   onClick={async () => {
-
     const comentario = prompt("Digite seu comentário")
 
 if (!comentario) return
