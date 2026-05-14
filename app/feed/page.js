@@ -288,14 +288,53 @@ export default function Pag2() {
                 ❤️ Amei {post.amei || 0}
               </button>
 
-              <button
-                style={styles.actionButton}
-              >
-                💬 Comentários
-              </button>
+             <button
+  style={styles.actionButton}
+  onClick={() => {
 
+    const comentario = prompt("Digite seu comentário")
+
+    if (!comentario) return
+
+    const novosPosts = posts.map((p) => {
+
+      if (p.id === post.id) {
+
+        return {
+          ...p,
+          comentarios: p.comentarios
+            ? [...p.comentarios, comentario]
+            : [comentario]
+        }
+      }
+
+      return p
+    })
+
+    setPosts(novosPosts)
+  }}
+>
+  💬 Comentários ({post.comentarios?.length || 0})
+</button>
             </div>
+{post.comentarios && post.comentarios.length > 0 && (
 
+  <div style={styles.commentsArea}>
+
+    {post.comentarios.map((comentario, index) => (
+
+      <div
+        key={index}
+        style={styles.comment}
+      >
+        💬 {comentario}
+      </div>
+
+    ))}
+
+  </div>
+
+)}
           </div>
 
         ))}
@@ -553,12 +592,27 @@ const styles = {
     cursor: "pointer"
   },
 
-  confirmButton: {
-    backgroundColor: "#22c55e",
-    color: "white",
-    border: "none",
-    padding: "10px 16px",
-    borderRadius: 10,
-    cursor: "pointer"
-  }
+ confirmButton: {
+  backgroundColor: "#22c55e",
+  color: "white",
+  border: "none",
+  padding: "10px 16px",
+  borderRadius: 10,
+  cursor: "pointer"
+},
+
+commentsArea: {
+  marginTop: 12,
+  backgroundColor: "#f9fafb",
+  padding: 10,
+  borderRadius: 10
+},
+
+comment: {
+  padding: 8,
+  borderBottom: "1px solid #e5e7eb",
+  fontSize: 14,
+  color: "#333"
+}
+
 }
