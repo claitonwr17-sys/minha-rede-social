@@ -121,7 +121,8 @@ export default function Pag2() {
     }
   }
 
-  function curtirPost(id) {
+  // NOVA FUNÇÃO DE REAÇÕES
+  function reagirPost(id, tipo) {
 
     const novosPosts = posts.map((post) => {
 
@@ -129,7 +130,7 @@ export default function Pag2() {
 
         return {
           ...post,
-          likes: post.likes ? post.likes + 1 : 1
+          [tipo]: post[tipo] ? post[tipo] + 1 : 1
         }
       }
 
@@ -275,9 +276,16 @@ export default function Pag2() {
 
               <button
                 style={styles.actionButton}
-                onClick={() => curtirPost(post.id)}
+                onClick={() => reagirPost(post.id, "curtir")}
               >
-                ❤️ {post.likes || 0}
+                👍 Curtir {post.curtir || 0}
+              </button>
+
+              <button
+                style={styles.actionButton}
+                onClick={() => reagirPost(post.id, "amei")}
+              >
+                ❤️ Amei {post.amei || 0}
               </button>
 
               <button
