@@ -30,16 +30,21 @@ export default function Perfil() {
 
           <div style={styles.menu}>
 
-            <div
-              style={{
-                ...styles.menuItem,
-                ...(hoverItem === "home" && styles.menuHover)
-              }}
-              onMouseEnter={() => setHoverItem("home")}
-              onMouseLeave={() => setHoverItem("")}
-            >
-              🏠 Home
-            </div>
+            <Link
+  href="/feed"
+  style={{ textDecoration: "none" }}
+>
+  <div
+    style={{
+      ...styles.menuItem,
+      ...(hoverItem === "home" && styles.menuHover)
+    }}
+    onMouseEnter={() => setHoverItem("home")}
+    onMouseLeave={() => setHoverItem("")}
+  >
+    🏠 Home
+  </div>
+</Link>
 
             <div
               style={{
