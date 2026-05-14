@@ -121,6 +121,24 @@ export default function Pag2() {
     }
   }
 
+  function curtirPost(id) {
+
+    const novosPosts = posts.map((post) => {
+
+      if (post.id === id) {
+
+        return {
+          ...post,
+          likes: post.likes ? post.likes + 1 : 1
+        }
+      }
+
+      return post
+    })
+
+    setPosts(novosPosts)
+  }
+
   return (
 
     <div style={styles.page}>
@@ -251,6 +269,23 @@ export default function Pag2() {
 
             <div style={styles.postText}>
               {post.texto}
+            </div>
+
+            <div style={styles.actions}>
+
+              <button
+                style={styles.actionButton}
+                onClick={() => curtirPost(post.id)}
+              >
+                ❤️ {post.likes || 0}
+              </button>
+
+              <button
+                style={styles.actionButton}
+              >
+                💬 Comentários
+              </button>
+
             </div>
 
           </div>
@@ -447,6 +482,22 @@ const styles = {
     color: "#333",
     fontSize: 16,
     lineHeight: 1.5
+  },
+
+  actions: {
+    display: "flex",
+    gap: 12,
+    marginTop: 15
+  },
+
+  actionButton: {
+    border: "none",
+    backgroundColor: "#f0f2f5",
+    padding: "10px 14px",
+    borderRadius: 10,
+    cursor: "pointer",
+    fontSize: 15,
+    transition: "0.2s"
   },
 
   modalOverlay: {
