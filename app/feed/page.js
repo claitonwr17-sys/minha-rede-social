@@ -122,23 +122,38 @@ export default function Pag2() {
   }
 
   // NOVA FUNÇÃO DE REAÇÕES
-  function reagirPost(id, tipo) {
+async function reagirPost(id, tipo) {
 
-    const novosPosts = posts.map((post) => {
+  const postAtual = posts.find((p) => p.id === id)
 
-      if (post.id === id) {
+  if (!postAtual) return
 
-        return {
-          ...post,
-          [tipo]: post[tipo] ? post[tipo] + 1 : 1
-        }
+  const novoValor = (postAtual[tipo] || 0) + 1
+
+  try {
+
+    await fetch(
+      `https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/posts/${id}`,
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          [tipo]: novoValor
+        })
       }
+    )
 
-      return post
-    })
+    buscarPosts()
 
-    setPosts(novosPosts)
+  } catch (error) {
+
+    console.error(error)
+
+    alert("Erro ao salvar reação")
   }
+}
 
   return (
 
