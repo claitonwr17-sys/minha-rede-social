@@ -305,28 +305,42 @@ async function reagirPost(id, tipo) {
 
              <button
   style={styles.actionButton}
-  onClick={() => {
+  onClick={async () => {
 
     const comentario = prompt("Digite seu comentário")
 
-    if (!comentario) return
+if (!comentario) return
 
-    const novosPosts = posts.map((p) => {
+const comentariosAtuais = post.comentarios || []
 
-      if (p.id === post.id) {
+const novosComentarios = [
+  ...comentariosAtuais,
+  comentario
+]
 
-        return {
-          ...p,
-          comentarios: p.comentarios
-            ? [...p.comentarios, comentario]
-            : [comentario]
-        }
-      }
+try {
 
-      return p
-    })
+  await fetch(
+    `https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/posts/${post.id}`,
+    {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        comentarios: novosComentarios
+      })
+    }
+  )
 
-    setPosts(novosPosts)
+  buscarPosts()
+
+} catch (error) {
+
+  console.error(error)
+
+  alert("Erro ao salvar comentário")
+}
   }}
 >
   🗨 Comentários ({post.comentarios?.length || 0})
