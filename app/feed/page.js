@@ -462,7 +462,7 @@ const styles = {
 
   logout: {
     marginTop: 20,
-    backgroundColor: "#ff4d4f",
+   backgroundColor: "#000",
     color: "white",
     border: "none",
     padding: "12px 16px",
