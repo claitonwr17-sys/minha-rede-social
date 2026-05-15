@@ -277,8 +277,8 @@ export default function Pag2() {
 {posts
   .filter((post) => post.texto && post.texto.trim() !== "")
   .map((post) => (
- 
-      <div
+
+        <div
             key={post.id}
             style={styles.postCard}
           >
@@ -298,7 +298,7 @@ export default function Pag2() {
               <button
                 type="button"
                 style={styles.actionButton}
-                onClick={() => reagirPost(post.id, "curtir")}
+                onClick={() => reagirPost(post["EU IA"], "curtir")
               >
                 🖒 Curtir {post.curtir || 0}
               </button>
@@ -306,7 +306,7 @@ export default function Pag2() {
               <button
                 type="button"
                 style={styles.actionButton}
-                onClick={() => reagirPost(post.id, "amei")}
+                onClick={() => onClick={() => reagirPost(post["EU IA"], "amei")}
               >
                 ❤ Amei {post.amei || 0}
               </button>
@@ -330,7 +330,7 @@ export default function Pag2() {
                   try {
 
                     await fetch(
-                      `https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/PATCH_/posts/${post.id}`,
+                      `https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/PATCH_/posts/${post["EU IA"]}
                       {
                         method: "PATCH",
                         headers: {
