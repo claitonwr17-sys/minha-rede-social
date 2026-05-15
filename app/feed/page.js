@@ -298,7 +298,7 @@ export default function Pag2() {
               <button
                 type="button"
                 style={styles.actionButton}
-                onClick={() => reagirPost(post["EU IA"], "curtir")
+                onClick={() => reagirPost(post["EU IA"], "curtir")}
               >
                 🖒 Curtir {post.curtir || 0}
               </button>
@@ -306,7 +306,7 @@ export default function Pag2() {
               <button
                 type="button"
                 style={styles.actionButton}
-                onClick={() => onClick={() => reagirPost(post["EU IA"], "amei")}
+                onClick={() => reagirPost(post["EU IA"], "amei")}
               >
                 ❤ Amei {post.amei || 0}
               </button>
