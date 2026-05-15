@@ -413,8 +413,6 @@ export default function Pag2() {
                   Postar
                 </button>
 
-              </div>
-
             </div>
 
           </div>
@@ -422,8 +420,6 @@ export default function Pag2() {
         )}
 
       </div>
-
-    </div>
   )
 }
 
