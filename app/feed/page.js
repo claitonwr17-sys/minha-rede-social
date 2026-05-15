@@ -23,6 +23,7 @@ export default function Pag2() {
   }, [])
 
   async function buscarPosts() {
+
     try {
 
       const response = await fetch(
@@ -36,7 +37,9 @@ export default function Pag2() {
       setPosts(ordenado)
 
     } catch (error) {
+
       console.error("Erro ao buscar posts", error)
+
     }
   }
 
@@ -118,42 +121,44 @@ export default function Pag2() {
       console.error(error)
 
       alert("Erro ao salvar post")
+
     }
   }
 
-  // NOVA FUNÇÃO DE REAÇÕES
-async function reagirPost(id, tipo) {
+  // CURTIR E AMEI
+  async function reagirPost(id, tipo) {
 
-  const postAtual = posts.find((p) => p.id === id)
+    const postAtual = posts.find((p) => p.id === id)
 
-  if (!postAtual) return
+    if (!postAtual) return
 
-  const novoValor = (postAtual[tipo] || 0) + 1
+    const novoValor = (postAtual[tipo] || 0) + 1
 
-  try {
+    try {
 
-    await fetch(
-      `https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/posts/${id}`,
-      {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          [tipo]: novoValor
-        })
-      }
-    )
+      await fetch(
+        `https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/PATCH_/posts/${id}`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            [tipo]: novoValor
+          })
+        }
+      )
 
-    buscarPosts()
+      buscarPosts()
 
-  } catch (error) {
+    } catch (error) {
 
-    console.error(error)
+      console.error(error)
 
-    alert("Erro ao salvar reação")
+      alert("Erro ao salvar reação")
+
+    }
   }
-}
 
   return (
 
@@ -289,85 +294,89 @@ async function reagirPost(id, tipo) {
 
             <div style={styles.actions}>
 
-             <button
-  type="button"
-  style={styles.actionButton}
-  onClick={() => reagirPost(post.id, "curtir")}
->
-              
+              <button
+                type="button"
+                style={styles.actionButton}
+                onClick={() => reagirPost(post.id, "curtir")}
+              >
                 🖒 Curtir {post.curtir || 0}
               </button>
 
               <button
-  type="button"
-  style={styles.actionButton}
-  onClick={() => reagirPost(post.id, "amei")}
->
-              
+                type="button"
+                style={styles.actionButton}
+                onClick={() => reagirPost(post.id, "amei")}
+              >
                 ❤ Amei {post.amei || 0}
               </button>
 
-            <button
-  type="button"
-  style={styles.actionButton}
-  onClick={async () => {
-    const comentario = prompt("Digite seu comentário")
+              <button
+                type="button"
+                style={styles.actionButton}
+                onClick={async () => {
 
-if (!comentario) return
+                  const comentario = prompt("Digite seu comentário")
 
-const comentariosAtuais = post.comentarios || []
+                  if (!comentario) return
 
-const novosComentarios = [
-  ...comentariosAtuais,
-  comentario
-]
+                  const comentariosAtuais = post.comentarios || []
 
-try {
+                  const novosComentarios = [
+                    ...comentariosAtuais,
+                    comentario
+                  ]
 
-  await fetch(
-    `https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/posts/${post.id}`,
-    {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        comentarios: novosComentarios
-      })
-    }
-  )
+                  try {
 
-  buscarPosts()
+                    await fetch(
+                      `https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/PATCH_/posts/${post.id}`,
+                      {
+                        method: "PATCH",
+                        headers: {
+                          "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({
+                          comentarios: novosComentarios
+                        })
+                      }
+                    )
 
-} catch (error) {
+                    buscarPosts()
 
-  console.error(error)
+                  } catch (error) {
 
-  alert("Erro ao salvar comentário")
-}
-  }}
->
-  🗨 Comentários ({post.comentarios?.length || 0})
-</button>
+                    console.error(error)
+
+                    alert("Erro ao salvar comentário")
+
+                  }
+
+                }}
+              >
+                🗨 Comentários ({post.comentarios?.length || 0})
+              </button>
+
             </div>
-{post.comentarios && post.comentarios.length > 0 && (
 
-  <div style={styles.commentsArea}>
+            {post.comentarios && post.comentarios.length > 0 && (
 
-    {post.comentarios.map((comentario, index) => (
+              <div style={styles.commentsArea}>
 
-      <div
-        key={index}
-        style={styles.comment}
-      >
-        💬 {comentario}
-      </div>
+                {post.comentarios.map((comentario, index) => (
 
-    ))}
+                  <div
+                    key={index}
+                    style={styles.comment}
+                  >
+                    💬 {comentario}
+                  </div>
 
-  </div>
+                ))}
 
-)}
+              </div>
+
+            )}
+
           </div>
 
         ))}
@@ -495,7 +504,7 @@ const styles = {
 
   logout: {
     marginTop: 20,
-   backgroundColor: "#000",
+    backgroundColor: "#000",
     color: "white",
     border: "none",
     padding: "12px 16px",
@@ -542,110 +551,6 @@ const styles = {
     cursor: "pointer",
     fontWeight: "bold",
     transition: "0.2s"
-  },
-
-  postCard: {
-    backgroundColor: "white",
-    padding: 18,
-    borderRadius: 16,
-    marginBottom: 14,
-    boxShadow: "0 1px 4px rgba(0,0,0,0.05)"
-  },
-
-  aiHeader: {
-    fontWeight: "bold",
-    marginBottom: 10,
-    fontSize: 18
-  },
-
-  postText: {
-    color: "#333",
-    fontSize: 16,
-    lineHeight: 1.5
-  },
-
-  actions: {
-    display: "flex",
-    gap: 12,
-    marginTop: 15
-  },
-
-  actionButton: {
-    border: "none",
-    backgroundColor: "#f0f2f5",
-    padding: "10px 14px",
-    borderRadius: 10,
-    cursor: "pointer",
-    fontSize: 15,
-    transition: "0.2s"
-  },
-
-  modalOverlay: {
-    position: "fixed",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    zIndex: 2000
-  },
-
-  modal: {
-    backgroundColor: "white",
-    padding: 25,
-    borderRadius: 16,
-    width: 400
-  },
-
-  modalTitle: {
-    fontWeight: "bold",
-    marginBottom: 15,
-    fontSize: 20
-  },
-
-  modalText: {
-    marginBottom: 20,
-    lineHeight: 1.5
-  },
-
-  modalButtons: {
-    display: "flex",
-    justifyContent: "space-between"
-  },
-
-  cancelButton: {
-    backgroundColor: "#999",
-    color: "white",
-    border: "none",
-    padding: "10px 16px",
-    borderRadius: 10,
-    cursor: "pointer"
-  },
-
- confirmButton: {
-  backgroundColor: "#22c55e",
-  color: "white",
-  border: "none",
-  padding: "10px 16px",
-  borderRadius: 10,
-  cursor: "pointer"
-},
-
-commentsArea: {
-  marginTop: 12,
-  backgroundColor: "#f9fafb",
-  padding: 10,
-  borderRadius: 10
-},
-
-comment: {
-  padding: 8,
-  borderBottom: "1px solid #e5e7eb",
-  fontSize: 14,
-  color: "#333"
+  }
 }
-
-}
+``
