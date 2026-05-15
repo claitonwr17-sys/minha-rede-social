@@ -275,8 +275,11 @@ export default function Pag2() {
 
         </div>
 
-        {/* POSTS */}
-        {posts.map((post) => (
+        {posts
+  .filter((post) => post.texto && post.texto.trim() !== "")
+  {posts
+  .filter((post) => post.texto && post.texto.trim() !== "")
+  .map((post) => (
 
           <div
             key={post.id}
@@ -569,16 +572,21 @@ const styles = {
   },
 
   postText: {
-    color: "#333",
-    fontSize: 16,
-    lineHeight: 1.5
-  },
+  color: "#333",
+  fontSize: 16,
+  lineHeight: 1.5,
+  marginBottom: 15,
+  wordBreak: "break-word"
+},
 
   actions: {
-    display: "flex",
-    gap: 12,
-    marginTop: 15
-  },
+  display: "flex",
+  gap: 12,
+  marginTop: 10,
+  paddingTop: 10,
+  borderTop: "1px solid #eee",
+  flexWrap: "wrap"
+},
 
   actionButton: {
     border: "none",
