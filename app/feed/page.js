@@ -276,112 +276,112 @@ export default function Pag2() {
 
         </div>
 
-        {/* POSTS */}
-        {posts.map((post) => (
+{/* POSTS */}
+{posts.map((post) => (
+
+  <div
+    key={post.id}
+    style={styles.postCard}
+  >
+
+    <div style={styles.aiHeader}>
+      👤 Usuário
+    </div>
+
+    <div style={styles.postText}>
+      {typeof post.texto === "string"
+        ? post.texto
+        : JSON.stringify(post.texto)}
+    </div>
+
+    <div style={styles.actions}>
+
+      <button
+        type="button"
+        style={styles.actionButton}
+        onClick={() => reagirPost(post.id, "curtir")}
+      >
+        🖒 Curtir {post.curtir || 0}
+      </button>
+
+      <button
+        type="button"
+        style={styles.actionButton}
+        onClick={() => reagirPost(post.id, "amei")}
+      >
+        ❤ Amei {post.amei || 0}
+      </button>
+
+      <button
+        type="button"
+        style={styles.actionButton}
+        onClick={async () => {
+
+          const comentario = prompt("Digite seu comentário")
+
+          if (!comentario) return
+
+          const comentariosAtuais = post.comentarios || []
+
+          const novosComentarios = [
+            ...comentariosAtuais,
+            comentario
+          ]
+
+          try {
+
+            await fetch(
+              `https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/PATCH_/posts/${post.id}`,
+              {
+                method: "PATCH",
+                headers: {
+                  "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                  comentarios: novosComentarios
+                })
+              }
+            )
+
+            buscarPosts()
+
+          } catch (error) {
+
+            console.error(error)
+
+            alert("Erro ao salvar comentário")
+
+          }
+
+        }}
+      >
+        🗨 Comentários ({post.comentarios?.length || 0})
+      </button>
+
+    </div>
+
+    {post.comentarios && post.comentarios.length > 0 && (
+
+      <div style={styles.commentsArea}>
+
+        {post.comentarios.map((comentario, index) => (
 
           <div
-            key={post.id}
-            style={styles.postCard}
+            key={index}
+            style={styles.comment}
           >
-
-            <div style={styles.aiHeader}>
-              👤 Usuário
-            </div>
-
-            <div style={styles.postText}>
-              {post.texto}
-            </div>
-
-            <div style={styles.actions}>
-
-              <button
-                type="button"
-                style={styles.actionButton}
-                onClick={() => reagirPost(post.id, "curtir")}
-              >
-                🖒 Curtir {post.curtir || 0}
-              </button>
-
-              <button
-                type="button"
-                style={styles.actionButton}
-                onClick={() => reagirPost(post.id, "amei")}
-              >
-                ❤ Amei {post.amei || 0}
-              </button>
-
-              <button
-                type="button"
-                style={styles.actionButton}
-                onClick={async () => {
-
-                  const comentario = prompt("Digite seu comentário")
-
-                  if (!comentario) return
-
-                  const comentariosAtuais = post.comentarios || []
-
-                  const novosComentarios = [
-                    ...comentariosAtuais,
-                    comentario
-                  ]
-
-                  try {
-
-                    await fetch(
-                      `https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/PATCH_/posts/${post.id}`,
-                      {
-                        method: "PATCH",
-                        headers: {
-                          "Content-Type": "application/json"
-                        },
-                        body: JSON.stringify({
-                          comentarios: novosComentarios
-                        })
-                      }
-                    )
-
-                    buscarPosts()
-
-                  } catch (error) {
-
-                    console.error(error)
-
-                    alert("Erro ao salvar comentário")
-
-                  }
-
-                }}
-              >
-                🗨 Comentários ({post.comentarios?.length || 0})
-              </button>
-
-            </div>
-
-            {post.comentarios && post.comentarios.length > 0 && (
-
-              <div style={styles.commentsArea}>
-
-                {post.comentarios.map((comentario, index) => (
-
-                  <div
-                    key={index}
-                    style={styles.comment}
-                  >
-                    💬 {comentario}
-                  </div>
-
-                ))}
-
-              </div>
-
-            )}
-
+            💬 {comentario}
           </div>
 
         ))}
 
       </div>
+
+    )}
+
+  </div>
+
+))}
 
       {/* MODAL */}
       {mostrarModal && (
@@ -659,4 +659,3 @@ const styles = {
   }
 
 }
-
