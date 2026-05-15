@@ -426,6 +426,7 @@ export default function Pag2() {
   )
 }
 
+
 const styles = {
 
   page: {
@@ -551,6 +552,111 @@ const styles = {
     cursor: "pointer",
     fontWeight: "bold",
     transition: "0.2s"
+  },
+
+  postCard: {
+    backgroundColor: "white",
+    padding: 18,
+    borderRadius: 16,
+    marginBottom: 14,
+    boxShadow: "0 1px 4px rgba(0,0,0,0.05)"
+  },
+
+  aiHeader: {
+    fontWeight: "bold",
+    marginBottom: 10,
+    fontSize: 18
+  },
+
+  postText: {
+    color: "#333",
+    fontSize: 16,
+    lineHeight: 1.5
+  },
+
+  actions: {
+    display: "flex",
+    gap: 12,
+    marginTop: 15
+  },
+
+  actionButton: {
+    border: "none",
+    backgroundColor: "#f0f2f5",
+    padding: "10px 14px",
+    borderRadius: 10,
+    cursor: "pointer",
+    fontSize: 15,
+    transition: "0.2s"
+  },
+
+  commentsArea: {
+    marginTop: 12,
+    backgroundColor: "#f9fafb",
+    padding: 10,
+    borderRadius: 10
+  },
+
+  comment: {
+    padding: 8,
+    borderBottom: "1px solid #e5e7eb",
+    fontSize: 14,
+    color: "#333"
+  },
+
+  modalOverlay: {
+    position: "fixed",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 2000
+  },
+
+  modal: {
+    backgroundColor: "white",
+    padding: 25,
+    borderRadius: 16,
+    width: 400
+  },
+
+  modalTitle: {
+    fontWeight: "bold",
+    marginBottom: 15,
+    fontSize: 20
+  },
+
+  modalText: {
+    marginBottom: 20,
+    lineHeight: 1.5
+  },
+
+  modalButtons: {
+    display: "flex",
+    justifyContent: "space-between"
+  },
+
+  cancelButton: {
+    backgroundColor: "#999",
+    color: "white",
+    border: "none",
+    padding: "10px 16px",
+    borderRadius: 10,
+    cursor: "pointer"
+  },
+
+  confirmButton: {
+    backgroundColor: "#22c55e",
+    color: "white",
+    border: "none",
+    padding: "10px 16px",
+    borderRadius: 10,
+    cursor: "pointer"
   }
+
 }
-``
+
