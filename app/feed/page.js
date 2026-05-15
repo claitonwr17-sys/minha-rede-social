@@ -274,14 +274,11 @@ export default function Pag2() {
           </button>
 
         </div>
-
-        {posts
-  .filter((post) => post.texto && post.texto.trim() !== "")
-  {posts
+{posts
   .filter((post) => post.texto && post.texto.trim() !== "")
   .map((post) => (
-
-          <div
+ 
+      <div
             key={post.id}
             style={styles.postCard}
           >
