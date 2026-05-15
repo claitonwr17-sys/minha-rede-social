@@ -274,152 +274,157 @@ export default function Pag2() {
           </button>
 
         </div>
-{posts
-  .filter((post) => post.texto && post.texto.trim() !== "")
-  .map((post) => (
 
-        <div
-            key={post.id}
-            style={styles.postCard}
-          >
+        {posts
+          .filter((post) => post.texto && post.texto.trim() !== "")
+          .map((post) => (
 
-            <div style={styles.aiHeader}>
-              👤 Usuário
-            </div>
+            <div
+              key={post.id}
+              style={styles.postCard}
+            >
 
-            <div style={styles.postText}>
-              {typeof post.texto === "string"
-                ? post.texto
-                : JSON.stringify(post.texto)}
-            </div>
-
-            <div style={styles.actions}>
-
-              <button
-                type="button"
-                style={styles.actionButton}
-                onClick={() => reagirPost(post["EU IA"], "curtir")}
-              >
-                🖒 Curtir {post.curtir || 0}
-              </button>
-
-              <button
-                type="button"
-                style={styles.actionButton}
-                onClick={() => reagirPost(post["EU IA"], "amei")}
-              >
-                ❤ Amei {post.amei || 0}
-              </button>
-
-              <button
-                type="button"
-                style={styles.actionButton}
-                onClick={async () => {
-
-                  const comentario = prompt("Digite seu comentário")
-
-                  if (!comentario) return
-
-                  const comentariosAtuais = post.comentarios || []
-
-                  const novosComentarios = [
-                    ...comentariosAtuais,
-                    comentario
-                  ]
-
-                  try {
-
-                    await fetch(
-                      `https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/PATCH_/posts/${post["EU IA"]}
-                      {
-                        method: "PATCH",
-                        headers: {
-                          "Content-Type": "application/json"
-                        },
-                        body: JSON.stringify({
-                          comentarios: novosComentarios
-                        })
-                      }
-                    )
-
-                    buscarPosts()
-
-                  } catch (error) {
-
-                    console.error(error)
-
-                    alert("Erro ao salvar comentário")
-
-                  }
-
-                }}
-              >
-                🗨 Comentários ({post.comentarios?.length || 0})
-              </button>
-
-            </div>
-
-            {post.comentarios && post.comentarios.length > 0 && (
-
-              <div style={styles.commentsArea}>
-
-                {post.comentarios.map((comentario, index) => (
-
-                  <div
-                    key={index}
-                    style={styles.comment}
-                  >
-                    💬 {comentario}
-                  </div>
-
-                ))}
-
+              <div style={styles.aiHeader}>
+                👤 Usuário
               </div>
 
-            )}
-
-          </div>
-
-        ))}
-
-        {/* MODAL */}
-        {mostrarModal && (
-
-          <div style={styles.modalOverlay}>
-
-            <div style={styles.modal}>
-
-              <div style={styles.modalTitle}>
-                🤖 Conrad AI
+              <div style={styles.postText}>
+                {typeof post.texto === "string"
+                  ? post.texto
+                  : JSON.stringify(post.texto)}
               </div>
 
-              <div style={styles.modalText}>
-                {respostaIA}
-              </div>
-
-              <div style={styles.modalButtons}>
+              <div style={styles.actions}>
 
                 <button
-                  onClick={() => setMostrarModal(false)}
-                  style={styles.cancelButton}
+                  type="button"
+                  style={styles.actionButton}
+                  onClick={() => reagirPost(post.id, "curtir")}
                 >
-                  Cancelar
+                  Curtir {post.curtir || 0}
                 </button>
 
                 <button
-                  onClick={confirmarPostagem}
-                  style={styles.confirmButton}
+                  type="button"
+                  style={styles.actionButton}
+                  onClick={() => reagirPost(post.id, "amei")}
                 >
-                  Postar
+                  Amei {post.amei || 0}
                 </button>
+
+                <button
+                  type="button"
+                  style={styles.actionButton}
+                  onClick={async () => {
+
+                    const comentario = prompt("Digite seu comentário")
+
+                    if (!comentario) return
+
+                    const comentariosAtuais = post.comentarios || []
+
+                    const novosComentarios = [
+                      ...comentariosAtuais,
+                      comentario
+                    ]
+
+                    try {
+
+                      await fetch(
+                        `https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/PATCH_/posts/${post.id}`,
+                        {
+                          method: "PATCH",
+                          headers: {
+                            "Content-Type": "application/json"
+                          },
+                          body: JSON.stringify({
+                            comentarios: novosComentarios
+                          })
+                        }
+                      )
+
+                      buscarPosts()
+
+                    } catch (error) {
+
+                      console.error(error)
+
+                      alert("Erro ao salvar comentário")
+
+                    }
+
+                  }}
+                >
+                  Comentários ({post.comentarios?.length || 0})
+                </button>
+
+              </div>
+
+              {post.comentarios && post.comentarios.length > 0 && (
+
+                <div style={styles.commentsArea}>
+
+                  {post.comentarios.map((comentario, index) => (
+
+                    <div
+                      key={index}
+                      style={styles.comment}
+                    >
+                      💬 {comentario}
+                    </div>
+
+                  ))}
+
+                </div>
+
+              )}
 
             </div>
 
-          </div>
-
-        )}
+          ))}
 
       </div>
+
+      {/* MODAL */}
+      {mostrarModal && (
+
+        <div style={styles.modalOverlay}>
+
+          <div style={styles.modal}>
+
+            <div style={styles.modalTitle}>
+              🤖 Conrad AI
+            </div>
+
+            <div style={styles.modalText}>
+              {respostaIA}
+            </div>
+
+            <div style={styles.modalButtons}>
+
+              <button
+                onClick={() => setMostrarModal(false)}
+                style={styles.cancelButton}
+              >
+                Cancelar
+              </button>
+
+              <button
+                onClick={confirmarPostagem}
+                style={styles.confirmButton}
+              >
+                Postar
+              </button>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      )}
+
+    </div>
   )
 }
 
@@ -507,7 +512,6 @@ const styles = {
     padding: "12px 16px",
     borderRadius: 10,
     cursor: "pointer",
-    transition: "0.2s",
     fontWeight: "bold"
   },
 
@@ -546,8 +550,7 @@ const styles = {
     padding: "12px 18px",
     borderRadius: 10,
     cursor: "pointer",
-    fontWeight: "bold",
-    transition: "0.2s"
+    fontWeight: "bold"
   },
 
   postCard: {
@@ -565,21 +568,21 @@ const styles = {
   },
 
   postText: {
-  color: "#333",
-  fontSize: 16,
-  lineHeight: 1.5,
-  marginBottom: 15,
-  wordBreak: "break-word"
-},
+    color: "#333",
+    fontSize: 16,
+    lineHeight: 1.5,
+    marginBottom: 15,
+    wordBreak: "break-word"
+  },
 
   actions: {
-  display: "flex",
-  gap: 12,
-  marginTop: 10,
-  paddingTop: 10,
-  borderTop: "1px solid #eee",
-  flexWrap: "wrap"
-},
+    display: "flex",
+    gap: 12,
+    marginTop: 10,
+    paddingTop: 10,
+    borderTop: "1px solid #eee",
+    flexWrap: "wrap"
+  },
 
   actionButton: {
     border: "none",
@@ -587,8 +590,7 @@ const styles = {
     padding: "10px 14px",
     borderRadius: 10,
     cursor: "pointer",
-    fontSize: 15,
-    transition: "0.2s"
+    fontSize: 15
   },
 
   commentsArea: {
