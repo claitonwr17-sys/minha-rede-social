@@ -312,72 +312,78 @@ export default function Pag2() {
                   Amei {post.amei || 0}
                 </button>
 
-               <button
-  type="button"
-  style={styles.actionButton}
-  onClick={async () => {
+                <button
+                  type="button"
+                  style={styles.actionButton}
+                  onClick={async () => {
 
-    const comentario = prompt("Digite seu comentário")
+                    const comentario = prompt("Digite seu comentário")
 
-    if (!comentario) return
+                    if (!comentario) return
 
-    const comentariosAtuais = post["comentários"] || []
+                    const comentariosAtuais = post["comentários"] || []
 
-    const novosComentarios = [
-      ...comentariosAtuais,
-      comentario
-    ]
+                    const novosComentarios = [
+                      ...comentariosAtuais,
+                      comentario
+                    ]
 
-    try {
+                    try {
 
-      await fetch(
-        `https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/PATCH_/posts/${post.id}`,
-        {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            "comentários": novosComentarios
-          })
-        }
-      )
+                      await fetch(
+                        `https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/PATCH_/posts/${post.id}`,
+                        {
+                          method: "PATCH",
+                          headers: {
+                            "Content-Type": "application/json"
+                          },
+                          body: JSON.stringify({
+                            "comentários": novosComentarios
+                          })
+                        }
+                      )
 
-      buscarPosts()
+                      buscarPosts()
 
-    } catch (error) {
+                    } catch (error) {
 
-      console.error(error)
+                      console.error(error)
 
-      alert("Erro ao salvar comentário")
+                      alert("Erro ao salvar comentário")
 
-    }
+                    }
 
-  }}
->
-  Comentários ({post["comentários"]?.length || 0})
-</button>
+                  }}
+                >
+                  Comentários ({post["comentários"]?.length || 0})
+                </button>
 
-</div>
+              </div>
 
-{post["comentários"] && post["comentários"].length > 0 && (
+              {post["comentários"] && post["comentários"].length > 0 && (
 
-  <div style={styles.commentsArea}>
+                <div style={styles.commentsArea}>
 
-    {post["comentários"].map((comentario, index) => (
+                  {post["comentários"].map((comentario, index) => (
 
-      <div
-        key={index}
-        style={styles.comment}
-      >
-        💬 {comentario}
+                    <div
+                      key={index}
+                      style={styles.comment}
+                    >
+                      💬 {comentario}
+                    </div>
+
+                  ))}
+
+                </div>
+
+              )}
+
+            </div>
+
+          ))}
+
       </div>
-
-    ))}
-
-  </div>
-
-)}
 
       {/* MODAL */}
       {mostrarModal && (
