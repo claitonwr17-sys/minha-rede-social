@@ -119,7 +119,7 @@ export default function Pag2() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          id: id,
+          "eu ia": id,
           [tipo]: novoValor,
         }),
       });
@@ -131,6 +131,8 @@ export default function Pag2() {
       alert("Erro ao salvar reação");
     }
   }
+
+  console.log(posts);
 
   return (
     <div style={styles.page}>
@@ -278,7 +280,7 @@ export default function Pag2() {
                             "Content-Type": "application/json",
                           },
                           body: JSON.stringify({
-                            id: post["eu ia"],
+                            "eu ia": post["eu ia"],
                             comentarios: novosComentarios,
                           }),
                         },
