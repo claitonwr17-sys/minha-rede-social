@@ -1,172 +1,141 @@
-'use client'
+"use client";
 
-import "@fontsource/inter"
-import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
+import "@fontsource/inter";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function Pag2() {
+  const router = useRouter();
 
-  const router = useRouter()
+  const [texto, setTexto] = useState("");
+  const [posts, setPosts] = useState([]);
+  const [respostaIA, setRespostaIA] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const [texto, setTexto] = useState("")
-  const [posts, setPosts] = useState([])
-  const [respostaIA, setRespostaIA] = useState("")
-  const [loading, setLoading] = useState(false)
+  const [mostrarModal, setMostrarModal] = useState(false);
+  const [textoPendente, setTextoPendente] = useState("");
 
-  const [mostrarModal, setMostrarModal] = useState(false)
-  const [textoPendente, setTextoPendente] = useState("")
-
-  const [hoverItem, setHoverItem] = useState("")
+  const [hoverItem, setHoverItem] = useState("");
 
   useEffect(() => {
-    buscarPosts()
-  }, [])
+    buscarPosts();
+  }, []);
 
   async function buscarPosts() {
-
     try {
-
       const response = await fetch(
-        "https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/posts"
-      )
+        "https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/posts",
+      );
 
-      const data = await response.json()
+      const data = await response.json();
 
-      const ordenado = data.sort((a, b) => b.id - a.id)
+      const ordenado = data.sort((a, b) => b.id - a.id);
 
-      setPosts(ordenado)
-
+      setPosts(ordenado);
     } catch (error) {
-
-      console.error("Erro ao buscar posts", error)
-
+      console.error("Erro ao buscar posts", error);
     }
   }
 
   function logout() {
-    router.push("/")
+    router.push("/");
   }
 
   async function publicarPost() {
-
     if (!texto.trim()) {
-      alert("Digite alguma coisa")
-      return
+      alert("Digite alguma coisa");
+      return;
     }
 
-    setLoading(true)
+    setLoading(true);
 
     try {
-
       const response = await fetch(
         "https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/sentimento-gemini",
         {
           method: "POST",
           headers: {
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
           },
-          body: JSON.stringify({ texto })
-        }
-      )
+          body: JSON.stringify({ texto }),
+        },
+      );
 
-      const data = await response.json()
+      const data = await response.json();
 
       const resposta =
-        data?.response?.result?.interpretacao ||
-        "Sem resposta da IA"
+        data?.response?.result?.interpretacao || "Sem resposta da IA";
 
-      setRespostaIA(resposta)
+      setRespostaIA(resposta);
 
-      setTextoPendente(texto)
+      setTextoPendente(texto);
 
-      setMostrarModal(true)
-
+      setMostrarModal(true);
     } catch (error) {
+      console.error(error);
 
-      console.error(error)
-
-      alert("Erro na requisição")
-
+      alert("Erro na requisição");
     }
 
-    setLoading(false)
+    setLoading(false);
   }
 
   async function confirmarPostagem() {
-
     try {
+      await fetch("https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/posts", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          texto: textoPendente,
+        }),
+      });
 
-      await fetch(
-        "https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/posts",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            texto: textoPendente
-          })
-        }
-      )
+      buscarPosts();
 
-      buscarPosts()
-
-      setTexto("")
-      setTextoPendente("")
-      setMostrarModal(false)
-      setRespostaIA("")
-
+      setTexto("");
+      setTextoPendente("");
+      setMostrarModal(false);
+      setRespostaIA("");
     } catch (error) {
+      console.error(error);
 
-      console.error(error)
-
-      alert("Erro ao salvar post")
-
+      alert("Erro ao salvar post");
     }
   }
 
   async function reagirPost(id, tipo) {
+    const postAtual = posts.find((p) => String(p["eu ia"]) === String(id));
 
-    const postAtual = posts.find((p) => p["eu ia"] === id)
+    if (!postAtual) return;
 
-    if (!postAtual) return
-
-    const novoValor = (postAtual[tipo] || 0) + 1
+    const novoValor = (postAtual[tipo] || 0) + 1;
 
     try {
+      await fetch("https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/PATCH", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          id: id,
+          [tipo]: novoValor,
+        }),
+      });
 
-      await fetch(
-        "https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/PATCH",
-        {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            id: id,
-            [tipo]: novoValor
-          })
-        }
-      )
-
-      buscarPosts()
-
+      buscarPosts();
     } catch (error) {
+      console.error(error);
 
-      console.error(error)
-
-      alert("Erro ao salvar reação")
-
+      alert("Erro ao salvar reação");
     }
   }
 
   return (
-
     <div style={styles.page}>
-
       {/* NAVBAR */}
       <div style={styles.navbar}>
-
         <div style={styles.logoArea}>
           <img
             src="/logo/logo-simbolo.png"
@@ -174,25 +143,18 @@ export default function Pag2() {
             alt="Logo"
           />
 
-          <span style={styles.logoText}>
-            Conrad
-          </span>
+          <span style={styles.logoText}>Conrad</span>
         </div>
 
-        <input
-          placeholder="Pesquisar"
-          style={styles.search}
-        />
-
+        <input placeholder="Pesquisar" style={styles.search} />
       </div>
 
       {/* SIDEBAR */}
       <div style={styles.sidebar}>
-
         <div
           style={{
             ...styles.sidebarItem,
-            ...(hoverItem === "home" && styles.sidebarItemHover)
+            ...(hoverItem === "home" && styles.sidebarItemHover),
           }}
           onMouseEnter={() => setHoverItem("home")}
           onMouseLeave={() => setHoverItem("")}
@@ -203,7 +165,7 @@ export default function Pag2() {
         <div
           style={{
             ...styles.sidebarItem,
-            ...(hoverItem === "ia" && styles.sidebarItemHover)
+            ...(hoverItem === "ia" && styles.sidebarItemHover),
           }}
           onMouseEnter={() => setHoverItem("ia")}
           onMouseLeave={() => setHoverItem("")}
@@ -214,7 +176,7 @@ export default function Pag2() {
         <div
           style={{
             ...styles.sidebarItem,
-            ...(hoverItem === "explorar" && styles.sidebarItemHover)
+            ...(hoverItem === "explorar" && styles.sidebarItemHover),
           }}
           onMouseEnter={() => setHoverItem("explorar")}
           onMouseLeave={() => setHoverItem("")}
@@ -225,7 +187,7 @@ export default function Pag2() {
         <div
           style={{
             ...styles.sidebarItem,
-            ...(hoverItem === "perfil" && styles.sidebarItemHover)
+            ...(hoverItem === "perfil" && styles.sidebarItemHover),
           }}
           onMouseEnter={() => setHoverItem("perfil")}
           onMouseLeave={() => setHoverItem("")}
@@ -237,7 +199,7 @@ export default function Pag2() {
         <div
           style={{
             ...styles.sidebarItem,
-            ...(hoverItem === "config" && styles.sidebarItemHover)
+            ...(hoverItem === "config" && styles.sidebarItemHover),
           }}
           onMouseEnter={() => setHoverItem("config")}
           onMouseLeave={() => setHoverItem("")}
@@ -245,21 +207,15 @@ export default function Pag2() {
           ⚙️ Configurações
         </div>
 
-        <button
-          onClick={logout}
-          style={styles.logout}
-        >
+        <button onClick={logout} style={styles.logout}>
           Sair
         </button>
-
       </div>
 
       {/* FEED */}
       <div style={styles.feed}>
-
         {/* CARD PUBLICAÇÃO */}
         <div style={styles.card}>
-
           <textarea
             value={texto}
             onChange={(e) => setTexto(e.target.value)}
@@ -267,27 +223,16 @@ export default function Pag2() {
             style={styles.textarea}
           />
 
-          <button
-            onClick={publicarPost}
-            style={styles.postButton}
-          >
+          <button onClick={publicarPost} style={styles.postButton}>
             {loading ? "Analisando..." : "Publicar"}
           </button>
-
         </div>
 
         {posts
           .filter((post) => post.texto && post.texto.trim() !== "")
           .map((post) => (
-
-            <div
-              key={post.id}
-              style={styles.postCard}
-            >
-
-              <div style={styles.aiHeader}>
-                👤 Usuário
-              </div>
+            <div key={post["eu ia"]} style={styles.postCard}>
+              <div style={styles.aiHeader}>👤 Usuário</div>
 
               <div style={styles.postText}>
                 {typeof post.texto === "string"
@@ -296,7 +241,6 @@ export default function Pag2() {
               </div>
 
               <div style={styles.actions}>
-
                 <button
                   type="button"
                   style={styles.actionButton}
@@ -317,94 +261,63 @@ export default function Pag2() {
                   type="button"
                   style={styles.actionButton}
                   onClick={async () => {
+                    const comentario = prompt("Digite seu comentário");
 
-                    const comentario = prompt("Digite seu comentário")
+                    if (!comentario) return;
 
-                    if (!comentario) return
+                    const comentariosAtuais = post["comentarios"] || [];
 
-                    const comentariosAtuais = post["comentarios"] || []
-
-                    const novosComentarios = [
-                      ...comentariosAtuais,
-                      comentario
-                    ]
+                    const novosComentarios = [...comentariosAtuais, comentario];
 
                     try {
-
                       await fetch(
                         "https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/PATCH",
                         {
                           method: "PATCH",
                           headers: {
-                            "Content-Type": "application/json"
+                            "Content-Type": "application/json",
                           },
                           body: JSON.stringify({
                             id: post["eu ia"],
-                            comentarios: novosComentarios
-                          })
-                        }
-                      )
+                            comentarios: novosComentarios,
+                          }),
+                        },
+                      );
 
-                      buscarPosts()
-
+                      buscarPosts();
                     } catch (error) {
+                      console.error(error);
 
-                      console.error(error)
-
-                      alert("Erro ao salvar comentário")
-
+                      alert("Erro ao salvar comentário");
                     }
-
                   }}
                 >
                   Comentarios ({post["comentarios"]?.length || 0})
                 </button>
-
               </div>
 
-              {post["comentarios"] &&
-                post["comentarios"].length > 0 && (
-
+              {post["comentarios"] && post["comentarios"].length > 0 && (
                 <div style={styles.commentsArea}>
-
                   {post["comentarios"].map((comentario, index) => (
-
-                    <div
-                      key={index}
-                      style={styles.comment}
-                    >
+                    <div key={index} style={styles.comment}>
                       💬 {comentario}
                     </div>
-
                   ))}
-
                 </div>
-
               )}
-
             </div>
-
           ))}
-
       </div>
 
       {/* MODAL */}
       {mostrarModal && (
-
         <div style={styles.modalOverlay}>
-
           <div style={styles.modal}>
+            <div style={styles.modalTitle}>🤖 Conrad AI</div>
 
-            <div style={styles.modalTitle}>
-              🤖 Conrad AI
-            </div>
-
-            <div style={styles.modalText}>
-              {respostaIA}
-            </div>
+            <div style={styles.modalText}>{respostaIA}</div>
 
             <div style={styles.modalButtons}>
-
               <button
                 onClick={() => setMostrarModal(false)}
                 style={styles.cancelButton}
@@ -412,32 +325,23 @@ export default function Pag2() {
                 Cancelar
               </button>
 
-              <button
-                onClick={confirmarPostagem}
-                style={styles.confirmButton}
-              >
+              <button onClick={confirmarPostagem} style={styles.confirmButton}>
                 Postar
               </button>
-
             </div>
-
           </div>
-
         </div>
-
       )}
-
     </div>
-  )
+  );
 }
 
 const styles = {
-
   page: {
     display: "flex",
     backgroundColor: "#f0f2f5",
     minHeight: "100vh",
-    fontFamily: "Inter, sans-serif"
+    fontFamily: "Inter, sans-serif",
   },
 
   navbar: {
@@ -452,24 +356,24 @@ const styles = {
     justifyContent: "space-between",
     padding: "0 20px",
     borderBottom: "1px solid #ddd",
-    zIndex: 1000
+    zIndex: 1000,
   },
 
   logoArea: {
     display: "flex",
     alignItems: "center",
-    gap: 10
+    gap: 10,
   },
 
   logoImage: {
     width: 40,
     height: 40,
-    objectFit: "contain"
+    objectFit: "contain",
   },
 
   logoText: {
     fontWeight: "bold",
-    fontSize: 18
+    fontSize: 18,
   },
 
   search: {
@@ -477,7 +381,7 @@ const styles = {
     borderRadius: 20,
     border: "1px solid #ddd",
     width: 250,
-    outline: "none"
+    outline: "none",
   },
 
   sidebar: {
@@ -488,7 +392,7 @@ const styles = {
     paddingLeft: 15,
     position: "fixed",
     left: 0,
-    borderRight: "1px solid #ddd"
+    borderRight: "1px solid #ddd",
   },
 
   sidebarItem: {
@@ -498,13 +402,13 @@ const styles = {
     marginBottom: 8,
     transition: "all 0.2s ease",
     fontWeight: 500,
-    color: "#333"
+    color: "#333",
   },
 
   sidebarItemHover: {
     backgroundColor: "#e7f3ff",
     color: "#1877f2",
-    transform: "translateX(5px)"
+    transform: "translateX(5px)",
   },
 
   logout: {
@@ -515,7 +419,7 @@ const styles = {
     padding: "12px 16px",
     borderRadius: 10,
     cursor: "pointer",
-    fontWeight: "bold"
+    fontWeight: "bold",
   },
 
   feed: {
@@ -523,7 +427,7 @@ const styles = {
     marginTop: 80,
     padding: 20,
     width: "100%",
-    maxWidth: 650
+    maxWidth: 650,
   },
 
   card: {
@@ -531,7 +435,7 @@ const styles = {
     padding: 18,
     borderRadius: 16,
     marginBottom: 20,
-    boxShadow: "0 1px 4px rgba(0,0,0,0.05)"
+    boxShadow: "0 1px 4px rgba(0,0,0,0.05)",
   },
 
   textarea: {
@@ -542,7 +446,7 @@ const styles = {
     padding: 12,
     resize: "none",
     outline: "none",
-    fontSize: 16
+    fontSize: 16,
   },
 
   postButton: {
@@ -553,7 +457,7 @@ const styles = {
     padding: "12px 18px",
     borderRadius: 10,
     cursor: "pointer",
-    fontWeight: "bold"
+    fontWeight: "bold",
   },
 
   postCard: {
@@ -561,13 +465,13 @@ const styles = {
     padding: 18,
     borderRadius: 16,
     marginBottom: 14,
-    boxShadow: "0 1px 4px rgba(0,0,0,0.05)"
+    boxShadow: "0 1px 4px rgba(0,0,0,0.05)",
   },
 
   aiHeader: {
     fontWeight: "bold",
     marginBottom: 10,
-    fontSize: 18
+    fontSize: 18,
   },
 
   postText: {
@@ -575,7 +479,7 @@ const styles = {
     fontSize: 16,
     lineHeight: 1.5,
     marginBottom: 15,
-    wordBreak: "break-word"
+    wordBreak: "break-word",
   },
 
   actions: {
@@ -584,7 +488,7 @@ const styles = {
     marginTop: 10,
     paddingTop: 10,
     borderTop: "1px solid #eee",
-    flexWrap: "wrap"
+    flexWrap: "wrap",
   },
 
   actionButton: {
@@ -593,21 +497,21 @@ const styles = {
     padding: "10px 14px",
     borderRadius: 10,
     cursor: "pointer",
-    fontSize: 15
+    fontSize: 15,
   },
 
   commentsArea: {
     marginTop: 12,
     backgroundColor: "#f9fafb",
     padding: 10,
-    borderRadius: 10
+    borderRadius: 10,
   },
 
   comment: {
     padding: 8,
     borderBottom: "1px solid #e5e7eb",
     fontSize: 14,
-    color: "#333"
+    color: "#333",
   },
 
   modalOverlay: {
@@ -620,30 +524,30 @@ const styles = {
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    zIndex: 2000
+    zIndex: 2000,
   },
 
   modal: {
     backgroundColor: "white",
     padding: 25,
     borderRadius: 16,
-    width: 400
+    width: 400,
   },
 
   modalTitle: {
     fontWeight: "bold",
     marginBottom: 15,
-    fontSize: 20
+    fontSize: 20,
   },
 
   modalText: {
     marginBottom: 20,
-    lineHeight: 1.5
+    lineHeight: 1.5,
   },
 
   modalButtons: {
     display: "flex",
-    justifyContent: "space-between"
+    justifyContent: "space-between",
   },
 
   cancelButton: {
@@ -652,7 +556,7 @@ const styles = {
     border: "none",
     padding: "10px 16px",
     borderRadius: 10,
-    cursor: "pointer"
+    cursor: "pointer",
   },
 
   confirmButton: {
@@ -661,7 +565,6 @@ const styles = {
     border: "none",
     padding: "10px 16px",
     borderRadius: 10,
-    cursor: "pointer"
-  }
-
-}
+    cursor: "pointer",
+  },
+};
