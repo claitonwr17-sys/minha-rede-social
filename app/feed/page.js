@@ -106,7 +106,7 @@ export default function Pag2() {
   }
 
   async function reagirPost(id, tipo) {
-    const postAtual = posts.find((p) => String(p["eu ia"]) === String(id));
+    const postAtual = posts.find((p) => String(p.id) === String(id));
 
     if (!postAtual) return;
 
@@ -119,7 +119,7 @@ export default function Pag2() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          "eu ia": id,
+          id: id,
           [tipo]: novoValor,
         }),
       });
@@ -233,7 +233,7 @@ export default function Pag2() {
         {posts
           .filter((post) => post.texto && post.texto.trim() !== "")
           .map((post) => (
-            <div key={post["eu ia"]} style={styles.postCard}>
+            <div key={post.id} style={styles.postCard}>
               <div style={styles.aiHeader}>👤 Usuário</div>
 
               <div style={styles.postText}>
@@ -267,9 +267,12 @@ export default function Pag2() {
 
                     if (!comentario) return;
 
-                    const comentariosAtuais = post["comentarios"] || [];
+                    const comentariosAtuais = post.comentarios || [];
 
-                    const novosComentarios = [...comentariosAtuais, comentario];
+                    const novosComentarios = [
+                      ...comentariosAtuais,
+                      comentario,
+                    ];
 
                     try {
                       await fetch(
@@ -294,13 +297,13 @@ export default function Pag2() {
                     }
                   }}
                 >
-                  Comentarios ({post["comentarios"]?.length || 0})
+                  Comentarios ({post.comentarios?.length || 0})
                 </button>
               </div>
 
-              {post["comentarios"] && post["comentarios"].length > 0 && (
+              {post.comentarios && post.comentarios.length > 0 && (
                 <div style={styles.commentsArea}>
-                  {post["comentarios"].map((comentario, index) => (
+                  {post.comentarios.map((comentario, index) => (
                     <div key={index} style={styles.comment}>
                       💬 {comentario}
                     </div>
@@ -570,3 +573,4 @@ const styles = {
     cursor: "pointer",
   },
 };
+
