@@ -246,7 +246,7 @@ export default function Pag2() {
                 <button
                   type="button"
                   style={styles.actionButton}
-                  onClick={() => reagirPost(post["eu ia"], "curtir")}
+                  onClick={() => reagirPost(post.id, "curtir")}
                 >
                   Curtir {post.curtir || 0}
                 </button>
@@ -254,7 +254,7 @@ export default function Pag2() {
                 <button
                   type="button"
                   style={styles.actionButton}
-                  onClick={() => reagirPost(post["eu ia"], "amei")}
+                  onClick={() => reagirPost(post.id, "amei")}
                 >
                   Amei {post.amei || 0}
                 </button>
@@ -280,7 +280,7 @@ export default function Pag2() {
                             "Content-Type": "application/json",
                           },
                           body: JSON.stringify({
-                            "eu ia": post["eu ia"],
+                            id: post.id,
                             comentarios: novosComentarios,
                           }),
                         },
