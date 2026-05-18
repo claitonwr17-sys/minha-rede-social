@@ -127,7 +127,7 @@ export default function Pag2() {
 
   async function reagirPost(id, tipo) {
 
-    const postAtual = posts.find((p) => p.id === id)
+    const postAtual = posts.find((p) => p["eu ia"] === id)
 
     if (!postAtual) return
 
@@ -136,13 +136,14 @@ export default function Pag2() {
     try {
 
       await fetch(
-        `https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/PATCH_/posts/${id}`,
+        "https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/PATCH",
         {
           method: "PATCH",
           headers: {
             "Content-Type": "application/json"
           },
           body: JSON.stringify({
+            id: id,
             [tipo]: novoValor
           })
         }
@@ -299,7 +300,7 @@ export default function Pag2() {
                 <button
                   type="button"
                   style={styles.actionButton}
-                  onClick={() => reagirPost(post.id, "curtir")}
+                  onClick={() => reagirPost(post["eu ia"], "curtir")}
                 >
                   Curtir {post.curtir || 0}
                 </button>
@@ -307,7 +308,7 @@ export default function Pag2() {
                 <button
                   type="button"
                   style={styles.actionButton}
-                  onClick={() => reagirPost(post.id, "amei")}
+                  onClick={() => reagirPost(post["eu ia"], "amei")}
                 >
                   Amei {post.amei || 0}
                 </button>
@@ -321,7 +322,7 @@ export default function Pag2() {
 
                     if (!comentario) return
 
-                    const comentariosAtuais = post["comentários"] || []
+                    const comentariosAtuais = post["comentarios"] || []
 
                     const novosComentarios = [
                       ...comentariosAtuais,
@@ -331,14 +332,15 @@ export default function Pag2() {
                     try {
 
                       await fetch(
-                        `https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/PATCH_/posts/${post.id}`,
+                        "https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/PATCH",
                         {
                           method: "PATCH",
                           headers: {
                             "Content-Type": "application/json"
                           },
                           body: JSON.stringify({
-                            "comentários": novosComentarios
+                            id: post["eu ia"],
+                            comentarios: novosComentarios
                           })
                         }
                       )
@@ -355,16 +357,17 @@ export default function Pag2() {
 
                   }}
                 >
-                  Comentários ({post["comentários"]?.length || 0})
+                  Comentarios ({post["comentarios"]?.length || 0})
                 </button>
 
               </div>
 
-              {post["comentários"] && post["comentários"].length > 0 && (
+              {post["comentarios"] &&
+                post["comentarios"].length > 0 && (
 
                 <div style={styles.commentsArea}>
 
-                  {post["comentários"].map((comentario, index) => (
+                  {post["comentarios"].map((comentario, index) => (
 
                     <div
                       key={index}
