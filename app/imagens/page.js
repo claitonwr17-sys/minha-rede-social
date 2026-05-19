@@ -64,10 +64,10 @@ export default function Imagens() {
           <div key={index} style={styles.card}>
             {/* USUÁRIO */}
             <div style={styles.userInfo}>
-              <div style={styles.avatar}>C</div>
+              <img src="/logo.png" alt="Logo" style={styles.avatarImage} />
 
               <div>
-                <div style={styles.username}>Conrad</div>
+                <div style={styles.username}>Claiton Wroblewski</div>
                 <div style={styles.time}>Agora mesmo</div>
               </div>
             </div>
