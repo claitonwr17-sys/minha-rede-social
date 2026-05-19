@@ -38,12 +38,15 @@ export default function Imagens() {
         <div style={styles.menu} onClick={() => router.push("/")}>
           🏠 Home
         </div>
+
         <div style={styles.menu} onClick={() => router.push("/ia")}>
           🤖 IA
         </div>
+
         <div style={styles.menu} onClick={() => router.push("/feed")}>
           📰 Feed
         </div>
+
         <div style={styles.menu} onClick={() => router.push("/perfil")}>
           👤 Perfil
         </div>
@@ -53,33 +56,44 @@ export default function Imagens() {
         </button>
       </div>
 
-      {/* FEED CENTRAL */}
+      {/* FEED */}
       <div style={styles.feedArea}>
         <h2 style={{ marginBottom: 20 }}>📷 Feed de Imagens</h2>
 
         {imagens.map((img, index) => (
           <div key={index} style={styles.card}>
             {/* IMAGEM */}
-            <div style={styles.imageBox}>🖼️ Imagem vazia</div>
+            <div style={styles.imageBox}>
+              🖼️ Imagem vazia
+            </div>
 
             {/* AÇÕES */}
             <div style={styles.actions}>
-             <button
-  style={styles.blackButton}
-  onClick={() => curtir(index)}
->
-  👍 Curtir {likes[index] || 0}
-</button>
+              <button
+                style={styles.blackButton}
+                onClick={() => curtir(index)}
+              >
+                👍 Curtir {likes[index] || 0}
+              </button>
 
-<button
-  style={styles.blackButton}
-  onClick={() => darAmei(index)}
->
-  ❤️ Amei {amei[index] || 0}
-</button>
-<button style={styles.button}>
-  💬 Comentar
-</button>
+              <button
+                style={styles.blackButton}
+                onClick={() => darAmei(index)}
+              >
+                ❤️ Amei {amei[index] || 0}
+              </button>
+
+              <button style={styles.button}>
+                💬 Comentar
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 const styles = {
   page: {
     display: "flex",
@@ -155,12 +169,25 @@ const styles = {
   actions: {
     display: "flex",
     justifyContent: "space-around",
+    alignItems: "center",
   },
 
+  /* BOTÕES PRETOS */
+  blackButton: {
+    backgroundColor: "#000",
+    color: "#fff",
+    border: "none",
+    padding: "10px 14px",
+    borderRadius: 10,
+    cursor: "pointer",
+    fontWeight: "bold",
+  },
+
+  /* COMENTAR */
   button: {
     backgroundColor: "#f0f2f5",
     border: "none",
-    padding: "8px 12px",
+    padding: "10px 14px",
     borderRadius: 10,
     cursor: "pointer",
   },
