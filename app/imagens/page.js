@@ -62,6 +62,16 @@ export default function Imagens() {
 
         {imagens.map((img, index) => (
           <div key={index} style={styles.card}>
+            {/* USUÁRIO */}
+            <div style={styles.userInfo}>
+              <div style={styles.avatar}>C</div>
+
+              <div>
+                <div style={styles.username}>Conrad</div>
+                <div style={styles.time}>Agora mesmo</div>
+              </div>
+            </div>
+
             {/* IMAGEM */}
             <div style={styles.imageBox}>🖼️ Imagem vazia</div>
 
