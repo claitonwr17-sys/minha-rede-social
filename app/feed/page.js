@@ -285,12 +285,13 @@ export default function Pag2() {
                             "Content-Type": "application/json",
                           },
                           body: JSON.stringify({
-                            id: post.id,
+                            post_id: post.id,
                             comentarios: novosComentarios,
+                            curtir: post.curtir || 0,
+                            amei: post.amei || 0,
                           }),
                         },
                       );
-
                       buscarPosts();
                     } catch (error) {
                       console.error(error);
@@ -575,3 +576,4 @@ const styles = {
     cursor: "pointer",
   },
 };
+
