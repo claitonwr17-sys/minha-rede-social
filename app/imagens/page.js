@@ -64,7 +64,7 @@ export default function Imagens() {
           <div key={index} style={styles.card}>
             {/* USUÁRIO */}
             <div style={styles.userInfo}>
-              <img src="/logo.png" alt="Logo" style={styles.avatarImage} />
+             <img src="/insta.png" alt="Perfil" style={styles.avatarImage} />
 
               <div>
                 <div style={styles.username}>Claiton Wroblewski</div>
