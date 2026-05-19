@@ -180,16 +180,24 @@ export default function Pag2() {
           🤖 IA
         </div>
 
-        <div
+        <a
+          href="/imagens"
           style={{
-            ...styles.sidebarItem,
-            ...(hoverItem === "explorar" && styles.sidebarItemHover),
+            textDecoration: "none",
+            color: "inherit",
           }}
-          onMouseEnter={() => setHoverItem("explorar")}
-          onMouseLeave={() => setHoverItem("")}
         >
-          Feed
-        </div>
+          <div
+            style={{
+              ...styles.sidebarItem,
+              ...(hoverItem === "explorar" && styles.sidebarItemHover),
+            }}
+            onMouseEnter={() => setHoverItem("explorar")}
+            onMouseLeave={() => setHoverItem("")}
+          >
+            Feed
+          </div>
+        </a>
 
         <div
           style={{
