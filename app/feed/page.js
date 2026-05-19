@@ -106,11 +106,15 @@ export default function Pag2() {
   }
 
   async function reagirPost(id, tipo) {
-    const postAtual = posts.find((p) => String(p.id) === String(id));
+    const postAtual = posts.find((p) => p.id === id);
 
     if (!postAtual) return;
 
-    const novoValor = (postAtual[tipo] || 0) + 1;
+    const novoCurtir =
+      tipo === "curtir" ? (postAtual.curtir || 0) + 1 : postAtual.curtir || 0;
+
+    const novoAmei =
+      tipo === "amei" ? (postAtual.amei || 0) + 1 : postAtual.amei || 0;
 
     try {
       await fetch("https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/PATCH", {
@@ -119,15 +123,16 @@ export default function Pag2() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          id: id,
-          [tipo]: novoValor,
+          post_id: postAtual.id,
+          curtir: novoCurtir,
+          amei: novoAmei,
+          comentarios: postAtual.comentarios || [],
         }),
       });
 
       buscarPosts();
     } catch (error) {
       console.error(error);
-
       alert("Erro ao salvar reação");
     }
   }
@@ -269,10 +274,7 @@ export default function Pag2() {
 
                     const comentariosAtuais = post.comentarios || [];
 
-                    const novosComentarios = [
-                      ...comentariosAtuais,
-                      comentario,
-                    ];
+                    const novosComentarios = [...comentariosAtuais, comentario];
 
                     try {
                       await fetch(
@@ -573,4 +575,3 @@ const styles = {
     cursor: "pointer",
   },
 };
-
