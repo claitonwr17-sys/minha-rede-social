@@ -63,29 +63,19 @@ export default function Imagens() {
         {imagens.map((img, index) => (
           <div key={index} style={styles.card}>
             {/* IMAGEM */}
-            <div style={styles.imageBox}>
-              🖼️ Imagem vazia
-            </div>
+            <div style={styles.imageBox}>🖼️ Imagem vazia</div>
 
             {/* AÇÕES */}
             <div style={styles.actions}>
-              <button
-                style={styles.blackButton}
-                onClick={() => curtir(index)}
-              >
-                ● Curtir  {likes[index] || 0}
+              <button style={styles.button} onClick={() => curtir(index)}>
+                👍🏿 Curtir {likes[index] || 0}
               </button>
 
-              <button
-                style={styles.blackButton}
-                onClick={() => darAmei(index)}
-              >
-                ● Amei {amei[index] || 0}
+              <button style={styles.button} onClick={() => darAmei(index)}>
+                🖤 Amei {amei[index] || 0}
               </button>
 
-              <button style={styles.button}>
-                💬 Comentar
-              </button>
+              <button style={styles.button}>💬 Comentar</button>
             </div>
           </div>
         ))}
