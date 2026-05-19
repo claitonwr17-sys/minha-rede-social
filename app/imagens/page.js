@@ -62,7 +62,7 @@ export default function Imagens() {
 
         {imagens.map((img, index) => (
           <div key={index} style={styles.card}>
-            {/* USUÁRIO */}
+           {/* USUÁRIO */}
 <div style={styles.userInfo}>
   <img
     src="/insta.png"
@@ -76,7 +76,7 @@ export default function Imagens() {
   </div>
 </div>
 
-{/* IMAGEM */}
+{/* IMAGEM DO POST */}
 <div style={styles.imageBox}>
   🖼️ Imagem vazia
 </div>
@@ -172,29 +172,44 @@ const styles = {
     marginBottom: 15,
   },
 
-  actions: {
-    display: "flex",
-    justifyContent: "space-around",
-    alignItems: "center",
-  },
+ actions: {
+  display: "flex",
+  justifyContent: "space-around",
+  alignItems: "center",
+},
 
-  /* BOTÕES PRETOS */
-  blackButton: {
-    backgroundColor: "#000",
-    color: "#fff",
-    border: "none",
-    padding: "10px 14px",
-    borderRadius: 10,
-    cursor: "pointer",
-    fontWeight: "bold",
-  },
+/* USUÁRIO */
+userInfo: {
+  display: "flex",
+  alignItems: "center",
+  marginBottom: 12,
+},
 
-  /* COMENTAR */
-  button: {
-    backgroundColor: "#f0f2f5",
-    border: "none",
-    padding: "10px 14px",
-    borderRadius: 10,
-    cursor: "pointer",
-  },
-};
+avatarImage: {
+  width: 45,
+  height: 45,
+  borderRadius: "50%",
+  objectFit: "cover",
+  marginRight: 12,
+},
+
+username: {
+  fontWeight: "bold",
+  fontSize: 15,
+},
+
+time: {
+  fontSize: 12,
+  color: "gray",
+},
+
+/* BOTÕES */
+blackButton: {
+  backgroundColor: "#000",
+  color: "#fff",
+  border: "none",
+  padding: "10px 14px",
+  borderRadius: 10,
+  cursor: "pointer",
+  fontWeight: "bold",
+},
