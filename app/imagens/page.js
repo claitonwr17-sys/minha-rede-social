@@ -73,14 +73,14 @@ export default function Imagens() {
                 style={styles.blackButton}
                 onClick={() => curtir(index)}
               >
-                👍 Curtir {likes[index] || 0}
+                ● Curtir  {likes[index] || 0}
               </button>
 
               <button
                 style={styles.blackButton}
                 onClick={() => darAmei(index)}
               >
-                ❤️ Amei {amei[index] || 0}
+                ● Amei {amei[index] || 0}
               </button>
 
               <button style={styles.button}>
