@@ -1,15 +1,15 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function Imagens() {
-  const imagens = [
-    "/img1.jpg",
-    "/img2.jpg",
-    "/img3.jpg",
-  ];
+  const router = useRouter();
+
+  const imagens = [1, 2, 3, 4, 5];
 
   const [likes, setLikes] = useState({});
+  const [amei, setAmei] = useState({});
 
   function curtir(index) {
     setLikes((prev) => ({
@@ -18,27 +18,75 @@ export default function Imagens() {
     }));
   }
 
+  function darAmei(index) {
+    setAmei((prev) => ({
+      ...prev,
+      [index]: (prev[index] || 0) + 1,
+    }));
+  }
+
+  function voltarHome() {
+    router.push("/");
+  }
+
   return (
     <div style={styles.page}>
-      <h2 style={styles.title}>📷 Feed de Imagens</h2>
 
-      <div style={styles.feed}>
+      {/* SIDEBAR */}
+      <div style={styles.sidebar}>
+        <div style={styles.logo}>📷 Conrad</div>
+
+        <div style={styles.menu} onClick={() => router.push("/")}>🏠 Home</div>
+        <div style={styles.menu} onClick={() => router.push("/ia")}>🤖 IA</div>
+        <div style={styles.menu} onClick={() => router.push("/feed")}>📰 Feed</div>
+        <div style={styles.menu} onClick={() => router.push("/perfil")}>👤 Perfil</div>
+
+        <button style={styles.logout} onClick={voltarHome}>
+          Sair
+        </button>
+      </div>
+
+      {/* FEED CENTRAL */}
+      <div style={styles.feedArea}>
+
+        <h2 style={{ marginBottom: 20 }}>📷 Feed de Imagens</h2>
+
         {imagens.map((img, index) => (
           <div key={index} style={styles.card}>
-            
+
+            {/* IMAGEM */}
             <div style={styles.imageBox}>
-              <span>Imagem vazia</span>
+              🖼️ Imagem vazia
             </div>
 
+            {/* AÇÕES */}
             <div style={styles.actions}>
-              <button onClick={() => curtir(index)}>👍 Curtir {likes[index] || 0}</button>
-              <button>❤️ Amei</button>
-              <button>💬 Comentar</button>
+
+              <button
+                style={styles.button}
+                onClick={() => curtir(index)}
+              >
+                👍 Curtir {likes[index] || 0}
+              </button>
+
+              <button
+                style={styles.button}
+                onClick={() => darAmei(index)}
+              >
+                ❤️ Amei {amei[index] || 0}
+              </button>
+
+              <button style={styles.button}>
+                💬 Comentar
+              </button>
+
             </div>
 
           </div>
         ))}
+
       </div>
+
     </div>
   );
 }
@@ -46,43 +94,85 @@ export default function Imagens() {
 const styles = {
   page: {
     display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    paddingTop: 80,
-    background: "#f0f2f5",
+    backgroundColor: "#f0f2f5",
     minHeight: "100vh",
+    fontFamily: "Inter, sans-serif",
   },
 
-  title: {
-    marginBottom: 20,
+  /* SIDEBAR */
+  sidebar: {
+    width: 220,
+    backgroundColor: "white",
+    height: "100vh",
+    padding: 20,
+    borderRight: "1px solid #ddd",
+    position: "fixed",
   },
 
-  feed: {
+  logo: {
+    fontWeight: "bold",
+    fontSize: 18,
+    marginBottom: 30,
+  },
+
+  menu: {
+    padding: 12,
+    cursor: "pointer",
+    borderRadius: 8,
+    marginBottom: 10,
+    transition: "0.2s",
+  },
+
+  logout: {
+    marginTop: 20,
+    backgroundColor: "black",
+    color: "white",
+    border: "none",
+    padding: 10,
+    borderRadius: 10,
+    cursor: "pointer",
     width: "100%",
-    maxWidth: 500,
+  },
+
+  /* FEED */
+  feedArea: {
+    marginLeft: 240,
+    paddingTop: 80,
+    width: "100%",
     display: "flex",
     flexDirection: "column",
-    gap: 20,
+    alignItems: "center",
   },
 
   card: {
-    background: "white",
+    backgroundColor: "white",
+    width: 500,
     borderRadius: 16,
     padding: 15,
+    marginBottom: 20,
+    boxShadow: "0 2px 6px rgba(0,0,0,0.05)",
   },
 
   imageBox: {
-    height: 300,
-    background: "#ddd",
+    height: 280,
+    backgroundColor: "#ddd",
     borderRadius: 12,
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 10,
+    marginBottom: 15,
   },
 
   actions: {
     display: "flex",
     justifyContent: "space-around",
+  },
+
+  button: {
+    backgroundColor: "#f0f2f5",
+    border: "none",
+    padding: "8px 12px",
+    borderRadius: 10,
+    cursor: "pointer",
   },
 };
