@@ -178,38 +178,48 @@ const styles = {
   alignItems: "center",
 },
 
-/* USUÁRIO */
-userInfo: {
-  display: "flex",
-  alignItems: "center",
-  marginBottom: 12,
-},
+  /* USUÁRIO */
+  userInfo: {
+    display: "flex",
+    alignItems: "center",
+    marginBottom: 12,
+  },
 
-avatarImage: {
-  width: 45,
-  height: 45,
-  borderRadius: "50%",
-  objectFit: "cover",
-  marginRight: 12,
-},
+  avatarImage: {
+    width: 45,
+    height: 45,
+    borderRadius: "50%",
+    objectFit: "cover",
+    marginRight: 12,
+  },
 
-username: {
-  fontWeight: "bold",
-  fontSize: 15,
-},
+  username: {
+    fontWeight: "bold",
+    fontSize: 15,
+  },
 
-time: {
-  fontSize: 12,
-  color: "gray",
-},
+  time: {
+    fontSize: 12,
+    color: "gray",
+  },
 
-/* BOTÕES */
-blackButton: {
-  backgroundColor: "#000",
-  color: "#fff",
-  border: "none",
-  padding: "10px 14px",
-  borderRadius: 10,
-  cursor: "pointer",
-  fontWeight: "bold",
-},
+  /* BOTÕES */
+  blackButton: {
+    backgroundColor: "#000",
+    color: "#fff",
+    border: "none",
+    padding: "10px 14px",
+    borderRadius: 10,
+    cursor: "pointer",
+    fontWeight: "bold",
+  },
+
+  /* COMENTAR */
+  button: {
+    backgroundColor: "#f0f2f5",
+    border: "none",
+    padding: "10px 14px",
+    borderRadius: 10,
+    cursor: "pointer",
+  },
+};
