@@ -1,35 +1,41 @@
 "use client";
 
-import { useState } from "react";
-
 export default function Imagens() {
-  const [imagens] = useState([
-    "https://picsum.photos/400/400?1",
-    "https://picsum.photos/400/400?2",
-    "https://picsum.photos/400/400?3",
-    "https://picsum.photos/400/400?4",
-    "https://picsum.photos/400/400?5",
-    "https://picsum.photos/400/400?6",
-    "https://picsum.photos/400/400?7",
-    "https://picsum.photos/400/400?8",
-    "https://picsum.photos/400/400?9",
-  ]);
-
   return (
     <div style={styles.page}>
-      
-      {/* HEADER */}
-      <div style={styles.header}>
-        <h2 style={{ margin: 0 }}>📸 Feed de Imagens</h2>
+
+      {/* SIDEBAR (igual Home) */}
+      <div style={styles.sidebar}>
+        <div style={styles.logo}>📸 Conrad</div>
+
+        <a href="/" style={styles.link}>🏠 Home</a>
+        <a href="/feed" style={styles.link}>🤖 IA</a>
+        <a href="/imagens" style={styles.active}>🖼 Feed</a>
+        <a href="/perfil" style={styles.link}>👤 Perfil</a>
+
+        <div style={styles.logout}>Sair</div>
       </div>
 
-      {/* GRID */}
-      <div style={styles.grid}>
-        {imagens.map((img, index) => (
-          <div key={index} style={styles.card}>
-            <img src={img} style={styles.image} />
-          </div>
-        ))}
+      {/* CONTEÚDO */}
+      <div style={styles.content}>
+
+        <h2>Feed de Imagens</h2>
+
+        {/* POST VAZIO 1 */}
+        <div style={styles.card}>
+          <div style={styles.placeholder}>📷 Imagem vazia</div>
+        </div>
+
+        {/* POST VAZIO 2 */}
+        <div style={styles.card}>
+          <div style={styles.placeholder}>📷 Imagem vazia</div>
+        </div>
+
+        {/* POST VAZIO 3 */}
+        <div style={styles.card}>
+          <div style={styles.placeholder}>📷 Imagem vazia</div>
+        </div>
+
       </div>
 
     </div>
@@ -38,41 +44,79 @@ export default function Imagens() {
 
 const styles = {
   page: {
-    backgroundColor: "#fafafa",
-    minHeight: "100vh",
-    padding: 20,
+    display: "flex",
     fontFamily: "Arial",
+    backgroundColor: "#f5f6f8",
+    minHeight: "100vh",
   },
 
-  header: {
-    textAlign: "center",
-    marginBottom: 20,
-    padding: 10,
+  /* SIDEBAR */
+  sidebar: {
+    width: 220,
     backgroundColor: "white",
-    borderRadius: 12,
-    boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+    height: "100vh",
+    padding: 20,
+    borderRight: "1px solid #ddd",
+    position: "fixed",
   },
 
-  grid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(3, 1fr)",
-    gap: 10,
-    maxWidth: 900,
-    margin: "0 auto",
+  logo: {
+    fontWeight: "bold",
+    marginBottom: 20,
+  },
+
+  link: {
+    display: "block",
+    padding: 10,
+    color: "#333",
+    textDecoration: "none",
+    marginBottom: 5,
+    borderRadius: 8,
+  },
+
+  active: {
+    display: "block",
+    padding: 10,
+    backgroundColor: "#e7f3ff",
+    color: "#1877f2",
+    textDecoration: "none",
+    marginBottom: 5,
+    borderRadius: 8,
+  },
+
+  logout: {
+    marginTop: 20,
+    padding: 10,
+    backgroundColor: "black",
+    color: "white",
+    textAlign: "center",
+    borderRadius: 8,
+    cursor: "pointer",
+  },
+
+  /* CONTEÚDO */
+  content: {
+    marginLeft: 240,
+    padding: 20,
+    width: "100%",
   },
 
   card: {
     backgroundColor: "white",
+    padding: 20,
     borderRadius: 12,
-    overflow: "hidden",
-    boxShadow: "0 1px 4px rgba(0,0,0,0.1)",
-    cursor: "pointer",
+    marginBottom: 15,
+    boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
   },
 
-  image: {
-    width: "100%",
-    height: 180,
-    objectFit: "cover",
-    display: "block",
+  placeholder: {
+    height: 200,
+    backgroundColor: "#eaeaea",
+    borderRadius: 10,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    color: "#777",
+    fontSize: 16,
   },
 };
