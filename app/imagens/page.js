@@ -1,43 +1,44 @@
 "use client";
 
+import { useState } from "react";
+
 export default function Imagens() {
+  const imagens = [
+    "/img1.jpg",
+    "/img2.jpg",
+    "/img3.jpg",
+  ];
+
+  const [likes, setLikes] = useState({});
+
+  function curtir(index) {
+    setLikes((prev) => ({
+      ...prev,
+      [index]: (prev[index] || 0) + 1,
+    }));
+  }
+
   return (
     <div style={styles.page}>
+      <h2 style={styles.title}>📷 Feed de Imagens</h2>
 
-      {/* SIDEBAR (igual Home) */}
-      <div style={styles.sidebar}>
-        <div style={styles.logo}>📸 Conrad</div>
+      <div style={styles.feed}>
+        {imagens.map((img, index) => (
+          <div key={index} style={styles.card}>
+            
+            <div style={styles.imageBox}>
+              <span>Imagem vazia</span>
+            </div>
 
-        <a href="/" style={styles.link}>🏠 Home</a>
-        <a href="/feed" style={styles.link}>🤖 IA</a>
-        <a href="/imagens" style={styles.active}>🖼 Feed</a>
-        <a href="/perfil" style={styles.link}>👤 Perfil</a>
+            <div style={styles.actions}>
+              <button onClick={() => curtir(index)}>👍 Curtir {likes[index] || 0}</button>
+              <button>❤️ Amei</button>
+              <button>💬 Comentar</button>
+            </div>
 
-        <div style={styles.logout}>Sair</div>
+          </div>
+        ))}
       </div>
-
-      {/* CONTEÚDO */}
-      <div style={styles.content}>
-
-        <h2>Feed de Imagens</h2>
-
-        {/* POST VAZIO 1 */}
-        <div style={styles.card}>
-          <div style={styles.placeholder}>📷 Imagem vazia</div>
-        </div>
-
-        {/* POST VAZIO 2 */}
-        <div style={styles.card}>
-          <div style={styles.placeholder}>📷 Imagem vazia</div>
-        </div>
-
-        {/* POST VAZIO 3 */}
-        <div style={styles.card}>
-          <div style={styles.placeholder}>📷 Imagem vazia</div>
-        </div>
-
-      </div>
-
     </div>
   );
 }
@@ -45,78 +46,43 @@ export default function Imagens() {
 const styles = {
   page: {
     display: "flex",
-    fontFamily: "Arial",
-    backgroundColor: "#f5f6f8",
+    flexDirection: "column",
+    alignItems: "center",
+    paddingTop: 80,
+    background: "#f0f2f5",
     minHeight: "100vh",
   },
 
-  /* SIDEBAR */
-  sidebar: {
-    width: 220,
-    backgroundColor: "white",
-    height: "100vh",
-    padding: 20,
-    borderRight: "1px solid #ddd",
-    position: "fixed",
-  },
-
-  logo: {
-    fontWeight: "bold",
+  title: {
     marginBottom: 20,
   },
 
-  link: {
-    display: "block",
-    padding: 10,
-    color: "#333",
-    textDecoration: "none",
-    marginBottom: 5,
-    borderRadius: 8,
-  },
-
-  active: {
-    display: "block",
-    padding: 10,
-    backgroundColor: "#e7f3ff",
-    color: "#1877f2",
-    textDecoration: "none",
-    marginBottom: 5,
-    borderRadius: 8,
-  },
-
-  logout: {
-    marginTop: 20,
-    padding: 10,
-    backgroundColor: "black",
-    color: "white",
-    textAlign: "center",
-    borderRadius: 8,
-    cursor: "pointer",
-  },
-
-  /* CONTEÚDO */
-  content: {
-    marginLeft: 240,
-    padding: 20,
+  feed: {
     width: "100%",
+    maxWidth: 500,
+    display: "flex",
+    flexDirection: "column",
+    gap: 20,
   },
 
   card: {
-    backgroundColor: "white",
-    padding: 20,
-    borderRadius: 12,
-    marginBottom: 15,
-    boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+    background: "white",
+    borderRadius: 16,
+    padding: 15,
   },
 
-  placeholder: {
-    height: 200,
-    backgroundColor: "#eaeaea",
-    borderRadius: 10,
+  imageBox: {
+    height: 300,
+    background: "#ddd",
+    borderRadius: 12,
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    color: "#777",
-    fontSize: 16,
+    marginBottom: 10,
+  },
+
+  actions: {
+    display: "flex",
+    justifyContent: "space-around",
   },
 };
