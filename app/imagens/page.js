@@ -63,17 +63,23 @@ export default function Imagens() {
         {imagens.map((img, index) => (
           <div key={index} style={styles.card}>
             {/* USUÁRIO */}
-            <div style={styles.userInfo}>
-             <img src="/insta.png" alt="Perfil" style={styles.avatarImage} />
+<div style={styles.userInfo}>
+  <img
+    src="/insta.png"
+    alt="Perfil"
+    style={styles.avatarImage}
+  />
 
-              <div>
-                <div style={styles.username}>Claiton Wroblewski</div>
-                <div style={styles.time}>Agora mesmo</div>
-              </div>
-            </div>
+  <div>
+    <div style={styles.username}>Claiton Wroblewski</div>
+    <div style={styles.time}>Agora mesmo</div>
+  </div>
+</div>
 
-            {/* IMAGEM */}
-            <div style={styles.imageBox}>🖼️ Imagem vazia</div>
+{/* IMAGEM */}
+<div style={styles.imageBox}>
+  🖼️ Imagem vazia
+</div>
 
             {/* AÇÕES */}
             <div style={styles.actions}>
