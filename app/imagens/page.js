@@ -31,15 +31,22 @@ export default function Imagens() {
 
   return (
     <div style={styles.page}>
-
       {/* SIDEBAR */}
       <div style={styles.sidebar}>
         <div style={styles.logo}>📷 Conrad</div>
 
-        <div style={styles.menu} onClick={() => router.push("/")}>🏠 Home</div>
-        <div style={styles.menu} onClick={() => router.push("/ia")}>🤖 IA</div>
-        <div style={styles.menu} onClick={() => router.push("/feed")}>📰 Feed</div>
-        <div style={styles.menu} onClick={() => router.push("/perfil")}>👤 Perfil</div>
+        <div style={styles.menu} onClick={() => router.push("/")}>
+          🏠 Home
+        </div>
+        <div style={styles.menu} onClick={() => router.push("/ia")}>
+          🤖 IA
+        </div>
+        <div style={styles.menu} onClick={() => router.push("/feed")}>
+          📰 Feed
+        </div>
+        <div style={styles.menu} onClick={() => router.push("/perfil")}>
+          👤 Perfil
+        </div>
 
         <button style={styles.logout} onClick={voltarHome}>
           Sair
@@ -48,45 +55,28 @@ export default function Imagens() {
 
       {/* FEED CENTRAL */}
       <div style={styles.feedArea}>
-
         <h2 style={{ marginBottom: 20 }}>📷 Feed de Imagens</h2>
 
         {imagens.map((img, index) => (
           <div key={index} style={styles.card}>
-
             {/* IMAGEM */}
-            <div style={styles.imageBox}>
-              🖼️ Imagem vazia
-            </div>
+            <div style={styles.imageBox}>🖼️ Imagem vazia</div>
 
             {/* AÇÕES */}
             <div style={styles.actions}>
-
-              <button
-                style={styles.button}
-                onClick={() => curtir(index)}
-              >
+              <button style={styles.blackButton} onClick={() => curtir(index)}>
                 👍 Curtir {likes[index] || 0}
               </button>
 
-              <button
-                style={styles.button}
-                onClick={() => darAmei(index)}
-              >
+              <button style={styles.blackButton} onClick={() => darAmei(index)}>
                 ❤️ Amei {amei[index] || 0}
               </button>
 
-              <button style={styles.button}>
-                💬 Comentar
-              </button>
-
+              <button style={styles.button}>💬 Comentar</button>
             </div>
-
           </div>
         ))}
-
       </div>
-
     </div>
   );
 }
