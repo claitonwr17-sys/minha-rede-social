@@ -196,7 +196,7 @@ export default function Home() {
 
               <button
                 onClick={fazerLogin}
-                className="w-full border border-black text-black py-2 rounded hover:bg-gray-100 transition"
+                className="w-full bg-black text-white py-2 rounded hover:bg-gray-800 transition"
               >
                 Fazer login
               </button>
