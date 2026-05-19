@@ -21,3 +21,18 @@ Análise IA visual
 positivo 🟢
 neutro 🟡
 ofensivo
+
+chave api do site cloudinary = Nome da nuvem	
+dstcmk7a2
+
+Chave de API	
+794844927554976
+
+Segredo da API	
+**********
+
+
+variável de ambiente da API	
+CLOUDINARY_URL=cloudinary://794844927554976:**********@dstcmk7a2
+
+

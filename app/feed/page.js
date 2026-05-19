@@ -188,7 +188,7 @@ export default function Pag2() {
           onMouseEnter={() => setHoverItem("explorar")}
           onMouseLeave={() => setHoverItem("")}
         >
-          🔍 Explorar
+          Feed
         </div>
 
         <div
