@@ -6,32 +6,40 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-export async function POST(request) {
+export async function POST(req) {
   try {
-    const body = await request.json();
+    const data = await req.formData();
+    const file = data.get("file");
 
-    const uploadResponse = await cloudinary.uploader.upload(
-      body.image,
-      {
-        folder: "conrad",
-      }
-    );
+    if (!file) {
+      return Response.json({
+        error: "Nenhum arquivo enviado",
+      });
+    }
+
+    const bytes = await file.arrayBuffer();
+    const buffer = Buffer.from(bytes);
+
+    const resultado = await new Promise((resolve, reject) => {
+      cloudinary.uploader
+        .upload_stream(
+          {
+            folder: "conrad",
+          },
+          (error, result) => {
+            if (error) reject(error);
+            else resolve(result);
+          }
+        )
+        .end(buffer);
+    });
 
     return Response.json({
-      success: true,
-      url: uploadResponse.secure_url,
+      url: resultado.secure_url,
     });
-  } catch (error) {
-    console.log(error);
-
-    return Response.json(
-      {
-        success: false,
-        error: "Erro no upload",
-      },
-      {
-        status: 500,
-      }
-    );
+  } catch (erro) {
+    return Response.json({
+      error: "Erro no upload",
+    });
   }
 }
