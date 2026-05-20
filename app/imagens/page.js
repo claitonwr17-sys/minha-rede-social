@@ -90,16 +90,29 @@ export default function Imagens() {
                 type="file"
                 accept="image/*"
                 style={{ display: "none" }}
-                onChange={(e) => {
-                  const arquivo = e.target.files[0];
+                onChange={async (e) => {
+  const arquivo = e.target.files[0];
 
-                  if (arquivo) {
-                    const urlImagem =
-                      URL.createObjectURL(arquivo);
+  if (!arquivo) return;
 
-                    setImagemSelecionada(urlImagem);
-                  }
-                }}
+  const formData = new FormData();
+  formData.append("file", arquivo);
+
+  try {
+    const resposta = await fetch("/api/upload", {
+      method: "POST",
+      body: formData,
+    });
+
+    const dados = await resposta.json();
+
+    if (dados.url) {
+      setImagemSelecionada(dados.url);
+    }
+  } catch (erro) {
+    console.log("Erro ao enviar imagem");
+  }
+}}
               />
             </label>
 
