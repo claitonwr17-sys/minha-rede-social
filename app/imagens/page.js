@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 export default function Imagens() {
   const router = useRouter();
 
-  const imagens = [1, 2, 3, 4, 5];
+  const imagens = [1];
 
   const [likes, setLikes] = useState({});
 const [amei, setAmei] = useState({});
