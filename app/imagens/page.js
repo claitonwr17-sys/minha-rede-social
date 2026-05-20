@@ -88,20 +88,9 @@ const [imagemSelecionada, setImagemSelecionada] = useState(null);
 
       if (arquivo) {
         const urlImagem = URL.createObjectURL(arquivo);
-        setImagemSelecionada(urlImagem);
-      }
-    }}
-  />
-</label>
-
-<div style={styles.imageBox}>
-  {imagemSelecionada ? (
-    <img
-      src={imagemSelecionada}
-      alt="Post"
-     <div style={styles.imageBox}>
+       <div style={styles.imageBox}>
   🖼️ Imagem vazia
-</div>         
+</div>       
              {/* AÇÕES */}
             <div style={styles.actions}>
               <button style={styles.button} onClick={() => curtir(index)}>
