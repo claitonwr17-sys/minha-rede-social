@@ -75,11 +75,14 @@ export default function Imagens() {
     <div style={styles.time}>Agora mesmo</div>
   </div>
 </div>
-<input
-  type="file"
-  accept="image/*"
-  style={{ marginBottom: 10 }}
-/>
+ <label style={styles.uploadButton}>
+  📸 Escolher imagem
+  <input
+    type="file"
+    accept="image/*"
+    style={{ display: "none" }}
+  />
+</label>
 {/* IMAGEM DO POST */}
 <div style={styles.imageBox}>
   🖼️ Imagem vazia
@@ -207,16 +210,16 @@ const styles = {
     color: "gray",
   },
 
-  /* BOTÕES */
-  blackButton: {
-    backgroundColor: "#000",
-    color: "#fff",
-    border: "none",
-    padding: "10px 14px",
-    borderRadius: 10,
-    cursor: "pointer",
-    fontWeight: "bold",
-  },
+  uploadButton: {
+  backgroundColor: "#000",
+  color: "#fff",
+  padding: "10px 14px",
+  borderRadius: 10,
+  cursor: "pointer",
+  display: "inline-block",
+  marginBottom: 12,
+  fontWeight: "bold",
+},
 
   /* COMENTAR */
   button: {
