@@ -9,8 +9,8 @@ export default function Imagens() {
   const imagens = [1];
 
   const [likes, setLikes] = useState({});
-const [amei, setAmei] = useState({});
-const [imagemSelecionada, setImagemSelecionada] = useState(null);
+  const [amei, setAmei] = useState({});
+  const [imagemSelecionada, setImagemSelecionada] = useState(null);
 
   function curtir(index) {
     setLikes((prev) => ({
@@ -63,45 +63,78 @@ const [imagemSelecionada, setImagemSelecionada] = useState(null);
 
         {imagens.map((img, index) => (
           <div key={index} style={styles.card}>
-           {/* USUÁRIO */}
-<div style={styles.userInfo}>
-  <img
-    src="/insta.png"
-    alt="Perfil"
-    style={styles.avatarImage}
-  />
+            {/* USUÁRIO */}
+            <div style={styles.userInfo}>
+              <img
+                src="/insta.png"
+                alt="Perfil"
+                style={styles.avatarImage}
+              />
 
-  <div>
-    <div style={styles.username}>Claiton Wroblewski</div>
-    <div style={styles.time}>Agora mesmo</div>
-  </div>
-</div>
- <label style={styles.uploadButton}>
-  📸 Escolher imagem
+              <div>
+                <div style={styles.username}>
+                  Claiton Wroblewski
+                </div>
 
-  <input
-    type="file"
-    accept="image/*"
-    style={{ display: "none" }}
-    onChange={(e) => {
-      const arquivo = e.target.files[0];
+                <div style={styles.time}>
+                  Agora mesmo
+                </div>
+              </div>
+            </div>
 
-      if (arquivo) {
-        const urlImagem = URL.createObjectURL(arquivo);
-       <div style={styles.imageBox}>
-  🖼️ Imagem vazia
-</div>       
-             {/* AÇÕES */}
+            {/* BOTÃO */}
+            <label style={styles.uploadButton}>
+              📸 Escolher imagem
+
+              <input
+                type="file"
+                accept="image/*"
+                style={{ display: "none" }}
+                onChange={(e) => {
+                  const arquivo = e.target.files[0];
+
+                  if (arquivo) {
+                    const urlImagem =
+                      URL.createObjectURL(arquivo);
+
+                    setImagemSelecionada(urlImagem);
+                  }
+                }}
+              />
+            </label>
+
+            {/* IMAGEM */}
+            <div style={styles.imageBox}>
+              {imagemSelecionada ? (
+                <img
+                  src={imagemSelecionada}
+                  alt="Post"
+                  style={styles.postImage}
+                />
+              ) : (
+                "🖼️ Imagem vazia"
+              )}
+            </div>
+
+            {/* AÇÕES */}
             <div style={styles.actions}>
-              <button style={styles.button} onClick={() => curtir(index)}>
+              <button
+                style={styles.button}
+                onClick={() => curtir(index)}
+              >
                 👍🏿 Curtir {likes[index] || 0}
               </button>
 
-              <button style={styles.button} onClick={() => darAmei(index)}>
+              <button
+                style={styles.button}
+                onClick={() => darAmei(index)}
+              >
                 🖤 Amei {amei[index] || 0}
               </button>
 
-              <button style={styles.button}>💬 Comentar</button>
+              <button style={styles.button}>
+                💬 Comentar
+              </button>
             </div>
           </div>
         ))}
@@ -172,22 +205,6 @@ const styles = {
     boxShadow: "0 2px 6px rgba(0,0,0,0.05)",
   },
 
-  imageBox: {
-    height: 280,
-    backgroundColor: "#ddd",
-    borderRadius: 12,
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 15,
-  },
-
- actions: {
-  display: "flex",
-  justifyContent: "space-around",
-  alignItems: "center",
-},
-
   /* USUÁRIO */
   userInfo: {
     display: "flex",
@@ -195,12 +212,13 @@ const styles = {
     marginBottom: 12,
   },
 
- postImage: {
-  width: "100%",
-  height: "100%",
-  objectFit: "cover",
-  borderRadius: 12,
-},
+  avatarImage: {
+    width: 45,
+    height: 45,
+    borderRadius: "50%",
+    objectFit: "cover",
+    marginRight: 12,
+  },
 
   username: {
     fontWeight: "bold",
@@ -212,18 +230,43 @@ const styles = {
     color: "gray",
   },
 
+  /* BOTÃO UPLOAD */
   uploadButton: {
-  backgroundColor: "#000",
-  color: "#fff",
-  padding: "10px 14px",
-  borderRadius: 10,
-  cursor: "pointer",
-  display: "inline-block",
-  marginBottom: 12,
-  fontWeight: "bold",
-},
+    backgroundColor: "#000",
+    color: "#fff",
+    padding: "10px 14px",
+    borderRadius: 10,
+    cursor: "pointer",
+    display: "inline-block",
+    marginBottom: 12,
+    fontWeight: "bold",
+  },
 
-  /* COMENTAR */
+  /* IMAGEM */
+  imageBox: {
+    height: 280,
+    backgroundColor: "#ddd",
+    borderRadius: 12,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 15,
+    overflow: "hidden",
+  },
+
+  postImage: {
+    width: "100%",
+    height: "100%",
+    objectFit: "cover",
+  },
+
+  /* AÇÕES */
+  actions: {
+    display: "flex",
+    justifyContent: "space-around",
+    alignItems: "center",
+  },
+
   button: {
     backgroundColor: "#f0f2f5",
     border: "none",
