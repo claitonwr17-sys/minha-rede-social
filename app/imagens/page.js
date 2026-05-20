@@ -9,7 +9,8 @@ export default function Imagens() {
   const imagens = [1, 2, 3, 4, 5];
 
   const [likes, setLikes] = useState({});
-  const [amei, setAmei] = useState({});
+const [amei, setAmei] = useState({});
+const [imagemSelecionada, setImagemSelecionada] = useState(null);
 
   function curtir(index) {
     setLikes((prev) => ({
@@ -77,18 +78,34 @@ export default function Imagens() {
 </div>
  <label style={styles.uploadButton}>
   📸 Escolher imagem
+
   <input
     type="file"
     accept="image/*"
     style={{ display: "none" }}
+    onChange={(e) => {
+      const arquivo = e.target.files[0];
+
+      if (arquivo) {
+        const urlImagem = URL.createObjectURL(arquivo);
+        setImagemSelecionada(urlImagem);
+      }
+    }}
   />
 </label>
-{/* IMAGEM DO POST */}
-<div style={styles.imageBox}>
-  🖼️ Imagem vazia
-</div>
 
-            {/* AÇÕES */}
+<div style={styles.imageBox}>
+  {imagemSelecionada ? (
+    <img
+      src={imagemSelecionada}
+      alt="Post"
+      style={styles.postImage}
+    />
+  ) : (
+    "🖼️ Imagem vazia"
+  )}
+</div>           
+             {/* AÇÕES */}
             <div style={styles.actions}>
               <button style={styles.button} onClick={() => curtir(index)}>
                 👍🏿 Curtir {likes[index] || 0}
@@ -192,13 +209,12 @@ const styles = {
     marginBottom: 12,
   },
 
-  avatarImage: {
-    width: 45,
-    height: 45,
-    borderRadius: "50%",
-    objectFit: "cover",
-    marginRight: 12,
-  },
+ postImage: {
+  width: "100%",
+  height: "100%",
+  objectFit: "cover",
+  borderRadius: 12,
+},
 
   username: {
     fontWeight: "bold",
