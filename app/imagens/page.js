@@ -99,12 +99,9 @@ const [imagemSelecionada, setImagemSelecionada] = useState(null);
     <img
       src={imagemSelecionada}
       alt="Post"
-      style={styles.postImage}
-    />
-  ) : (
-    "🖼️ Imagem vazia"
-  )}
-</div>           
+     <div style={styles.imageBox}>
+  🖼️ Imagem vazia
+</div>         
              {/* AÇÕES */}
             <div style={styles.actions}>
               <button style={styles.button} onClick={() => curtir(index)}>
