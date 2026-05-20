@@ -75,7 +75,11 @@ export default function Imagens() {
     <div style={styles.time}>Agora mesmo</div>
   </div>
 </div>
-
+<input
+  type="file"
+  accept="image/*"
+  style={{ marginBottom: 10 }}
+/>
 {/* IMAGEM DO POST */}
 <div style={styles.imageBox}>
   🖼️ Imagem vazia
