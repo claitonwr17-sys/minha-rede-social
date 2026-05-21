@@ -25,7 +25,7 @@ export default function Imagens() {
       [index]: (prev[index] || 0) + 1,
     }));
   }
-  function darAmei(index: number) {
+  function darAmei(index) {
     setAmei((prev) => ({
       ...prev,
       [index]: (prev[index] || 0) + 1,
