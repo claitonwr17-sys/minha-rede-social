@@ -86,35 +86,34 @@ export default function Imagens() {
             <label style={styles.uploadButton}>
               📸 Escolher imagem
 
-              <input
-                type="file"
-                accept="image/*"
-                style={{ display: "none" }}
-                onChange={async (e) => {
-  const arquivo = e.target.files[0];
+  <input
+  type="file"
+  accept="image/*"
+  style={{ display: "none" }}
+  onChange={async (e) => {
+    const arquivo = e.target.files[0];
 
-  if (!arquivo) return;
+    if (!arquivo) return;
 
-  const formData = new FormData();
-  formData.append("file", arquivo);
+    const formData = new FormData();
+    formData.append("file", arquivo);
 
-  try {
-    const resposta = await fetch("/api/upload", {
-      method: "POST",
-      body: formData,
-    });
+    try {
+      const resposta = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
 
-    const dados = await resposta.json();
+      const dados = await resposta.json();
 
-    if (dados.url) {
-      setImagemSelecionada(dados.url);
+      if (dados.url) {
+        setImagemSelecionada(dados.url);
+      }
+    } catch (erro) {
+      console.log(erro);
     }
-  }catch (erro) {
-  console.log(erro);
-}
-  }
-}}
-              />
+  }}
+/>
             </label>
 
             {/* IMAGEM */}
