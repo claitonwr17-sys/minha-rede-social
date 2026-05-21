@@ -8,18 +8,18 @@ export default function Imagens() {
 
   const imagens = [1];
 
-  const [likes, setLikes] = useState({});
-  const [amei, setAmei] = useState({});
-  const [imagemSelecionada, setImagemSelecionada] = useState(null);
+  const [likes, setLikes] = useState<Record<number, number>>({});
+  const [amei, setAmei] = useState<Record<number, number>>({});
+  const [imagemSelecionada, setImagemSelecionada] = useState<string | null>(null);
 
-  function curtir(index) {
+  function curtir(index: number) {
     setLikes((prev) => ({
       ...prev,
       [index]: (prev[index] || 0) + 1,
     }));
   }
 
-  function darAmei(index) {
+  function darAmei(index: number) {
     setAmei((prev) => ({
       ...prev,
       [index]: (prev[index] || 0) + 1,
@@ -90,7 +90,7 @@ export default function Imagens() {
     type="file"
     hidden
     onChange={async (e) => {
-      const arquivo = e.target.files[0];
+     const arquivo = e.target.files?.[0];
 
       if (!arquivo) return;
 
