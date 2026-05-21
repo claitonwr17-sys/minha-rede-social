@@ -1,9 +1,9 @@
 import { v2 as cloudinary } from "cloudinary";
 
 cloudinary.config({
-  cloud_name: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CHAVE_API_NA_NUVINARY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
+ cloud_name: "dstcmk7a2",
+api_key: "794844927554976",
+api_secret: "KLrjABwMDCZC4x3xwzyOTZm7oZQ",
 });
 export async function POST(req) {
   try {
