@@ -8,17 +8,23 @@ export default function Imagens() {
 
   const imagens = [1];
 
-  const [likes, setLikes] = useState<Record<number, number>>({});
-  const [amei, setAmei] = useState<Record<number, number>>({});
-  const [imagemSelecionada, setImagemSelecionada] = useState<string | null>(null);
+  const [likes, setLikes] = useState({});
+  const [amei, setAmei] = useState({});
+  const [imagemSelecionada, setImagemSelecionada] = useState(null);
 
-  function curtir(index: number) {
+  function curtir(index) {
     setLikes((prev) => ({
       ...prev,
       [index]: (prev[index] || 0) + 1,
     }));
   }
 
+  function darAmei(index) {
+    setAmei((prev) => ({
+      ...prev,
+      [index]: (prev[index] || 0) + 1,
+    }));
+  }
   function darAmei(index: number) {
     setAmei((prev) => ({
       ...prev,
