@@ -109,9 +109,9 @@ export default function Imagens() {
     if (dados.url) {
       setImagemSelecionada(dados.url);
     }
-  } catch (erro) {
-    console.log(dados);
-console.log(erro);
+  }catch (erro) {
+  console.log(erro);
+}
   }
 }}
               />
