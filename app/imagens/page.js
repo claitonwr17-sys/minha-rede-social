@@ -110,7 +110,8 @@ export default function Imagens() {
       setImagemSelecionada(dados.url);
     }
   } catch (erro) {
-    console.log("Erro ao enviar imagem");
+    console.log(dados);
+console.log(erro);
   }
 }}
               />
