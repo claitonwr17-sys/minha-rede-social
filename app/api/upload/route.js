@@ -2,8 +2,8 @@ import { v2 as cloudinary } from "cloudinary";
 
 cloudinary.config({
   cloud_name: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
-  api_key: "794844927554976",
-  api_secret: "KLrjABwMDCZC4x3xwzyOTZm7oZQ",
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
 export async function POST(req) {
@@ -27,8 +27,11 @@ export async function POST(req) {
             folder: "conrad",
           },
           (error, result) => {
-            if (error) reject(error);
-            else resolve(result);
+            if (error) {
+              reject(error);
+            } else {
+              resolve(result);
+            }
           }
         )
         .end(buffer);
@@ -38,6 +41,8 @@ export async function POST(req) {
       url: resultado.secure_url,
     });
   } catch (erro) {
+    console.log(erro);
+
     return Response.json({
       error: "Erro no upload",
     });
