@@ -1,10 +1,11 @@
 import { v2 as cloudinary } from "cloudinary";
 
 cloudinary.config({
- cloud_name: "dstcmk7a2",
-api_key: "794844927554976",
-api_secret: "KLrjABwMDCZC4x3xwzyOTZm7oZQ",
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
 });
+
 export async function POST(req) {
   try {
     const data = await req.formData();
