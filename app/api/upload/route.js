@@ -36,17 +36,16 @@ export async function POST(req) {
           (error, result) => {
             if (error) {
               reject(error);
-            } else {
-              resolve(result);
-            }
+           } else {
+  resolve(result || {});
+}
           }
         )
         .end(buffer);
     });
-
-    return Response.json({
-      url: resultado.secure_url,
-    });
+return Response.json({
+  url: resultado?.secure_url,
+});
 
   } catch (erro) {
     console.log(erro);
