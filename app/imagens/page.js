@@ -33,9 +33,8 @@ export default function Imagens() {
   }
 
   function voltarHome() {
-    router.push("/");
-  }
-
+  router.push("/feed");
+}
   return (
     <div style={styles.page}>
       {/* SIDEBAR */}
