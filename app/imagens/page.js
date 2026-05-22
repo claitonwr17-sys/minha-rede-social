@@ -41,9 +41,9 @@ export default function Imagens() {
       <div style={styles.sidebar}>
         <div style={styles.logo}>📷 Conrad</div>
 
-        <div style={styles.menu} onClick={() => router.push("/")}>
-          🏠 Home
-        </div>
+        <div style={styles.menu} onClick={() => router.push("/feed")}>
+  🏠 Home
+</div>
 
         <div style={styles.menu} onClick={() => router.push("/ia")}>
           🤖 IA
