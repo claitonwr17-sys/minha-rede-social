@@ -170,3 +170,127 @@ export default function Imagens() {
     </div>
   );
 }
+const styles = {
+  page: {
+    display: "flex",
+    backgroundColor: "#f0f2f5",
+    minHeight: "100vh",
+    fontFamily: "Inter, sans-serif",
+  },
+
+  sidebar: {
+    width: 220,
+    backgroundColor: "white",
+    height: "100vh",
+    padding: 20,
+    borderRight: "1px solid #ddd",
+    position: "fixed",
+  },
+
+  logo: {
+    fontWeight: "bold",
+    fontSize: 18,
+    marginBottom: 30,
+  },
+
+  menu: {
+    padding: 12,
+    cursor: "pointer",
+    borderRadius: 8,
+    marginBottom: 10,
+  },
+
+  logout: {
+    marginTop: 20,
+    backgroundColor: "black",
+    color: "white",
+    border: "none",
+    padding: 10,
+    borderRadius: 10,
+    cursor: "pointer",
+    width: "100%",
+  },
+
+  feedArea: {
+    marginLeft: 240,
+    paddingTop: 80,
+    width: "100%",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+  },
+
+  card: {
+    backgroundColor: "white",
+    width: 500,
+    borderRadius: 16,
+    padding: 15,
+    marginBottom: 20,
+    boxShadow: "0 2px 6px rgba(0,0,0,0.05)",
+  },
+
+  userInfo: {
+    display: "flex",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+
+  avatarImage: {
+    width: 45,
+    height: 45,
+    borderRadius: "50%",
+    objectFit: "cover",
+    marginRight: 12,
+  },
+
+  username: {
+    fontWeight: "bold",
+    fontSize: 15,
+  },
+
+  time: {
+    fontSize: 12,
+    color: "gray",
+  },
+
+  uploadButton: {
+    backgroundColor: "#000",
+    color: "#fff",
+    padding: "10px 14px",
+    borderRadius: 10,
+    cursor: "pointer",
+    display: "inline-block",
+    marginBottom: 12,
+    fontWeight: "bold",
+  },
+
+  imageBox: {
+    height: 280,
+    backgroundColor: "#ddd",
+    borderRadius: 12,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 15,
+    overflow: "hidden",
+  },
+
+  postImage: {
+    width: "100%",
+    height: "100%",
+    objectFit: "cover",
+  },
+
+  actions: {
+    display: "flex",
+    justifyContent: "space-around",
+  },
+
+  button: {
+    backgroundColor: "#f0f2f5",
+    border: "none",
+    padding: "10px 14px",
+    borderRadius: 10,
+    cursor: "pointer",
+  },
+};
