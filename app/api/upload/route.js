@@ -41,10 +41,17 @@ export async function POST(req) {
 }
           }
         )
-        .end(buffer);
-    });
-return Response.json({
-  url: resultado?.secure_url,
+      .end(buffer);
+});
+
+await fetch("https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/salvar_imagem", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    imagem: resultado?.secure_url,
+  }),
 });
 
   } catch (erro) {
