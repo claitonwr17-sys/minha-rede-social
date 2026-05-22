@@ -44,18 +44,22 @@ export async function POST(req) {
       .end(buffer);
 });
 
-await fetch("https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/salvar_imagem", {
+const respostaXano = await fetch("URL_REAL_DO_XANO", {
   method: "POST",
   headers: {
     "Content-Type": "application/json",
   },
   body: JSON.stringify({
-    imagem: resultado?.secure_url,
+    URL_da_imagem: resultado?.secure_url,
   }),
 });
 
+const texto = await respostaXano.text();
+
+console.log("RESPOSTA XANO:", texto);
+
   } catch (erro) {
-    console.log(erro);
+   console.error("ERRO COMPLETO:", erro);
 
     return Response.json(
       {
