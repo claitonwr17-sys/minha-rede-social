@@ -255,12 +255,15 @@ const styles = {
   },
 
   logout: {
-    color: "red",
-    fontSize: 18,
-    cursor: "pointer",
-    transition: "0.2s"
-  },
-
+  backgroundColor: "#000",
+  color: "white",
+  padding: "14px 18px",
+  borderRadius: 12,
+  fontSize: 18,
+  cursor: "pointer",
+  transition: "0.2s",
+  textAlign: "center"
+},
   logoutHover: {
     transform: "translateX(5px)",
     opacity: 0.8
