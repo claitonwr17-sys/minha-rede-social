@@ -74,16 +74,16 @@ export async function POST(req) {
       url: resultado?.secure_url,
     });
 
-  } catch (erro) {
-    console.error("ERRO CLOUDINARY:", erro);
+} catch (erro) {
+  console.error("ERRO CLOUDINARY:", erro);
 
-    return Response.json(
-      {
-        error: "Erro no upload",
-      },
-      {
-        status: 500,
-      }
-    );
-  }
+  return Response.json(
+    {
+      error: "Erro no upload",
+      detalhes: String(erro),
+    },
+    {
+      status: 500,
+    }
+  );
 }
