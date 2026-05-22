@@ -81,7 +81,7 @@ const resultado = await new Promise((resolve, reject) => {
     return Response.json(
       {
         error: "Erro no upload",
-        detalhes: JSON.stringify(erro),
+        detalhes: erro?.message || "Erro desconhecido",
       },
       {
         status: 500,
