@@ -80,7 +80,7 @@ export async function POST(req) {
     return Response.json(
       {
         error: "Erro no upload",
-        detalhes: String(erro),
+        detalhes: JSON.stringify(erro),
       },
       {
         status: 500,
