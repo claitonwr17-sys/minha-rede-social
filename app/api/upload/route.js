@@ -25,24 +25,25 @@ export async function POST(req) {
     }
 
     const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
+const buffer = Buffer.from(bytes);
 
-    const resultado = await new Promise((resolve, reject) => {
-      cloudinary.uploader
-        .upload_stream(
-          {
-            folder: "conrad",
-          },
-          (error, result) => {
-            if (error) {
-              reject(error);
-            } else {
-              resolve(result);
-            }
-          }
-        )
-        .end(buffer);
-    });
+const resultado = await new Promise((resolve, reject) => {
+  const stream = cloudinary.uploader.upload_stream(
+    {
+      folder: "conrad",
+      resource_type: "image",
+    },
+    (error, result) => {
+      if (error) {
+        reject(error);
+      } else {
+        resolve(result);
+      }
+    }
+  );
+
+  stream.end(buffer);
+});
 
     const respostaXano = await fetch("SUA_URL_DO_XANO", {
       method: "POST",
