@@ -57,16 +57,17 @@ export default function Perfil() {
               🤖 IA
             </div>
 
-            <div
-              style={{
-                ...styles.menuItem,
-                ...(hoverItem === "explorar" && styles.menuHover)
-              }}
-              onMouseEnter={() => setHoverItem("explorar")}
-              onMouseLeave={() => setHoverItem("")}
-            >
-              🔍 Explorar
-            </div>
+           <div
+  style={{
+    ...styles.menuItem,
+    ...(hoverItem === "explorar" && styles.menuHover)
+  }}
+  onMouseEnter={() => setHoverItem("explorar")}
+  onMouseLeave={() => setHoverItem("")}
+  onClick={() => router.push("/imagens")}
+>
+  📰 Feed
+</div>
 
             <div style={styles.menuAtivo}>
               👤 Perfil
