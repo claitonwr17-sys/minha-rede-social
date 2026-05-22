@@ -54,20 +54,18 @@ const respostaXano = await fetch("URL_REAL_DO_XANO", {
   }),
 });
 
-const texto = await respostaXano.text();
+if (!respostaXano.ok) {
+  const erroTexto = await respostaXano.text();
 
-console.log("RESPOSTA XANO:", texto);
+  console.log("ERRO XANO:", erroTexto);
 
-  } catch (erro) {
-   console.error("ERRO COMPLETO:", erro);
-
-    return Response.json(
-      {
-        error: "Erro no upload",
-      },
-      {
-        status: 500,
-      }
-    );
-  }
+  return Response.json(
+    {
+      error: "Erro ao salvar no Xano",
+      detalhes: erroTexto,
+    },
+    {
+      status: 500,
+    }
+  );
 }
