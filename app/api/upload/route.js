@@ -75,7 +75,7 @@ export async function POST(req) {
     });
 
   } catch (erro) {
-    console.error("ERRO COMPLETO:", erro);
+    console.error("ERRO CLOUDINARY:", erro);
 
     return Response.json(
       {
