@@ -97,7 +97,7 @@ export default function Perfil() {
           onMouseLeave={() => setHoverItem("")}
           onClick={logout}
         >
-          🚪 Sair
+           Sair
         </div>
 
       </div>
@@ -339,7 +339,7 @@ const styles = {
   },
 
   botao: {
-    backgroundColor: "#1877f2",
+    backgroundColor: "#000",
     color: "white",
     border: "none",
     padding: "14px 24px",
