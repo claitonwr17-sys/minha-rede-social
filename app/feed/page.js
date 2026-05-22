@@ -467,7 +467,7 @@ const styles = {
 
   postButton: {
     marginTop: 12,
-    backgroundColor: "#1877f2",
+    backgroundColor: "#000",
     color: "white",
     border: "none",
     padding: "12px 18px",
