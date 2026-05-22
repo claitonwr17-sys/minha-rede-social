@@ -39,7 +39,7 @@ export default function Imagens() {
     try {
       const res = await fetch("https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/get_imagens");
       const data = await res.json();
-      setImagens(data.data);
+     setImagens(data.data || data || []);
     } catch (error) {
       console.log("Erro ao carregar feed:", error);
     }
