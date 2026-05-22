@@ -42,6 +42,7 @@ export async function POST(req) {
     return Response.json({
       url: resultado.secure_url,
     });
+
   } catch (erro) {
     console.log(erro);
 
