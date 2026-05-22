@@ -1,16 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 export default function Imagens() {
   const router = useRouter();
 
-  const imagens = [1];
+  // 📌 FEED REAL DO XANO
+  const [imagens, setImagens] = useState([]);
 
   const [likes, setLikes] = useState({});
   const [amei, setAmei] = useState({});
-  const [imagemSelecionada, setImagemSelecionada] = useState(null);
 
   function curtir(index) {
     setLikes((prev) => ({
@@ -25,16 +25,26 @@ export default function Imagens() {
       [index]: (prev[index] || 0) + 1,
     }));
   }
-  function darAmei(index) {
-    setAmei((prev) => ({
-      ...prev,
-      [index]: (prev[index] || 0) + 1,
-    }));
-  }
 
   function voltarHome() {
-  router.push("/feed");
-}
+    router.push("/feed");
+  }
+
+  // 🔥 CARREGAR FEED DO XANO (F5 FUNCIONA AQUI)
+  useEffect(() => {
+    carregarFeed();
+  }, []);
+
+  async function carregarFeed() {
+    try {
+      const res = await fetch("SUA_URL_DO_XANO/get_imagens");
+      const data = await res.json();
+      setImagens(data);
+    } catch (error) {
+      console.log("Erro ao carregar feed:", error);
+    }
+  }
+
   return (
     <div style={styles.page}>
       {/* SIDEBAR */}
@@ -42,8 +52,8 @@ export default function Imagens() {
         <div style={styles.logo}>📷 Conrad</div>
 
         <div style={styles.menu} onClick={() => router.push("/feed")}>
-  🏠 Home
-</div>
+          🏠 Home
+        </div>
 
         <div style={styles.menu} onClick={() => router.push("/ia")}>
           🤖 IA
@@ -67,7 +77,8 @@ export default function Imagens() {
         <h2 style={{ marginBottom: 20 }}>📷 Feed de Imagens</h2>
 
         {imagens.map((img, index) => (
-          <div key={index} style={styles.card}>
+          <div key={img.id || index} style={styles.card}>
+            
             {/* USUÁRIO */}
             <div style={styles.userInfo}>
               <img
@@ -87,49 +98,49 @@ export default function Imagens() {
               </div>
             </div>
 
-            {/* BOTÃO */}
-    <label style={styles.uploadButton}>
-  📸 Escolher imagem
+            {/* BOTÃO UPLOAD */}
+            <label style={styles.uploadButton}>
+              📸 Escolher imagem
 
-  <input
-    type="file"
-    hidden
-    onChange={async (e) => {
-     const arquivo = e.target.files?.[0];
+              <input
+                type="file"
+                hidden
+                onChange={async (e) => {
+                  const arquivo = e.target.files?.[0];
+                  if (!arquivo) return;
 
-      if (!arquivo) return;
+                  const formData = new FormData();
+                  formData.append("file", arquivo);
 
-      const formData = new FormData();
-      formData.append("file", arquivo);
+                  try {
+                    const resposta = await fetch("/api/upload", {
+                      method: "POST",
+                      body: formData,
+                    });
 
-      try {
-        const resposta = await fetch("/api/upload", {
-          method: "POST",
-          body: formData,
-        });
+                    const dados = await resposta.json();
 
-        const dados = await resposta.json();
+                    if (dados.url) {
+                      // opcional: aqui depois podemos salvar no Xano
+                      console.log("Upload:", dados.url);
+                    }
+                  } catch (erro) {
+                    console.log(erro);
+                  }
+                }}
+              />
+            </label>
 
-        if (dados.url) {
-          setImagemSelecionada(dados.url);
-        }
-      } catch (erro) {
-        console.log(erro);
-      }
-    }}
-  />
-</label>
-
-            {/* IMAGEM */}
+            {/* IMAGEM REAL DO XANO */}
             <div style={styles.imageBox}>
-              {imagemSelecionada ? (
+              {img["URL da imagem"] ? (
                 <img
-                  src={imagemSelecionada}
+                  src={img["URL da imagem"]}
                   alt="Post"
                   style={styles.postImage}
                 />
               ) : (
-                "🖼️ Imagem vazia"
+                "🖼️ Sem imagem"
               )}
             </div>
 
@@ -159,136 +170,3 @@ export default function Imagens() {
     </div>
   );
 }
-
-const styles = {
-  page: {
-    display: "flex",
-    backgroundColor: "#f0f2f5",
-    minHeight: "100vh",
-    fontFamily: "Inter, sans-serif",
-  },
-
-  /* SIDEBAR */
-  sidebar: {
-    width: 220,
-    backgroundColor: "white",
-    height: "100vh",
-    padding: 20,
-    borderRight: "1px solid #ddd",
-    position: "fixed",
-  },
-
-  logo: {
-    fontWeight: "bold",
-    fontSize: 18,
-    marginBottom: 30,
-  },
-
-  menu: {
-    padding: 12,
-    cursor: "pointer",
-    borderRadius: 8,
-    marginBottom: 10,
-    transition: "0.2s",
-  },
-
-  logout: {
-    marginTop: 20,
-    backgroundColor: "black",
-    color: "white",
-    border: "none",
-    padding: 10,
-    borderRadius: 10,
-    cursor: "pointer",
-    width: "100%",
-  },
-
-  /* FEED */
-  feedArea: {
-    marginLeft: 240,
-    paddingTop: 80,
-    width: "100%",
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-  },
-
-  card: {
-    backgroundColor: "white",
-    width: 500,
-    borderRadius: 16,
-    padding: 15,
-    marginBottom: 20,
-    boxShadow: "0 2px 6px rgba(0,0,0,0.05)",
-  },
-
-  /* USUÁRIO */
-  userInfo: {
-    display: "flex",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-
-  avatarImage: {
-    width: 45,
-    height: 45,
-    borderRadius: "50%",
-    objectFit: "cover",
-    marginRight: 12,
-  },
-
-  username: {
-    fontWeight: "bold",
-    fontSize: 15,
-  },
-
-  time: {
-    fontSize: 12,
-    color: "gray",
-  },
-
-  /* BOTÃO UPLOAD */
-  uploadButton: {
-    backgroundColor: "#000",
-    color: "#fff",
-    padding: "10px 14px",
-    borderRadius: 10,
-    cursor: "pointer",
-    display: "inline-block",
-    marginBottom: 12,
-    fontWeight: "bold",
-  },
-
-  /* IMAGEM */
-  imageBox: {
-    height: 280,
-    backgroundColor: "#ddd",
-    borderRadius: 12,
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 15,
-    overflow: "hidden",
-  },
-
-  postImage: {
-    width: "100%",
-    height: "100%",
-    objectFit: "cover",
-  },
-
-  /* AÇÕES */
-  actions: {
-    display: "flex",
-    justifyContent: "space-around",
-    alignItems: "center",
-  },
-
-  button: {
-    backgroundColor: "#f0f2f5",
-    border: "none",
-    padding: "10px 14px",
-    borderRadius: 10,
-    cursor: "pointer",
-  },
-};
