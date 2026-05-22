@@ -37,9 +37,9 @@ export default function Imagens() {
 
   async function carregarFeed() {
     try {
-      const res = await fetch("SUA_URL_DO_XANO/get_imagens");
+      const res = await fetch("https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/get_imagens");
       const data = await res.json();
-      setImagens(data);
+      setImagens(data.data);
     } catch (error) {
       console.log("Erro ao carregar feed:", error);
     }
