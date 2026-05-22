@@ -45,7 +45,7 @@ const resultado = await new Promise((resolve, reject) => {
   stream.end(buffer);
 });
 
-    const respostaXano = await fetch("SUA_URL_DO_XANO", {
+    const respostaXano = await fetch("https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/salvar_imagem", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
