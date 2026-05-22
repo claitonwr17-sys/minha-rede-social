@@ -76,7 +76,7 @@ export default function Imagens() {
       <div style={styles.feedArea}>
         <h2 style={{ marginBottom: 20 }}>📷 Feed de Imagens</h2>
 
-        {imagens.map((img, index) => (
+       {Array.isArray(imagens) && imagens.map((img, index) => (
           <div key={img.id || index} style={styles.card}>
             
             {/* USUÁRIO */}
