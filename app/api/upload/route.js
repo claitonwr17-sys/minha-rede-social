@@ -36,36 +36,54 @@ export async function POST(req) {
           (error, result) => {
             if (error) {
               reject(error);
-           } else {
-  resolve(result || {});
-}
+            } else {
+              resolve(result || {});
+            }
           }
         )
-      .end(buffer);
-});
+        .end(buffer);
+    });
 
-const respostaXano = await fetch("URL_REAL_DO_XANO", {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-  },
-  body: JSON.stringify({
-    URL_da_imagem: resultado?.secure_url,
-  }),
-});
+    const respostaXano = await fetch("SUA_URL_DO_XANO", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        URL_da_imagem: resultado?.secure_url,
+      }),
+    });
 
-if (!respostaXano.ok) {
-  const erroTexto = await respostaXano.text();
+    if (!respostaXano.ok) {
+      const erroTexto = await respostaXano.text();
 
-  console.log("ERRO XANO:", erroTexto);
+      console.log("ERRO XANO:", erroTexto);
 
-  return Response.json(
-    {
-      error: "Erro ao salvar no Xano",
-      detalhes: erroTexto,
-    },
-    {
-      status: 500,
+      return Response.json(
+        {
+          error: "Erro ao salvar no Xano",
+          detalhes: erroTexto,
+        },
+        {
+          status: 500,
+        }
+      );
     }
-  );
+
+    return Response.json({
+      url: resultado?.secure_url,
+    });
+
+  } catch (erro) {
+    console.error("ERRO COMPLETO:", erro);
+
+    return Response.json(
+      {
+        error: "Erro no upload",
+      },
+      {
+        status: 500,
+      }
+    );
+  }
 }
