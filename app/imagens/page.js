@@ -36,20 +36,20 @@ export default function Imagens() {
   }, []);
 
   async function carregarFeed() {
-    try {
-      const res = await fetch(
-        "https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/get_imagens"
-      );
+  try {
+    const res = await fetch(
+      "https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/get_imagens"
+    );
 
-      const data = await res.json();
+    const data = await res.json();
 
-      console.log("DADOS XANO:", data);
+    console.log("DADOS XANO:", data);
 
-      setImagens(data.data || data || []);
-    } catch (error) {
-      console.log("Erro ao carregar feed:", error);
-    }
+    setImagens(data || []);
+  } catch (error) {
+    console.log("Erro ao carregar feed:", error);
   }
+}
 
   return (
     <div style={styles.page}>
