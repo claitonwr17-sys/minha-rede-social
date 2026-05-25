@@ -30,16 +30,22 @@ export default function Imagens() {
     router.push("/feed");
   }
 
-  // 🔥 CARREGAR FEED DO XANO (F5 FUNCIONA AQUI)
+  // 🔥 CARREGAR FEED DO XANO
   useEffect(() => {
     carregarFeed();
   }, []);
 
   async function carregarFeed() {
     try {
-      const res = await fetch("https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/get_imagens");
+      const res = await fetch(
+        "https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/get_imagens"
+      );
+
       const data = await res.json();
-     setImagens(data.data || data || []);
+
+      console.log("DADOS XANO:", data);
+
+      setImagens(data.data || data || []);
     } catch (error) {
       console.log("Erro ao carregar feed:", error);
     }
@@ -76,126 +82,146 @@ export default function Imagens() {
       <div style={styles.feedArea}>
         <h2 style={{ marginBottom: 20 }}>📷 Feed de Imagens</h2>
 
-       {Array.isArray(imagens) && imagens.map((img, index) => (
-          <div key={img.id || index} style={styles.card}>
-            
-            {/* USUÁRIO */}
-            <div style={styles.userInfo}>
-              <img
-                src="/insta.png"
-                alt="Perfil"
-                style={styles.avatarImage}
-              />
+        {Array.isArray(imagens) &&
+          imagens.map((img, index) => {
+            console.log("OBJETO XANO:", img);
 
-              <div>
-                <div style={styles.username}>
-                  Claiton Wroblewski
+            return (
+              <div key={img.id || index} style={styles.card}>
+                {/* USUÁRIO */}
+                <div style={styles.userInfo}>
+                  <img
+                    src="/insta.png"
+                    alt="Perfil"
+                    style={styles.avatarImage}
+                  />
+
+                  <div>
+                    <div style={styles.username}>
+                      Claiton Wroblewski
+                    </div>
+
+                    <div style={styles.time}>
+                      Agora mesmo
+                    </div>
+                  </div>
                 </div>
 
-                <div style={styles.time}>
-                  Agora mesmo
+                {/* BOTÃO UPLOAD */}
+                <label style={styles.uploadButton}>
+                  📸 Escolher imagem
+
+                  <input
+                    type="file"
+                    hidden
+                    onChange={async (e) => {
+                      const arquivo = e.target.files?.[0];
+
+                      if (!arquivo) return;
+
+                      const formData = new FormData();
+                      formData.append("file", arquivo);
+
+                      try {
+                        // 🔥 UPLOAD CLOUDINARY
+                        const resposta = await fetch("/api/upload", {
+                          method: "POST",
+                          body: formData,
+                        });
+
+                        const dados = await resposta.json();
+
+                        console.log("Upload:", dados.url);
+
+                        if (dados.url) {
+
+                          // 🔥 SALVAR NO XANO
+                          await fetch(
+                            "https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/analisar_imagem",
+                            {
+                              method: "POST",
+                              headers: {
+                                "Content-Type": "application/json",
+                              },
+                              body: JSON.stringify({
+                                "URL da imagem": dados.url,
+                              }),
+                            }
+                          );
+
+                          // 🔥 MOSTRAR IMAGEM NA HORA
+                          setImagens((prev) => [
+                            {
+                              "URL da imagem": dados.url,
+                            },
+                            ...prev,
+                          ]);
+                        }
+                      } catch (erro) {
+                        console.log("Erro upload:", erro);
+                      }
+                    }}
+                  />
+                </label>
+
+                {/* IMAGEM */}
+                <div style={styles.imageBox}>
+                  {img.imagens?.length > 0 ? (
+                    <div style={styles.gridImages}>
+                      {img.imagens.map((url, i) => (
+                        <img
+                          key={i}
+                          src={url}
+                          alt="Post"
+                          style={styles.gridImg}
+                        />
+                      ))}
+                    </div>
+                  ) : img["URL da imagem"] ||
+                    img.url ||
+                    img.imagem ? (
+                    <img
+                      src={
+                        img["URL da imagem"] ||
+                        img.url ||
+                        img.imagem
+                      }
+                      alt="Post"
+                      style={styles.postImage}
+                    />
+                  ) : (
+                    "🖼️ Sem imagem"
+                  )}
+                </div>
+
+                {/* AÇÕES */}
+                <div style={styles.actions}>
+                  <button
+                    style={styles.button}
+                    onClick={() => curtir(index)}
+                  >
+                    👍🏿 Curtir {likes[index] || 0}
+                  </button>
+
+                  <button
+                    style={styles.button}
+                    onClick={() => darAmei(index)}
+                  >
+                    🖤 Amei {amei[index] || 0}
+                  </button>
+
+                  <button style={styles.button}>
+                    💬 Comentar
+                  </button>
                 </div>
               </div>
-            </div>
-
-            {/* BOTÃO UPLOAD */}
-            <label style={styles.uploadButton}>
-              📸 Escolher imagem
-
-              <input
-                type="file"
-                hidden
-                onChange={async (e) => {
-  const arquivo = e.target.files?.[0];
-  if (!arquivo) return;
-
-  const formData = new FormData();
-  formData.append("file", arquivo);
-
-  try {
-
-    const resposta = await fetch("/api/upload", {
-      method: "POST",
-      body: formData,
-    });
-
-    const dados = await resposta.json();
-
-    console.log("Upload:", dados.url);
-
-    if (dados.url) {
-
-      setImagens((prev) => [
-        {
-          url: dados.url,
-        },
-        ...prev,
-      ]);
-
-    }
-
-  } catch (erro) {
-    console.log(erro);
-  }
-}}
-              />
-            </label>
-
-           {/* IMAGEM REAL DO XANO */}
-<div style={styles.imageBox}>
-
-  {img.imagens?.length > 0 ? (
-    <div style={styles.gridImages}>
-      {img.imagens.map((url, i) => (
-        <img
-          key={i}
-          src={url}
-          alt="Post"
-          style={styles.gridImg}
-        />
-      ))}
-    </div>
-
-  ) : img["URL da imagem"] || img.url || img.imagem ? (
-
-    <img
-      src={img["URL da imagem"] || img.url || img.imagem}
-      alt="Post"
-      style={styles.postImage}
-    />
-
-  ) : (
-    "🖼️ Sem imagem"
-  )}
-
-</div>
-
-            {/* AÇÕES */}
-            <div style={styles.actions}>
-              <button
-                style={styles.button}
-                onClick={() => curtir(index)}
-              >
-                👍🏿 Curtir {likes[index] || 0}
-              </button>
-
-              <button
-                style={styles.button}
-                onClick={() => darAmei(index)}
-              >
-                🖤 Amei {amei[index] || 0}
-              </button>
-
-              <button style={styles.button}>
-                💬 Comentar
-              </button>
-            </div>
-          </div>
-        ))}
+            );
+          })}
       </div>
     </div>
   );
 }
+
 const styles = {
   page: {
     display: "flex",
@@ -302,6 +328,20 @@ const styles = {
   },
 
   postImage: {
+    width: "100%",
+    height: "100%",
+    objectFit: "cover",
+  },
+
+  gridImages: {
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr",
+    gap: 4,
+    width: "100%",
+    height: "100%",
+  },
+
+  gridImg: {
     width: "100%",
     height: "100%",
     objectFit: "cover",
