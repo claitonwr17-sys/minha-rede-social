@@ -136,18 +136,18 @@ export default function Imagens() {
                         if (dados.url) {
 
                           // 🔥 SALVAR NO XANO
-                          await fetch(
-                            "https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/analisar_imagem",
-                            {
-                              method: "POST",
-                              headers: {
-                                "Content-Type": "application/json",
-                              },
-                              body: JSON.stringify({
-                                "URL da imagem": dados.url,
-                              }),
-                            }
-                          );
+await fetch(
+  "https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/salvar_imagem",
+  {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      URL_da_imagem: dados.url,
+    }),
+  }
+);
 
                           // 🔥 MOSTRAR IMAGEM NA HORA
                           setImagens((prev) => [
