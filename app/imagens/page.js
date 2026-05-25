@@ -177,15 +177,18 @@ await fetch(
                         />
                       ))}
                     </div>
-                  ) : img["URL da imagem"] ||
-                    img.url ||
-                    img.imagem ? (
-                    <img
-                      src={
-                        img["URL da imagem"] ||
-                        img.url ||
-                        img.imagem
-                      }
+                 ) : img.image_url ||
+    img["URL da imagem"] ||
+    img.url ||
+    img.imagem ? (
+
+  <img
+    src={
+      img.image_url ||
+      img["URL da imagem"] ||
+      img.url ||
+      img.imagem
+    }
                       alt="Post"
                       style={styles.postImage}
                     />
