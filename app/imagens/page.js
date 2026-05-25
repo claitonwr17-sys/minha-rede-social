@@ -29,11 +29,10 @@ export default function Imagens() {
     router.push("/feed");
   }
 
-  // 🔥 CARREGAR FEED DO XANO
   useEffect(() => {
-    carregarFeed();
-  }, []);
-
+  carregarFeed();
+  // eslint-disable-next-line
+}, []);
   async function carregarFeed() {
     try {
       const res = await fetch(
@@ -44,7 +43,14 @@ export default function Imagens() {
 
       console.log("DADOS XANO:", data);
 
-      setImagens(data || []);
+    setImagens(
+  [...new Map(
+    (data || []).map(item => [
+      item.id || item["URL da imagem"],
+      item
+    ])
+  ).values()]
+);
     } catch (error) {
       console.log("Erro ao carregar feed:", error);
     }
