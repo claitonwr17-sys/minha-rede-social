@@ -165,38 +165,42 @@ await fetch(
                 </label>
 
                 {/* IMAGEM */}
-                <div style={styles.imageBox}>
-                  {img.imagens?.length > 0 ? (
-                    <div style={styles.gridImages}>
-                      {img.imagens.map((url, i) => (
-                        <img
-                          key={i}
-                          src={url}
-                          alt="Post"
-                          style={styles.gridImg}
-                        />
-                      ))}
-                    </div>
-                 ) : img.image_url ||
+<div style={styles.imageBox}>
+  {img.imagens?.length > 0 ? (
+
+    <div style={styles.gridImages}>
+      {img.imagens.map((url, i) => (
+        <img
+          key={i}
+          src={url}
+          alt="Post"
+          style={styles.gridImg}
+        />
+      ))}
+    </div>
+
+  ) : (
+    img.image_url ||
     img["URL da imagem"] ||
     img.url ||
-    img.imagem ? (
+    img.imagem
+  ) ? (
 
-  <img
-    src={
-      img.image_url ||
-      img["URL da imagem"] ||
-      img.url ||
-      img.imagem
-    }
-                      alt="Post"
-                      style={styles.postImage}
-                    />
-                  ) : (
-                    "🖼️ Sem imagem"
-                  )}
-                </div>
+    <img
+      src={
+        img.image_url ||
+        img["URL da imagem"] ||
+        img.url ||
+        img.imagem
+      }
+      alt="Post"
+      style={styles.postImage}
+    />
 
+  ) : (
+    "🖼️ Sem imagem"
+  )}
+</div>
                 {/* AÇÕES */}
                 <div style={styles.actions}>
                   <button
