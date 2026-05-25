@@ -43,14 +43,19 @@ const [enviando, setEnviando] = useState(false);
 
       console.log("DADOS XANO:", data);
 
-    setImagens(
-  [...new Map(
-    (data || []).map(item => [
-      item.id || item["URL da imagem"],
-      item
+    const imagensUnicas = [
+  ...new Map(
+    (data || []).map((item) => [
+      item.image_url ||
+      item["URL da imagem"] ||
+      item.url ||
+      item.imagem,
+      item,
     ])
-  ).values()]
-);
+  ).values(),
+];
+
+setImagens(imagensUnicas);
     } catch (error) {
       console.log("Erro ao carregar feed:", error);
     }
