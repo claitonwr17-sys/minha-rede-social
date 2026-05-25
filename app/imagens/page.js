@@ -4,12 +4,12 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 export default function Imagens() {
-  const router = useRouter();
+  const router = useRouter();  
 
-  // 📌 FEED REAL DO XANO
-  const [imagens, setImagens] = useState([]);
-  const [likes, setLikes] = useState({});
-  const [amei, setAmei] = useState({});
+const [imagens, setImagens] = useState([]);
+const [likes, setLikes] = useState({});
+const [amei, setAmei] = useState({});
+const [enviando, setEnviando] = useState(false);
 
   function curtir(index) {
     setLikes((prev) => ({
@@ -118,9 +118,14 @@ export default function Imagens() {
       <input
         type="file"
         hidden
-        onChange={async (e) => {
-          const arquivo = e.target.files?.[0];
+        
+       onChange={async (e) => {
 
+  if (enviando) return;
+
+  setEnviando(true);
+
+  const arquivo = e.target.files?.[0];
           if (!arquivo) return;
 
           const formData = new FormData();
@@ -154,8 +159,10 @@ export default function Imagens() {
               carregarFeed();
             }
           } catch (erro) {
-            console.log("Erro upload:", erro);
-          }
+  console.log("Erro upload:", erro);
+}
+
+setEnviando(false);
         }}
       />
     </label>
