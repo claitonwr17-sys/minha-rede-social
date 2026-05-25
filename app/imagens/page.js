@@ -118,12 +118,18 @@ export default function Imagens() {
                       body: formData,
                     });
 
-                    const dados = await resposta.json();
-
                     if (dados.url) {
-                      // opcional: aqui depois podemos salvar no Xano
-                      console.log("Upload:", dados.url);
-                    }
+
+  console.log("Upload:", dados.url);
+
+  setImagens((prev) => [
+    {
+      url: dados.url,
+    },
+    ...prev,
+  ]);
+
+}
                   } catch (erro) {
                     console.log(erro);
                   }
