@@ -106,34 +106,38 @@ export default function Imagens() {
                 type="file"
                 hidden
                 onChange={async (e) => {
-                  const arquivo = e.target.files?.[0];
-                  if (!arquivo) return;
+  const arquivo = e.target.files?.[0];
+  if (!arquivo) return;
 
-                  const formData = new FormData();
-                  formData.append("file", arquivo);
+  const formData = new FormData();
+  formData.append("file", arquivo);
 
-                  try {
-                    const resposta = await fetch("/api/upload", {
-                      method: "POST",
-                      body: formData,
-                    });
+  try {
 
-                    if (dados.url) {
+    const resposta = await fetch("/api/upload", {
+      method: "POST",
+      body: formData,
+    });
 
-  console.log("Upload:", dados.url);
+    const dados = await resposta.json();
 
-  setImagens((prev) => [
-    {
-      url: dados.url,
-    },
-    ...prev,
-  ]);
+    console.log("Upload:", dados.url);
 
-}
-                  } catch (erro) {
-                    console.log(erro);
-                  }
-                }}
+    if (dados.url) {
+
+      setImagens((prev) => [
+        {
+          url: dados.url,
+        },
+        ...prev,
+      ]);
+
+    }
+
+  } catch (erro) {
+    console.log(erro);
+  }
+}}
               />
             </label>
 
