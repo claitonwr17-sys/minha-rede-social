@@ -201,29 +201,30 @@ await fetch(
     "🖼️ Sem imagem"
   )}
 </div>
-                {/* AÇÕES */}
-                <div style={styles.actions}>
-                  <button
-                    style={styles.button}
-                    onClick={() => curtir(index)}
-                  >
-                    👍🏿 Curtir {likes[index] || 0}
-                  </button>
+                            {/* AÇÕES */}
+            <div style={styles.actions}>
+              <button
+                style={styles.button}
+                onClick={() => curtir(index)}
+              >
+                👍🏿 Curtir {likes[index] || 0}
+              </button>
 
-                  <button
-                    style={styles.button}
-                    onClick={() => darAmei(index)}
-                  >
-                    🖤 Amei {amei[index] || 0}
-                  </button>
+              <button
+                style={styles.button}
+                onClick={() => darAmei(index)}
+              >
+                🖤 Amei {amei[index] || 0}
+              </button>
 
-                  <button style={styles.button}>
-                    💬 Comentar
-                  </button>
-                </div>
-              </div>
-            );
-          })}
+              <button style={styles.button}>
+                💬 Comentar
+              </button>
+            </div>
+
+          </div>
+        );
+      })}
       </div>
     </div>
   );
