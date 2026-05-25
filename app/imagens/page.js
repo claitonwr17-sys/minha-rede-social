@@ -167,10 +167,28 @@ setEnviando(false);
       />
     </label>
 
-    {/* BOX VAZIO */}
-    <div style={styles.imageBox}>
-      🖼️ Sem imagem
-    </div>
+   {/* IMAGEM */}
+<div style={styles.imageBox}>
+  {imagens[0]?.image_url ||
+  imagens[0]?.["URL da imagem"] ||
+  imagens[0]?.url ||
+  imagens[0]?.imagem ? (
+
+    <img
+      src={
+        imagens[0]?.image_url ||
+        imagens[0]?.["URL da imagem"] ||
+        imagens[0]?.url ||
+        imagens[0]?.imagem
+      }
+      alt="Post"
+      style={styles.postImage}
+    />
+
+  ) : (
+    "🖼️ Sem imagem"
+  )}
+</div>
 
     {/* AÇÕES */}
     <div style={styles.actions}>
@@ -191,7 +209,7 @@ setEnviando(false);
 
   {/* POSTS */}
   {Array.isArray(imagens) &&
-    imagens.map((img, index) => {
+    imagens.slice(1).map((img, index) => {
       console.log("OBJETO XANO:", img);
 
       return (
