@@ -4,25 +4,51 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 export default function Imagens() {
-  const router = useRouter();  
+  const router = useRouter();
 
-const [imagens, setImagens] = useState([]);
-const [likes, setLikes] = useState({});
-const [amei, setAmei] = useState({});
-const [enviando, setEnviando] = useState(false);
+  const [imagens, setImagens] = useState([]);
+  const [enviando, setEnviando] = useState(false);
 
-  function curtir(index) {
-    setLikes((prev) => ({
-      ...prev,
-      [index]: (prev[index] || 0) + 1,
-    }));
+  async function curtir(post) {
+    try {
+      await fetch(
+        "https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/curtir_imagem",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            id: post.id,
+          }),
+        }
+      );
+
+      carregarFeed();
+    } catch (error) {
+      console.log("Erro ao curtir:", error);
+    }
   }
 
-  function darAmei(index) {
-    setAmei((prev) => ({
-      ...prev,
-      [index]: (prev[index] || 0) + 1,
-    }));
+  async function darAmei(post) {
+    try {
+      await fetch(
+        "https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/amei_imagem",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            id: post.id,
+          }),
+        }
+      );
+
+      carregarFeed();
+    } catch (error) {
+      console.log("Erro ao amei:", error);
+    }
   }
 
   function voltarHome() {
@@ -30,9 +56,9 @@ const [enviando, setEnviando] = useState(false);
   }
 
   useEffect(() => {
-  carregarFeed();
-  // eslint-disable-next-line
-}, []);
+    carregarFeed();
+  }, []);
+
   async function carregarFeed() {
     try {
       const res = await fetch(
@@ -43,19 +69,19 @@ const [enviando, setEnviando] = useState(false);
 
       console.log("DADOS XANO:", data);
 
-    const imagensUnicas = [
-  ...new Map(
-    (data || []).map((item) => [
-      item.image_url ||
-      item["URL da imagem"] ||
-      item.url ||
-      item.imagem,
-      item,
-    ])
-  ).values(),
-];
+      const imagensUnicas = [
+        ...new Map(
+          (data || []).map((item) => [
+            item.image_url ||
+              item["URL da imagem"] ||
+              item.url ||
+              item.imagem,
+            item,
+          ])
+        ).values(),
+      ];
 
-setImagens(imagensUnicas);
+      setImagens(imagensUnicas);
     } catch (error) {
       console.log("Erro ao carregar feed:", error);
     }
@@ -88,140 +114,15 @@ setImagens(imagensUnicas);
         </button>
       </div>
 
-     {/* FEED */}
-<div style={styles.feedArea}>
-  <h2 style={{ marginBottom: 20 }}>
-    📷 Feed de Imagens
-  </h2>
+      {/* FEED */}
+      <div style={styles.feedArea}>
+        <h2 style={{ marginBottom: 20 }}>
+          📷 Feed de Imagens
+        </h2>
 
-  {/* CARD FIXO */}
-  <div style={styles.card}>
+        {/* CARD FIXO */}
+        <div style={styles.card}>
 
-    {/* USUÁRIO */}
-    <div style={styles.userInfo}>
-      <img
-        src="/insta.png"
-        alt="Perfil"
-        style={styles.avatarImage}
-      />
-
-      <div>
-        <div style={styles.username}>
-          Claiton Wroblewski
-        </div>
-
-        <div style={styles.time}>
-          Agora mesmo
-        </div>
-      </div>
-    </div>
-
-    {/* BOTÃO UPLOAD */}
-    <label style={styles.uploadButton}>
-      📸 Escolher imagem
-
-      <input
-        type="file"
-        hidden
-        
-       onChange={async (e) => {
-
-  if (enviando) return;
-
-  setEnviando(true);
-
-  const arquivo = e.target.files?.[0];
-          if (!arquivo) return;
-
-          const formData = new FormData();
-          formData.append("file", arquivo);
-
-          try {
-            const resposta = await fetch("/api/upload", {
-              method: "POST",
-              body: formData,
-            });
-
-            const dados = await resposta.json();
-
-            console.log("Upload:", dados.url);
-
-            if (dados.url) {
-
-              await fetch(
-                "https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/salvar_imagem",
-                {
-                  method: "POST",
-                  headers: {
-                    "Content-Type": "application/json",
-                  },
-                  body: JSON.stringify({
-                    URL_da_imagem: dados.url,
-                  }),
-                }
-              );
-
-              carregarFeed();
-            }
-          } catch (erro) {
-  console.log("Erro upload:", erro);
-}
-
-setEnviando(false);
-        }}
-      />
-    </label>
-
-   {/* IMAGEM */}
-<div style={styles.imageBox}>
-  {imagens[0]?.image_url ||
-  imagens[0]?.["URL da imagem"] ||
-  imagens[0]?.url ||
-  imagens[0]?.imagem ? (
-
-    <img
-      src={
-        imagens[0]?.image_url ||
-        imagens[0]?.["URL da imagem"] ||
-        imagens[0]?.url ||
-        imagens[0]?.imagem
-      }
-      alt="Post"
-      style={styles.postImage}
-    />
-
-  ) : (
-    "🖼️ Sem imagem"
-  )}
-</div>
-
-    {/* AÇÕES */}
-    <div style={styles.actions}>
-      <button style={styles.button}>
-        👍🏿 Curtir 0
-      </button>
-
-      <button style={styles.button}>
-        🖤 Amei 0
-      </button>
-
-      <button style={styles.button}>
-        💬 Comentar
-      </button>
-    </div>
-
-  </div>
-
-  {/* POSTS */}
-  {Array.isArray(imagens) &&
-    imagens.slice(1).map((img, index) => {
-      console.log("OBJETO XANO:", img);
-
-      return (
-        <div
-          key={img.id || index}
-          style={styles.card}
-        >
           {/* USUÁRIO */}
           <div style={styles.userInfo}>
             <img
@@ -241,33 +142,86 @@ setEnviando(false);
             </div>
           </div>
 
+          {/* BOTÃO UPLOAD */}
+          <label style={styles.uploadButton}>
+            📸 Escolher imagem
+
+            <input
+              type="file"
+              hidden
+              onChange={async (e) => {
+
+                if (enviando) return;
+
+                setEnviando(true);
+
+                const arquivo = e.target.files?.[0];
+
+                if (!arquivo) {
+                  setEnviando(false);
+                  return;
+                }
+
+                const formData = new FormData();
+                formData.append("file", arquivo);
+
+                try {
+                  const resposta = await fetch("/api/upload", {
+                    method: "POST",
+                    body: formData,
+                  });
+
+                  const dados = await resposta.json();
+
+                  console.log("Upload:", dados.url);
+
+                  if (dados.url) {
+                    await fetch(
+                      "https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/salvar_imagem",
+                      {
+                        method: "POST",
+                        headers: {
+                          "Content-Type": "application/json",
+                        },
+                        body: JSON.stringify({
+                          URL_da_imagem: dados.url,
+                          curtir: 0,
+                          amei: 0,
+                          comentários: [],
+                        }),
+                      }
+                    );
+
+                    carregarFeed();
+                  }
+
+                } catch (erro) {
+                  console.log("Erro upload:", erro);
+                }
+
+                setEnviando(false);
+              }}
+            />
+          </label>
+
           {/* IMAGEM */}
           <div style={styles.imageBox}>
-            {img.imagens?.length > 0 ? (
-              <div style={styles.gridImages}>
-                {img.imagens.map((url, i) => (
-                  <img
-                    key={i}
-                    src={url}
-                    alt="Post"
-                    style={styles.gridImg}
-                  />
-                ))}
-              </div>
-            ) : img.image_url ||
-              img["URL da imagem"] ||
-              img.url ||
-              img.imagem ? (
+            {imagens[0]?.image_url ||
+            imagens[0]?.["URL da imagem"] ||
+            imagens[0]?.url ||
+            imagens[0]?.imagem ? (
+
               <img
                 src={
-                  img.image_url ||
-                  img["URL da imagem"] ||
-                  img.url ||
-                  img.imagem
+                  imagens[0]?.image_url ||
+                  imagens[0]?.["URL da imagem"] ||
+                  imagens[0]?.url ||
+                  imagens[0]?.imagem
                 }
                 alt="Post"
                 style={styles.postImage}
               />
+
             ) : (
               "🖼️ Sem imagem"
             )}
@@ -275,30 +229,126 @@ setEnviando(false);
 
           {/* AÇÕES */}
           <div style={styles.actions}>
+
             <button
               style={styles.button}
-              onClick={() => curtir(index)}
+              onClick={() => curtir(imagens[0])}
             >
-              👍🏿 Curtir {likes[index] || 0}
+              👍🏿 Curtir {imagens[0]?.curtir || 0}
             </button>
 
             <button
               style={styles.button}
-              onClick={() => darAmei(index)}
+              onClick={() => darAmei(imagens[0])}
             >
-              🖤 Amei {amei[index] || 0}
+              🖤 Amei {imagens[0]?.amei || 0}
             </button>
 
             <button style={styles.button}>
               💬 Comentar
             </button>
+
           </div>
         </div>
-      );
-    })}
-</div>
-</div>
-);
+
+        {/* POSTS */}
+        {Array.isArray(imagens) &&
+          imagens.slice(1).map((img, index) => {
+
+            console.log("OBJETO XANO:", img);
+
+            return (
+              <div
+                key={img.id || index}
+                style={styles.card}
+              >
+
+                {/* USUÁRIO */}
+                <div style={styles.userInfo}>
+                  <img
+                    src="/insta.png"
+                    alt="Perfil"
+                    style={styles.avatarImage}
+                  />
+
+                  <div>
+                    <div style={styles.username}>
+                      Claiton Wroblewski
+                    </div>
+
+                    <div style={styles.time}>
+                      Agora mesmo
+                    </div>
+                  </div>
+                </div>
+
+                {/* IMAGEM */}
+                <div style={styles.imageBox}>
+
+                  {img.imagens?.length > 0 ? (
+
+                    <div style={styles.gridImages}>
+                      {img.imagens.map((url, i) => (
+                        <img
+                          key={i}
+                          src={url}
+                          alt="Post"
+                          style={styles.gridImg}
+                        />
+                      ))}
+                    </div>
+
+                  ) : img.image_url ||
+                    img["URL da imagem"] ||
+                    img.url ||
+                    img.imagem ? (
+
+                    <img
+                      src={
+                        img.image_url ||
+                        img["URL da imagem"] ||
+                        img.url ||
+                        img.imagem
+                      }
+                      alt="Post"
+                      style={styles.postImage}
+                    />
+
+                  ) : (
+                    "🖼️ Sem imagem"
+                  )}
+
+                </div>
+
+                {/* AÇÕES */}
+                <div style={styles.actions}>
+
+                  <button
+                    style={styles.button}
+                    onClick={() => curtir(img)}
+                  >
+                    👍🏿 Curtir {img.curtir || 0}
+                  </button>
+
+                  <button
+                    style={styles.button}
+                    onClick={() => darAmei(img)}
+                  >
+                    🖤 Amei {img.amei || 0}
+                  </button>
+
+                  <button style={styles.button}>
+                    💬 Comentar
+                  </button>
+
+                </div>
+
+              </div>
+            );
+          })}
+      </div>
+    </div>
+  );
 }
 
 const styles = {
