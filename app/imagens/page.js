@@ -62,9 +62,12 @@ export default function Imagens() {
     }
   }
 
- async function comentar(post, comentarioTexto) {
+ async function comentar(post) {
   try {
-    if (!comentarioTexto.trim()) return;
+
+    if (!novoComentario || !novoComentario.trim()) {
+      return;
+    }
 
     const comentariosAtuais =
       post.comentarios || [];
@@ -84,11 +87,13 @@ export default function Imagens() {
 
           comentarios: [
             ...comentariosAtuais,
-            comentarioTexto,
+            novoComentario.trim(),
           ],
         }),
       }
     );
+
+    setNovoComentario("");
 
     carregarFeed();
 
