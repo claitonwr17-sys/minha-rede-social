@@ -245,14 +245,14 @@ export default function Imagens() {
                         "application/json",
                     },
 
-                    body: JSON.stringify({
-                      URL_da_imagem:
-                        dados.url,
+                   body: JSON.stringify({
+  "URL da imagem":
+    dados.url,
 
-                      curtir: 0,
-                      amei: 0,
-                      comentarios: [],
-                    }),
+  curtir: 0,
+  amei: 0,
+  comentarios: [],
+}),
                   }
                 );
 
