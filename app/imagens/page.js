@@ -187,95 +187,106 @@ export default function Imagens() {
 
       </div>
 
-      {/* FEED */}
-      <div style={styles.feedArea}>
+     {/* FEED */}
+<div style={styles.feedArea}>
 
-        <h2 style={{ marginBottom: 20 }}>
-          📷 Feed de Imagens
-        </h2>
+  {/* CARD PERFIL */}
+  <div style={styles.profileCard}>
 
-        {/* BOTÃO UPLOAD */}
-        <label style={styles.uploadButton}>
+    <img
+      src="/insta.png"
+      alt="Perfil"
+      style={styles.profileImage}
+    />
 
-          📸 Escolher imagem
+    <div style={styles.profileName}>
+      Claiton Wroblewski
+    </div>
 
-          <input
-            type="file"
-            hidden
-            onChange={async (e) => {
+    {/* BOTÃO UPLOAD */}
+    <label style={styles.uploadButton}>
 
-              if (enviando) return;
+      📸 Escolher imagem
 
-              setEnviando(true);
+      <input
+        type="file"
+        hidden
+        onChange={async (e) => {
 
-              const arquivo =
-                e.target.files?.[0];
+          if (enviando) return;
 
-              if (!arquivo) {
-                setEnviando(false);
-                return;
-              }
+          setEnviando(true);
 
-              const formData =
-                new FormData();
+          const arquivo =
+            e.target.files?.[0];
 
-              formData.append(
-                "file",
-                arquivo
+          if (!arquivo) {
+            setEnviando(false);
+            return;
+          }
+
+          const formData =
+            new FormData();
+
+          formData.append(
+            "file",
+            arquivo
+          );
+
+          try {
+
+            const resposta =
+              await fetch(
+                "/api/upload",
+                {
+                  method: "POST",
+                  body: formData,
+                }
               );
 
-              try {
+            const dados =
+              await resposta.json();
 
-                const resposta =
-                  await fetch(
-                    "/api/upload",
-                    {
-                      method: "POST",
-                      body: formData,
-                    }
-                  );
+            if (dados.url) {
 
-                const dados =
-                  await resposta.json();
+              await fetch(
+                "https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/salvar_imagem",
+                {
+                  method: "POST",
 
-                if (dados.url) {
+                  headers: {
+                    "Content-Type":
+                      "application/json",
+                  },
 
-                  await fetch(
-                    "https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/salvar_imagem",
-                    {
-                      method: "POST",
+                  body: JSON.stringify({
+                    "URL da imagem":
+                      dados.url,
 
-                      headers: {
-                        "Content-Type":
-                          "application/json",
-                      },
-
-                      body: JSON.stringify({
-                        "URL da imagem":
-                          dados.url,
-
-                        curtir: 0,
-                        amei: 0,
-                        comentarios: [],
-                      }),
-                    }
-                  );
-
-                  carregarFeed();
+                    curtir: 0,
+                    amei: 0,
+                    comentarios: [],
+                  }),
                 }
+              );
 
-              } catch (erro) {
-                console.log(
-                  "Erro upload:",
-                  erro
-                );
-              }
+              carregarFeed();
+            }
 
-              setEnviando(false);
-            }}
-          />
+          } catch (erro) {
+            console.log(
+              "Erro upload:",
+              erro
+            );
+          }
 
-        </label>
+          setEnviando(false);
+        }}
+      />
+
+    </label>
+
+  </div>
 
         {/* POSTS */}
         {Array.isArray(imagens) &&
@@ -552,9 +563,35 @@ const styles = {
     padding: 8,
     borderRadius: 8,
     marginBottom: 5,
-  },
+  }, 
 
-  commentBox: {
-    marginTop: 10,
-  },
+profileCard: {
+  backgroundColor: "white",
+  width: 500,
+  borderRadius: 16,
+  padding: 20,
+  marginBottom: 20,
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "flex-start",
+  boxShadow: "0 2px 6px rgba(0,0,0,0.05)",
+},
+
+profileImage: {
+  width: 60,
+  height: 60,
+  borderRadius: "50%",
+  objectFit: "cover",
+  marginBottom: 10,
+},
+
+profileName: {
+  fontWeight: "bold",
+  fontSize: 18,
+  marginBottom: 15,
+},
+
+commentBox: {
+  marginTop: 10,
+},
 };
