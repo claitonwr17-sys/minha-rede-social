@@ -62,41 +62,40 @@ export default function Imagens() {
     }
   }
 
-  async function comentar(post) {
-    try {
+ async function comentar(post, comentarioTexto) {
+  try {
+    if (!comentarioTexto.trim()) return;
 
-      const comentariosAtuais =
-        post.comentarios || [];
+    const comentariosAtuais =
+      post.comentarios || [];
 
-      await fetch(
-        "https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/Reagir_a_iamgens",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
+    await fetch(
+      "https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/Reagir_a_iamgens",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
 
-          body: JSON.stringify({
-            post_id: post.id,
-            curtir: post.curtir || 0,
-            amei: post.amei || 0,
+        body: JSON.stringify({
+          post_id: post.id,
+          curtir: post.curtir || 0,
+          amei: post.amei || 0,
 
-            comentarios: [
-              ...comentariosAtuais,
-              novoComentario,
-            ],
-          }),
-        }
-      );
+          comentarios: [
+            ...comentariosAtuais,
+            comentarioTexto,
+          ],
+        }),
+      }
+    );
 
-      setNovoComentario("");
+    carregarFeed();
 
-      carregarFeed();
-
-    } catch (error) {
-      console.log("Erro ao comentar:", error);
-    }
+  } catch (error) {
+    console.log("Erro ao comentar:", error);
   }
+}
 
   function voltarHome() {
     router.push("/feed");
@@ -359,16 +358,16 @@ export default function Imagens() {
                   <div style={styles.commentArea}>
 
                     <input
-                      type="text"
-                      placeholder="Digite um comentário..."
-                      value={novoComentario}
-                      onChange={(e) =>
-                        setNovoComentario(
-                          e.target.value
-                        )
-                      }
-                      style={styles.input}
-                    />
+  type="text"
+  placeholder="Digite um comentário..."
+  value={novoComentario}
+  onChange={(e) =>
+    setNovoComentario(
+      e.target.value
+    )
+  }
+  style={styles.input}
+/>
 
                     <button
                       style={styles.button}
