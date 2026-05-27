@@ -10,6 +10,9 @@ export default function Imagens() {
   const [enviando, setEnviando] = useState(false);
   const [novoComentario, setNovoComentario] = useState("");
 
+  const [postSelecionado, setPostSelecionado] = useState(null);
+  const [comentariosAberto, setComentariosAberto] = useState(false);
+
   async function curtir(post) {
     try {
       await fetch(
@@ -56,7 +59,7 @@ export default function Imagens() {
 
   async function comentar(post) {
     try {
-      if (!novoComentario || !novoComentario.trim()) return;
+      if (!novoComentario.trim()) return;
 
       const comentariosAtuais = post.comentarios || [];
 
@@ -144,155 +147,97 @@ export default function Imagens() {
 
       {/* FEED */}
       <div style={styles.feedArea}>
-        {Array.isArray(imagens) &&
-          imagens.map((img, index) => (
-            <div key={img.id || index} style={styles.card}>
-              
-              {/* USUÁRIO */}
-              <div style={styles.userInfo}>
-                <img
-                  src="/insta.png"
-                  alt="Perfil"
-                  style={styles.avatarImage}
-                />
-
-                <div>
-                  <div style={styles.username}>
-                    Claiton Wroblewski
-                  </div>
-                  <div style={styles.time}>Agora mesmo</div>
-                </div>
-              </div>
-
-              {/* BOTÃO UPLOAD (AGORA DENTRO DO POST) */}
-              <label style={styles.uploadButton}>
-                📸 Escolher imagem
-                <input
-                  type="file"
-                  hidden
-                  onChange={async (e) => {
-                    if (enviando) return;
-                    setEnviando(true);
-
-                    const arquivo = e.target.files?.[0];
-                    if (!arquivo) {
-                      setEnviando(false);
-                      return;
-                    }
-
-                    const formData = new FormData();
-                    formData.append("file", arquivo);
-
-                    try {
-                      const resposta = await fetch("/api/upload", {
-                        method: "POST",
-                        body: formData,
-                      });
-
-                      const dados = await resposta.json();
-
-                      if (dados.url) {
-                        await fetch(
-                          "https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/salvar_imagem",
-                          {
-                            method: "POST",
-                            headers: {
-                              "Content-Type": "application/json",
-                            },
-                            body: JSON.stringify({
-                              "URL da imagem": dados.url,
-                              curtir: 0,
-                              amei: 0,
-                              comentarios: [],
-                            }),
-                          }
-                        );
-
-                        carregarFeed();
-                      }
-                    } catch (erro) {
-                      console.log("Erro upload:", erro);
-                    }
-
-                    setEnviando(false);
-                  }}
-                />
-              </label>
-
-              {/* IMAGEM */}
-              <div style={styles.imageBox}>
-                {img.image_url ||
-                img["URL da imagem"] ||
-                img.url ||
-                img.imagem ? (
-                  <img
-                    src={
-                      img.image_url ||
-                      img["URL da imagem"] ||
-                      img.url ||
-                      img.imagem
-                    }
-                    style={styles.postImage}
-                  />
-                ) : (
-                  "🖼️ Sem imagem"
-                )}
-              </div>
-
-              {/* AÇÕES */}
-              <div style={styles.actions}>
-                <button
-                  style={styles.button}
-                  onClick={() => curtir(img)}
-                >
-                  👍🏿 Curtir {img.curtir || 0}
-                </button>
-
-                <button
-                  style={styles.button}
-                  onClick={() => darAmei(img)}
-                >
-                  🖤 Amei {img.amei || 0}
-                </button>
-
-                <button style={styles.button}>💬</button>
-              </div>
-
-              {/* COMENTÁRIOS */}
-              <div style={styles.commentBox}>
-                <div style={styles.commentArea}>
-                  <input
-                    type="text"
-                    placeholder="Digite um comentário..."
-                    value={novoComentario}
-                    onChange={(e) =>
-                      setNovoComentario(e.target.value)
-                    }
-                    style={styles.input}
-                  />
-
-                  <button
-                    style={styles.button}
-                    onClick={() => comentar(img)}
-                  >
-                    Enviar
-                  </button>
-                </div>
-
-                <div style={{ marginTop: 10 }}>
-                  {img.comentarios?.map((comentario, i) => (
-                    <div key={i} style={styles.comment}>
-                      💬 {comentario}
-                    </div>
-                  ))}
-                </div>
+        {imagens.map((img, index) => (
+          <div key={img.id || index} style={styles.card}>
+            
+            {/* USUÁRIO */}
+            <div style={styles.userInfo}>
+              <img src="/insta.png" style={styles.avatarImage} />
+              <div>
+                <div style={styles.username}>Claiton Wroblewski</div>
+                <div style={styles.time}>Agora mesmo</div>
               </div>
             </div>
-          ))}
+
+            {/* IMAGEM */}
+            <div style={styles.imageBox}>
+              <img
+                src={
+                  img.image_url ||
+                  img["URL da imagem"] ||
+                  img.url ||
+                  img.imagem
+                }
+                style={styles.postImage}
+              />
+            </div>
+
+            {/* AÇÕES */}
+            <div style={styles.actions}>
+              <button onClick={() => curtir(img)} style={styles.button}>
+                👍 Curtir {img.curtir || 0}
+              </button>
+
+              <button onClick={() => darAmei(img)} style={styles.button}>
+                🖤 Amei {img.amei || 0}
+              </button>
+
+              <button
+                style={styles.button}
+                onClick={() => {
+                  setPostSelecionado(img);
+                  setComentariosAberto(true);
+                }}
+              >
+                💬 {img.comentarios?.length || 0}
+              </button>
+            </div>
+          </div>
+        ))}
       </div>
+
+      {/* MODAL COMENTÁRIOS */}
+      {comentariosAberto && postSelecionado && (
+        <div style={styles.modalOverlay}>
+          <div style={styles.modal}>
+            <div style={styles.modalHeader}>
+              <h3>Comentários</h3>
+              <button onClick={() => setComentariosAberto(false)}>
+                X
+              </button>
+            </div>
+
+            <div>
+              {postSelecionado.comentarios?.map((c, i) => (
+                <div key={i} style={styles.comment}>
+                  💬 {c}
+                </div>
+              ))}
+            </div>
+
+            <div style={styles.commentArea}>
+              <input
+                value={novoComentario}
+                onChange={(e) => setNovoComentario(e.target.value)}
+                style={styles.input}
+                placeholder="Escreva um comentário..."
+              />
+
+              <button
+                style={styles.button}
+                onClick={() => comentar(postSelecionado)}
+              >
+                Enviar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
+/* ================= STYLES ================= */
 
 const styles = {
   page: {
@@ -310,26 +255,18 @@ const styles = {
     position: "fixed",
   },
   logo: { fontWeight: "bold", fontSize: 18, marginBottom: 30 },
-  menu: {
-    padding: 12,
-    cursor: "pointer",
-    borderRadius: 8,
-    marginBottom: 10,
-  },
+  menu: { padding: 12, cursor: "pointer", marginBottom: 10 },
   logout: {
     marginTop: 20,
     backgroundColor: "black",
     color: "white",
-    border: "none",
     padding: 10,
     borderRadius: 10,
-    cursor: "pointer",
     width: "100%",
   },
   feedArea: {
     marginLeft: 240,
     paddingTop: 80,
-    width: "100%",
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
@@ -340,49 +277,47 @@ const styles = {
     borderRadius: 16,
     padding: 15,
     marginBottom: 20,
-    boxShadow: "0 2px 6px rgba(0,0,0,0.05)",
   },
-  userInfo: { display: "flex", alignItems: "center", marginBottom: 12 },
-  avatarImage: {
-    width: 45,
-    height: 45,
-    borderRadius: "50%",
-    marginRight: 12,
-  },
-  username: { fontWeight: "bold", fontSize: 15 },
+  userInfo: { display: "flex", marginBottom: 10 },
+  avatarImage: { width: 40, height: 40, borderRadius: "50%" },
+  username: { fontWeight: "bold" },
   time: { fontSize: 12, color: "gray" },
-  uploadButton: {
-    backgroundColor: "#000",
-    color: "#fff",
-    padding: "10px 14px",
-    borderRadius: 10,
-    cursor: "pointer",
-    display: "inline-block",
-    marginBottom: 15,
-    fontWeight: "bold",
-  },
-  imageBox: {
-    height: 280,
-    backgroundColor: "#ddd",
-    borderRadius: 12,
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 15,
-    overflow: "hidden",
-  },
+  imageBox: { height: 280, overflow: "hidden" },
   postImage: { width: "100%", height: "100%", objectFit: "cover" },
-  actions: {
-    display: "flex",
-    justifyContent: "space-around",
-    marginBottom: 15,
-  },
+  actions: { display: "flex", justifyContent: "space-around" },
   button: {
     backgroundColor: "#f0f2f5",
-    border: "none",
-    padding: "10px 14px",
+    padding: 10,
     borderRadius: 10,
-    cursor: "pointer",
+    border: "none",
+  },
+  modalOverlay: {
+    position: "fixed",
+    inset: 0,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    display: "flex",
+    alignItems: "flex-end",
+    justifyContent: "center",
+  },
+  modal: {
+    backgroundColor: "white",
+    width: "100%",
+    maxWidth: 500,
+    height: "70vh",
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+  },
+  modalHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    marginBottom: 10,
+  },
+  comment: {
+    backgroundColor: "#f0f2f5",
+    padding: 8,
+    borderRadius: 8,
+    marginBottom: 5,
   },
   commentArea: {
     display: "flex",
@@ -394,11 +329,5 @@ const styles = {
     padding: 10,
     borderRadius: 10,
     border: "1px solid #ccc",
-  },
-  comment: {
-    backgroundColor: "#f0f2f5",
-    padding: 8,
-    borderRadius: 8,
-    marginBottom: 5,
   },
 };
