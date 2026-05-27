@@ -21,7 +21,7 @@ export default function Imagens() {
           },
 
           body: JSON.stringify({
-            post_id:post.id,
+            post_id: post.id,
             curtir: (post.curtir || 0) + 1,
             amei: post.amei || 0,
             comentarios: post.comentarios || [],
@@ -108,6 +108,7 @@ export default function Imagens() {
 
   async function carregarFeed() {
     try {
+
       const res = await fetch(
         "https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/get_imagens"
       );
@@ -120,9 +121,9 @@ export default function Imagens() {
         ...new Map(
           (data || []).map((item) => [
             item.image_url ||
-              item["URL da imagem"] ||
-              item.url ||
-              item.imagem,
+            item["URL da imagem"] ||
+            item.url ||
+            item.imagem,
             item,
           ])
         ).values(),
@@ -136,281 +137,271 @@ export default function Imagens() {
   }
 
   return (
-  <div style={styles.page}>
+    <div style={styles.page}>
 
-    {/* SIDEBAR */}
-    <div style={styles.sidebar}>
+      {/* SIDEBAR */}
+      <div style={styles.sidebar}>
 
-      <div style={styles.logo}>
-        📷 Conrad
+        <div style={styles.logo}>
+          📷 Conrad
+        </div>
+
+        <div
+          style={styles.menu}
+          onClick={() => router.push("/feed")}
+        >
+          🏠 Home
+        </div>
+
+        <div
+          style={styles.menu}
+          onClick={() => router.push("/ia")}
+        >
+          🤖 IA
+        </div>
+
+        <div
+          style={styles.menu}
+          onClick={() => router.push("/feed")}
+        >
+          📰 Feed
+        </div>
+
+        <div
+          style={styles.menu}
+          onClick={() => router.push("/perfil")}
+        >
+          👤 Perfil
+        </div>
+
+        <button
+          style={styles.logout}
+          onClick={voltarHome}
+        >
+          Sair
+        </button>
+
       </div>
 
-      <div
-        style={styles.menu}
-        onClick={() => router.push("/feed")}
-      >
-        🏠 Home
-      </div>
+      {/* FEED */}
+      <div style={styles.feedArea}>
 
-      <div
-        style={styles.menu}
-        onClick={() => router.push("/ia")}
-      >
-        🤖 IA
-      </div>
+        <h2 style={{ marginBottom: 20 }}>
+          📷 Feed de Imagens
+        </h2>
 
-      <div
-        style={styles.menu}
-        onClick={() => router.push("/feed")}
-      >
-        📰 Feed
-      </div>
+        {/* BOTÃO UPLOAD */}
+        <label style={styles.uploadButton}>
 
-      <div
-        style={styles.menu}
-        onClick={() => router.push("/perfil")}
-      >
-        👤 Perfil
-      </div>
+          📸 Escolher imagem
 
-      <button
-        style={styles.logout}
-        onClick={voltarHome}
-      >
-        Sair
-      </button>
+          <input
+            type="file"
+            hidden
+            onChange={async (e) => {
 
-    </div>
+              if (enviando) return;
 
-    {/* FEED */}
-    <div style={styles.feedArea}>
+              setEnviando(true);
 
-      <h2 style={{ marginBottom: 20 }}>
-        📷 Feed de Imagens
-      </h2>
+              const arquivo =
+                e.target.files?.[0];
 
-      {/* BOTÃO UPLOAD FIXO */}
-      <label style={styles.uploadButton}>
-
-        📸 Escolher imagem
-
-        <input
-          type="file"
-          hidden
-          onChange={async (e) => {
-
-            if (enviando) return;
-
-            setEnviando(true);
-
-            const arquivo =
-              e.target.files?.[0];
-
-            if (!arquivo) {
-              setEnviando(false);
-              return;
-            }
-
-            const formData =
-              new FormData();
-
-            formData.append(
-              "file",
-              arquivo
-            );
-
-            try {
-
-              const resposta =
-                await fetch(
-                  "/api/upload",
-                  {
-                    method: "POST",
-                    body: formData,
-                  }
-                );
-
-              const dados =
-                await resposta.json();
-
-              if (dados.url) {
-
-                await fetch(
-                  "https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/salvar_imagem",
-                  {
-                    method: "POST",
-
-                    headers: {
-                      "Content-Type":
-                        "application/json",
-                    },
-
-                   body: JSON.stringify({
-  "URL da imagem":
-    dados.url,
-
-  curtir: 0,
-  amei: 0,
-  comentarios: [],
-}),
-                  }
-                );
-
-                carregarFeed();
+              if (!arquivo) {
+                setEnviando(false);
+                return;
               }
 
-            } catch (erro) {
-              console.log(
-                "Erro upload:",
-                erro
+              const formData =
+                new FormData();
+
+              formData.append(
+                "file",
+                arquivo
               );
-            }
 
-            setEnviando(false);
-          }}
-        />
+              try {
 
-      </label>
-
-      {/* POSTS */}
-      {Array.isArray(imagens) &&
-        imagens.map((img, index) => {
-
-          return (
-            <div
-              key={img.id || index}
-              style={styles.card}
-            >
-
-              {/* USUÁRIO */}
-              <div style={styles.userInfo}>
-
-                <img
-                  src="/insta.png"
-                  alt="Perfil"
-                  style={styles.avatarImage}
-                />
-
-                <div>
-                  <div style={styles.username}>
-                    Claiton Wroblewski
-                  </div>
-
-                  <div style={styles.time}>
-                    Agora mesmo
-                  </div>
-                </div>
-
-              </div>
-
-              {/* IMAGEM */}
-              <div style={styles.imageBox}>
-
-                {img.image_url ||
-                img["URL da imagem"] ||
-                img.url ||
-                img.imagem ? (
-
-                  <img
-                    src={
-                      img.image_url ||
-                      img["URL da imagem"] ||
-                      img.url ||
-                      img.imagem
+                const resposta =
+                  await fetch(
+                    "/api/upload",
+                    {
+                      method: "POST",
+                      body: formData,
                     }
+                  );
 
-                    alt="Post"
-                    style={styles.postImage}
-                  />
+                const dados =
+                  await resposta.json();
 
-                ) : (
-                  "🖼️ Sem imagem"
-                )}
+                if (dados.url) {
 
-              </div>
+                  await fetch(
+                    "https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/salvar_imagem",
+                    {
+                      method: "POST",
 
-              {/* AÇÕES */}
-              <div style={styles.actions}>
+                      headers: {
+                        "Content-Type":
+                          "application/json",
+                      },
 
-                <button
-                  style={styles.button}
-                  onClick={() => curtir(img)}
-                >
-                  👍🏿 Curtir {img.curtir || 0}
-                </button>
+                      body: JSON.stringify({
+                        "URL da imagem":
+                          dados.url,
 
-                <button
-                  style={styles.button}
-                  onClick={() => darAmei(img)}
-                >
-                  🖤 Amei {img.amei || 0}
-                </button>
+                        curtir: 0,
+                        amei: 0,
+                        comentarios: [],
+                      }),
+                    }
+                  );
 
-                <button
-                  style={styles.button}
-                  onClick={() =>
-                    document.getElementById(
-                      `comentario-${index}`
-                    ).classList.toggle("show")
-                  }
-                >
-                  💬
-                </button>
+                  carregarFeed();
+                }
 
-              </div>
+              } catch (erro) {
+                console.log(
+                  "Erro upload:",
+                  erro
+                );
+              }
 
-              {/* ÁREA DE COMENTÁRIO */}
+              setEnviando(false);
+            }}
+          />
+
+        </label>
+
+        {/* POSTS */}
+        {Array.isArray(imagens) &&
+          imagens.map((img, index) => {
+
+            return (
               <div
-                id={`comentario-${index}`}
-                style={styles.commentBox}
+                key={img.id || index}
+                style={styles.card}
               >
 
-                <div style={styles.commentArea}>
+                {/* USUÁRIO */}
+                <div style={styles.userInfo}>
 
-                  <input
-                    type="text"
-                    placeholder="Digite um comentário..."
-                    value={novoComentario}
-                    onChange={(e) =>
-                      setNovoComentario(
-                        e.target.value
-                      )
-                    }
-                    style={styles.input}
+                  <img
+                    src="/insta.png"
+                    alt="Perfil"
+                    style={styles.avatarImage}
                   />
 
-                  <button
-                    style={styles.button}
-                    onClick={() => comentar(img)}
-                  >
-                    Enviar
-                  </button>
+                  <div>
+                    <div style={styles.username}>
+                      Claiton Wroblewski
+                    </div>
+
+                    <div style={styles.time}>
+                      Agora mesmo
+                    </div>
+                  </div>
 
                 </div>
 
-                <div style={{ marginTop: 10 }}>
+                {/* IMAGEM */}
+                <div style={styles.imageBox}>
 
-                  {img.comentarios?.map(
-                    (comentario, i) => (
-                      <div
-                        key={i}
-                        style={styles.comment}
-                      >
-                        💬 {comentario}
-                      </div>
-                    )
+                  {img.image_url ||
+                  img["URL da imagem"] ||
+                  img.url ||
+                  img.imagem ? (
+
+                    <img
+                      src={
+                        img.image_url ||
+                        img["URL da imagem"] ||
+                        img.url ||
+                        img.imagem
+                      }
+
+                      alt="Post"
+                      style={styles.postImage}
+                    />
+
+                  ) : (
+                    "🖼️ Sem imagem"
                   )}
 
                 </div>
 
+                {/* AÇÕES */}
+                <div style={styles.actions}>
+
+                  <button
+                    style={styles.button}
+                    onClick={() => curtir(img)}
+                  >
+                    👍🏿 Curtir {img.curtir || 0}
+                  </button>
+
+                  <button
+                    style={styles.button}
+                    onClick={() => darAmei(img)}
+                  >
+                    🖤 Amei {img.amei || 0}
+                  </button>
+
+                  <button style={styles.button}>
+                    💬
+                  </button>
+
+                </div>
+
+                {/* COMENTÁRIOS */}
+                <div style={styles.commentBox}>
+
+                  <div style={styles.commentArea}>
+
+                    <input
+                      type="text"
+                      placeholder="Digite um comentário..."
+                      value={novoComentario}
+                      onChange={(e) =>
+                        setNovoComentario(
+                          e.target.value
+                        )
+                      }
+                      style={styles.input}
+                    />
+
+                    <button
+                      style={styles.button}
+                      onClick={() => comentar(img)}
+                    >
+                      Enviar
+                    </button>
+
+                  </div>
+
+                  <div style={{ marginTop: 10 }}>
+
+                    {img.comentarios?.map(
+                      (comentario, i) => (
+                        <div
+                          key={i}
+                          style={styles.comment}
+                        >
+                          💬 {comentario}
+                        </div>
+                      )
+                    )}
+
+                  </div>
+
+                </div>
+
               </div>
+            );
+          })}
 
-            </div>
-          );
-        })}
-
+      </div>
     </div>
-  </div>
   );
 }
 
@@ -560,7 +551,6 @@ const styles = {
   },
 
   commentBox: {
-    display: "none",
+    marginTop: 10,
   },
- 
 };

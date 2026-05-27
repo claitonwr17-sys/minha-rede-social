@@ -25,35 +25,42 @@ export async function POST(req) {
     }
 
     const bytes = await file.arrayBuffer();
-const buffer = Buffer.from(bytes);
+    const buffer = Buffer.from(bytes);
 
-const resultado = await new Promise((resolve, reject) => {
-  const stream = cloudinary.uploader.upload_stream(
-    {
-      folder: "conrad",
-      resource_type: "image",
-    },
-    (error, result) => {
-      if (error) {
-        reject(error);
-      } else {
-        resolve(result);
-      }
-    }
-  );
+    const resultado = await new Promise((resolve, reject) => {
+      const stream = cloudinary.uploader.upload_stream(
+        {
+          folder: "conrad",
+          resource_type: "image",
+        },
+        (error, result) => {
+          if (error) {
+            reject(error);
+          } else {
+            resolve(result);
+          }
+        }
+      );
 
-  stream.end(buffer);
-});
-
-    const respostaXano = await fetch("https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/salvar_imagem", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        URL_da_imagem: resultado.secure_url,
-      }),
+      stream.end(buffer);
     });
+
+    const respostaXano = await fetch(
+      "https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/salvar_imagem",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+
+        body: JSON.stringify({
+          "URL da imagem": resultado.secure_url,
+          curtir: 0,
+          amei: 0,
+          comentarios: [],
+        }),
+      }
+    );
 
     if (!respostaXano.ok) {
       const erroTexto = await respostaXano.text();
