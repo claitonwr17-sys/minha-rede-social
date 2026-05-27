@@ -21,7 +21,7 @@ export default function Imagens() {
           },
 
           body: JSON.stringify({
-            post_id: post["eu ia"],
+            post_id:post.id,
             curtir: (post.curtir || 0) + 1,
             amei: post.amei || 0,
             comentarios: post.comentarios || [],
@@ -47,7 +47,7 @@ export default function Imagens() {
           },
 
           body: JSON.stringify({
-            post_id: post["eu ia"],
+            post_id: post.id,
             curtir: post.curtir || 0,
             amei: (post.amei || 0) + 1,
             comentarios: post.comentarios || [],
@@ -77,7 +77,7 @@ export default function Imagens() {
           },
 
           body: JSON.stringify({
-            post_id: post["eu ia"],
+            post_id: post.id,
             curtir: post.curtir || 0,
             amei: post.amei || 0,
 
