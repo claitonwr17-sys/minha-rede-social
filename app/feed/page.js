@@ -308,7 +308,7 @@ export default function Pag2() {
                     }
                   }}
                 >
-                  Comentarios ({post.comentarios?.length || 0})
+                  💬 Comentarios ({post.comentarios?.length || 0})
                 </button>
               </div>
 
