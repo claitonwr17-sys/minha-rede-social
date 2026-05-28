@@ -261,7 +261,7 @@ export default function Pag2() {
                   style={styles.actionButton}
                   onClick={() => reagirPost(post.id, "curtir")}
                 >
-                  Curtir {post.curtir || 0}
+                 👍🏿 Curtir {post.curtir || 0}
                 </button>
 
                 <button
@@ -269,7 +269,7 @@ export default function Pag2() {
                   style={styles.actionButton}
                   onClick={() => reagirPost(post.id, "amei")}
                 >
-                  Amei {post.amei || 0}
+                 🖤 Amei {post.amei || 0}
                 </button>
 
                 <button
