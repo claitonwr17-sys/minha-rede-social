@@ -7,7 +7,6 @@ export default function Imagens() {
   const router = useRouter();
 
   const [imagens, setImagens] = useState([]);
-  const [enviando, setEnviando] = useState(false);
   const [novoComentario, setNovoComentario] = useState("");
 
   const [postSelecionado, setPostSelecionado] = useState(null);
@@ -27,6 +26,7 @@ export default function Imagens() {
         }),
       }
     );
+
     carregarFeed();
   }
 
@@ -44,6 +44,7 @@ export default function Imagens() {
         }),
       }
     );
+
     carregarFeed();
   }
 
@@ -103,10 +104,21 @@ export default function Imagens() {
       <div style={styles.sidebar}>
         <div style={styles.logo}>📷 Conrad</div>
 
-        <div style={styles.menu} onClick={() => router.push("/feed")}>🏠 Home</div>
-        <div style={styles.menu} onClick={() => router.push("/ia")}>🤖 IA</div>
-        <div style={styles.menu} onClick={() => router.push("/feed")}>📰 Feed</div>
-        <div style={styles.menu} onClick={() => router.push("/perfil")}>👤 Perfil</div>
+        <div style={styles.menu} onClick={() => router.push("/feed")}>
+          🏠 Home
+        </div>
+
+        <div style={styles.menu} onClick={() => router.push("/ia")}>
+          🤖 IA
+        </div>
+
+        <div style={styles.menu} onClick={() => router.push("/feed")}>
+          📰 Feed
+        </div>
+
+        <div style={styles.menu} onClick={() => router.push("/perfil")}>
+          👤 Perfil
+        </div>
 
         <button style={styles.logout} onClick={voltarHome}>
           Sair
@@ -117,23 +129,30 @@ export default function Imagens() {
       <div style={styles.feedArea}>
         {imagens.map((img, index) => (
           <div key={index} style={styles.card}>
-
+            
             {/* USUÁRIO */}
             <div style={styles.userInfo}>
               <img src="/insta.png" style={styles.avatarImage} />
 
               <div>
-                <div style={styles.username}>Claiton Wroblewski</div>
-                <div style={styles.time}>Agora mesmo</div>
+                <div style={styles.username}>
+                  Claiton Wroblewski
+                </div>
 
-                {/* BOTÃO UPLOAD AGORA AQUI 👇 */}
+                <div style={styles.time}>
+                  Agora mesmo
+                </div>
+
+                {/* BOTÃO UPLOAD */}
                 <label style={styles.uploadButton}>
                   📸 Escolher imagem
+
                   <input
                     type="file"
                     hidden
                     onChange={async (e) => {
                       const file = e.target.files?.[0];
+
                       if (!file) return;
 
                       const formData = new FormData();
@@ -151,7 +170,9 @@ export default function Imagens() {
                           "https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/salvar_imagem",
                           {
                             method: "POST",
-                            headers: { "Content-Type": "application/json" },
+                            headers: {
+                              "Content-Type": "application/json",
+                            },
                             body: JSON.stringify({
                               "URL da imagem": data.url,
                               curtir: 0,
@@ -169,9 +190,12 @@ export default function Imagens() {
               </div>
             </div>
 
-            {/* IMAGEM (CENTRALIZADA MELHOR) */}
+            {/* IMAGEM */}
             <div style={styles.imageBox}>
-              {img.image_url || img["URL da imagem"] || img.url || img.imagem ? (
+              {img.image_url ||
+              img["URL da imagem"] ||
+              img.url ||
+              img.imagem ? (
                 <img
                   src={
                     img.image_url ||
@@ -188,44 +212,85 @@ export default function Imagens() {
 
             {/* AÇÕES */}
             <div style={styles.actions}>
-              <button style={styles.button} onClick={() => curtir(img)}>
-                👍 Curtir {img.curtir || 0}
+              
+              <button
+                style={styles.button}
+                onClick={() => curtir(img)}
+              >
+                👍🏿 Curtir {img.curtir || 0}
               </button>
 
-              <button style={styles.button} onClick={() => darAmei(img)}>
-                🖤 Beleza {img.amei || 0}
+              <button
+                style={styles.button}
+                onClick={() => darAmei(img)}
+              >
+                🖤 Amei {img.amei || 0}
               </button>
 
-              <button style={styles.button}>💬</button>
+              <button
+                style={styles.button}
+                onClick={() => {
+                  setPostSelecionado(img);
+                  setComentariosAberto(true);
+                }}
+              >
+                💬 {img.comentarios?.length || 0}
+              </button>
+
             </div>
-
-            {/* COMENTÁRIOS */}
-            <div style={styles.commentBox}>
-              <div style={styles.commentArea}>
-                <input
-                  value={novoComentario}
-                  onChange={(e) => setNovoComentario(e.target.value)}
-                  placeholder="Digite um comentário..."
-                  style={styles.input}
-                />
-
-                <button style={styles.button} onClick={() => comentar(img)}>
-                  Enviar
-                </button>
-              </div>
-
-              <div>
-                {img.comentarios?.map((c, i) => (
-                  <div key={i} style={styles.comment}>
-                    💬 {c}
-                  </div>
-                ))}
-              </div>
-            </div>
-
           </div>
         ))}
       </div>
+
+      {/* MODAL COMENTÁRIOS */}
+      {comentariosAberto && postSelecionado && (
+        <div style={styles.modalOverlay}>
+          <div style={styles.modal}>
+            
+            <div style={styles.modalTop}>
+              <h3>Comentários</h3>
+
+              <button
+                style={styles.closeButton}
+                onClick={() => setComentariosAberto(false)}
+              >
+                ✖
+              </button>
+            </div>
+
+            <div style={styles.commentsList}>
+              {postSelecionado.comentarios?.length > 0 ? (
+                postSelecionado.comentarios.map((c, i) => (
+                  <div key={i} style={styles.comment}>
+                    💬 {c}
+                  </div>
+                ))
+              ) : (
+                <p>Sem comentários ainda.</p>
+              )}
+            </div>
+
+            <div style={styles.commentArea}>
+              <input
+                value={novoComentario}
+                onChange={(e) =>
+                  setNovoComentario(e.target.value)
+                }
+                placeholder="Digite um comentário..."
+                style={styles.input}
+              />
+
+              <button
+                style={styles.button}
+                onClick={() => comentar(postSelecionado)}
+              >
+                Enviar
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -238,6 +303,7 @@ const styles = {
     backgroundColor: "#f0f2f5",
     minHeight: "100vh",
   },
+
   sidebar: {
     width: 220,
     background: "#fff",
@@ -245,8 +311,17 @@ const styles = {
     position: "fixed",
     height: "100vh",
   },
-  logo: { fontWeight: "bold", marginBottom: 30 },
-  menu: { padding: 10, cursor: "pointer" },
+
+  logo: {
+    fontWeight: "bold",
+    marginBottom: 30,
+  },
+
+  menu: {
+    padding: 10,
+    cursor: "pointer",
+  },
+
   logout: {
     marginTop: 20,
     background: "black",
@@ -254,15 +329,19 @@ const styles = {
     width: "100%",
     padding: 10,
     borderRadius: 10,
+    border: "none",
+    cursor: "pointer",
   },
+
   feedArea: {
     marginLeft: 240,
-    paddingTop: 80,
+    paddingTop: 40,
     width: "100%",
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
   },
+
   card: {
     background: "#fff",
     width: 520,
@@ -270,18 +349,27 @@ const styles = {
     borderRadius: 16,
     marginBottom: 20,
   },
+
   userInfo: {
     display: "flex",
     gap: 10,
     alignItems: "center",
   },
+
   avatarImage: {
     width: 45,
     height: 45,
     borderRadius: "50%",
   },
-  username: { fontWeight: "bold" },
-  time: { fontSize: 12, color: "gray" },
+
+  username: {
+    fontWeight: "bold",
+  },
+
+  time: {
+    fontSize: 12,
+    color: "gray",
+  },
 
   uploadButton: {
     display: "inline-block",
@@ -321,17 +409,51 @@ const styles = {
     borderRadius: 10,
     border: "none",
     cursor: "pointer",
-    color: "black", // 🔥 botão agora preto
+    color: "black",
   },
 
-  commentBox: {
-    marginTop: 10,
+  modalOverlay: {
+    position: "fixed",
+    top: 0,
+    left: 0,
+    width: "100%",
+    height: "100%",
+    background: "rgba(0,0,0,0.5)",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  modal: {
+    width: 400,
+    background: "white",
+    borderRadius: 16,
+    padding: 20,
+  },
+
+  modalTop: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 15,
+  },
+
+  closeButton: {
+    border: "none",
+    background: "transparent",
+    fontSize: 18,
+    cursor: "pointer",
+  },
+
+  commentsList: {
+    maxHeight: 300,
+    overflowY: "auto",
+    marginBottom: 15,
   },
 
   commentArea: {
     display: "flex",
     gap: 10,
-    marginTop: 10,
   },
 
   input: {
