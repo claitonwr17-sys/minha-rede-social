@@ -14,74 +14,60 @@ export default function Imagens() {
   const [comentariosAberto, setComentariosAberto] = useState(false);
 
   async function curtir(post) {
-    try {
-      await fetch(
-        "https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/Reagir_a_iamgens",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            post_id: post.id,
-            curtir: (post.curtir || 0) + 1,
-            amei: post.amei || 0,
-            comentarios: post.comentarios || [],
-          }),
-        }
-      );
-
-      carregarFeed();
-    } catch (error) {
-      console.log("Erro ao curtir:", error);
-    }
+    await fetch(
+      "https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/Reagir_a_iamgens",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          post_id: post.id,
+          curtir: (post.curtir || 0) + 1,
+          amei: post.amei || 0,
+          comentarios: post.comentarios || [],
+        }),
+      }
+    );
+    carregarFeed();
   }
 
   async function darAmei(post) {
-    try {
-      await fetch(
-        "https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/Reagir_a_iamgens",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            post_id: post.id,
-            curtir: post.curtir || 0,
-            amei: (post.amei || 0) + 1,
-            comentarios: post.comentarios || [],
-          }),
-        }
-      );
-
-      carregarFeed();
-    } catch (error) {
-      console.log("Erro ao amei:", error);
-    }
+    await fetch(
+      "https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/Reagir_a_iamgens",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          post_id: post.id,
+          curtir: post.curtir || 0,
+          amei: (post.amei || 0) + 1,
+          comentarios: post.comentarios || [],
+        }),
+      }
+    );
+    carregarFeed();
   }
 
   async function comentar(post) {
-    try {
-      if (!novoComentario.trim()) return;
+    if (!novoComentario.trim()) return;
 
-      const comentariosAtuais = post.comentarios || [];
+    const comentariosAtuais = post.comentarios || [];
 
-      await fetch(
-        "https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/Reagir_a_iamgens",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            post_id: post.id,
-            curtir: post.curtir || 0,
-            amei: post.amei || 0,
-            comentarios: [...comentariosAtuais, novoComentario.trim()],
-          }),
-        }
-      );
+    await fetch(
+      "https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/Reagir_a_iamgens",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          post_id: post.id,
+          curtir: post.curtir || 0,
+          amei: post.amei || 0,
+          comentarios: [...comentariosAtuais, novoComentario],
+        }),
+      }
+    );
 
-      setNovoComentario("");
-      carregarFeed();
-    } catch (error) {
-      console.log("Erro ao comentar:", error);
-    }
+    setNovoComentario("");
+    carregarFeed();
   }
 
   function voltarHome() {
@@ -93,29 +79,22 @@ export default function Imagens() {
   }, []);
 
   async function carregarFeed() {
-    try {
-      const res = await fetch(
-        "https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/get_imagens"
-      );
+    const res = await fetch(
+      "https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/get_imagens"
+    );
 
-      const data = await res.json();
+    const data = await res.json();
 
-      const imagensUnicas = [
-        ...new Map(
-          (data || []).map((item) => [
-            item.image_url ||
-              item["URL da imagem"] ||
-              item.url ||
-              item.imagem,
-            item,
-          ])
-        ).values(),
-      ];
+    const imagensUnicas = [
+      ...new Map(
+        (data || []).map((item) => [
+          item.image_url || item["URL da imagem"] || item.url || item.imagem,
+          item,
+        ])
+      ).values(),
+    ];
 
-      setImagens(imagensUnicas);
-    } catch (error) {
-      console.log("Erro ao carregar feed:", error);
-    }
+    setImagens(imagensUnicas);
   }
 
   return (
@@ -124,21 +103,10 @@ export default function Imagens() {
       <div style={styles.sidebar}>
         <div style={styles.logo}>📷 Conrad</div>
 
-        <div style={styles.menu} onClick={() => router.push("/feed")}>
-          🏠 Home
-        </div>
-
-        <div style={styles.menu} onClick={() => router.push("/ia")}>
-          🤖 IA
-        </div>
-
-        <div style={styles.menu} onClick={() => router.push("/feed")}>
-          📰 Feed
-        </div>
-
-        <div style={styles.menu} onClick={() => router.push("/perfil")}>
-          👤 Perfil
-        </div>
+        <div style={styles.menu} onClick={() => router.push("/feed")}>🏠 Home</div>
+        <div style={styles.menu} onClick={() => router.push("/ia")}>🤖 IA</div>
+        <div style={styles.menu} onClick={() => router.push("/feed")}>📰 Feed</div>
+        <div style={styles.menu} onClick={() => router.push("/perfil")}>👤 Perfil</div>
 
         <button style={styles.logout} onClick={voltarHome}>
           Sair
@@ -148,91 +116,116 @@ export default function Imagens() {
       {/* FEED */}
       <div style={styles.feedArea}>
         {imagens.map((img, index) => (
-          <div key={img.id || index} style={styles.card}>
-            
+          <div key={index} style={styles.card}>
+
             {/* USUÁRIO */}
             <div style={styles.userInfo}>
               <img src="/insta.png" style={styles.avatarImage} />
+
               <div>
                 <div style={styles.username}>Claiton Wroblewski</div>
                 <div style={styles.time}>Agora mesmo</div>
+
+                {/* BOTÃO UPLOAD AGORA AQUI 👇 */}
+                <label style={styles.uploadButton}>
+                  📸 Escolher imagem
+                  <input
+                    type="file"
+                    hidden
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+
+                      const formData = new FormData();
+                      formData.append("file", file);
+
+                      const res = await fetch("/api/upload", {
+                        method: "POST",
+                        body: formData,
+                      });
+
+                      const data = await res.json();
+
+                      if (data.url) {
+                        await fetch(
+                          "https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/salvar_imagem",
+                          {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                              "URL da imagem": data.url,
+                              curtir: 0,
+                              amei: 0,
+                              comentarios: [],
+                            }),
+                          }
+                        );
+
+                        carregarFeed();
+                      }
+                    }}
+                  />
+                </label>
               </div>
             </div>
 
-            {/* IMAGEM */}
+            {/* IMAGEM (CENTRALIZADA MELHOR) */}
             <div style={styles.imageBox}>
-              <img
-                src={
-                  img.image_url ||
-                  img["URL da imagem"] ||
-                  img.url ||
-                  img.imagem
-                }
-                style={styles.postImage}
-              />
+              {img.image_url || img["URL da imagem"] || img.url || img.imagem ? (
+                <img
+                  src={
+                    img.image_url ||
+                    img["URL da imagem"] ||
+                    img.url ||
+                    img.imagem
+                  }
+                  style={styles.postImage}
+                />
+              ) : (
+                "🖼️ Sem imagem"
+              )}
             </div>
 
             {/* AÇÕES */}
             <div style={styles.actions}>
-              <button onClick={() => curtir(img)} style={styles.button}>
+              <button style={styles.button} onClick={() => curtir(img)}>
                 👍 Curtir {img.curtir || 0}
               </button>
 
-              <button onClick={() => darAmei(img)} style={styles.button}>
-                🖤 Amei {img.amei || 0}
+              <button style={styles.button} onClick={() => darAmei(img)}>
+                🖤 Beleza {img.amei || 0}
               </button>
 
-              <button
-                style={styles.button}
-                onClick={() => {
-                  setPostSelecionado(img);
-                  setComentariosAberto(true);
-                }}
-              >
-                💬 {img.comentarios?.length || 0}
-              </button>
+              <button style={styles.button}>💬</button>
             </div>
+
+            {/* COMENTÁRIOS */}
+            <div style={styles.commentBox}>
+              <div style={styles.commentArea}>
+                <input
+                  value={novoComentario}
+                  onChange={(e) => setNovoComentario(e.target.value)}
+                  placeholder="Digite um comentário..."
+                  style={styles.input}
+                />
+
+                <button style={styles.button} onClick={() => comentar(img)}>
+                  Enviar
+                </button>
+              </div>
+
+              <div>
+                {img.comentarios?.map((c, i) => (
+                  <div key={i} style={styles.comment}>
+                    💬 {c}
+                  </div>
+                ))}
+              </div>
+            </div>
+
           </div>
         ))}
       </div>
-
-      {/* MODAL COMENTÁRIOS */}
-      {comentariosAberto && postSelecionado && (
-        <div style={styles.modalOverlay}>
-          <div style={styles.modal}>
-            <div style={styles.modalHeader}>
-              <h3>Comentários</h3>
-              <button onClick={() => setComentariosAberto(false)}>
-                X
-              </button>
-            </div>
-
-            <div>
-              {postSelecionado.comentarios?.map((c, i) => (
-                <div key={i} style={styles.comment}>
-                  💬 {c}
-                </div>
-              ))}
-            </div>
-
-            <div style={styles.commentArea}>
-              <input
-                value={novoComentario}
-                onChange={(e) => setNovoComentario(e.target.value)}
-                style={styles.input}
-                placeholder="Escreva um comentário..."
-              />
-
-              <button
-                style={styles.button}
-                onClick={() => comentar(postSelecionado)}
-              >
-                Enviar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
@@ -244,90 +237,114 @@ const styles = {
     display: "flex",
     backgroundColor: "#f0f2f5",
     minHeight: "100vh",
-    fontFamily: "Inter, sans-serif",
   },
   sidebar: {
     width: 220,
-    backgroundColor: "white",
-    height: "100vh",
+    background: "#fff",
     padding: 20,
-    borderRight: "1px solid #ddd",
     position: "fixed",
+    height: "100vh",
   },
-  logo: { fontWeight: "bold", fontSize: 18, marginBottom: 30 },
-  menu: { padding: 12, cursor: "pointer", marginBottom: 10 },
+  logo: { fontWeight: "bold", marginBottom: 30 },
+  menu: { padding: 10, cursor: "pointer" },
   logout: {
     marginTop: 20,
-    backgroundColor: "black",
+    background: "black",
     color: "white",
+    width: "100%",
     padding: 10,
     borderRadius: 10,
-    width: "100%",
   },
   feedArea: {
     marginLeft: 240,
     paddingTop: 80,
+    width: "100%",
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
   },
   card: {
-    backgroundColor: "white",
-    width: 500,
-    borderRadius: 16,
+    background: "#fff",
+    width: 520,
     padding: 15,
+    borderRadius: 16,
     marginBottom: 20,
   },
-  userInfo: { display: "flex", marginBottom: 10 },
-  avatarImage: { width: 40, height: 40, borderRadius: "50%" },
+  userInfo: {
+    display: "flex",
+    gap: 10,
+    alignItems: "center",
+  },
+  avatarImage: {
+    width: 45,
+    height: 45,
+    borderRadius: "50%",
+  },
   username: { fontWeight: "bold" },
   time: { fontSize: 12, color: "gray" },
-  imageBox: { height: 280, overflow: "hidden" },
-  postImage: { width: "100%", height: "100%", objectFit: "cover" },
-  actions: { display: "flex", justifyContent: "space-around" },
+
+  uploadButton: {
+    display: "inline-block",
+    marginTop: 8,
+    background: "black",
+    color: "white",
+    padding: 8,
+    borderRadius: 10,
+    cursor: "pointer",
+  },
+
+  imageBox: {
+    marginTop: 15,
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    background: "#eee",
+    borderRadius: 12,
+    overflow: "hidden",
+  },
+
+  postImage: {
+    width: "100%",
+    height: 300,
+    objectFit: "cover",
+  },
+
+  actions: {
+    display: "flex",
+    justifyContent: "space-around",
+    marginTop: 10,
+  },
+
   button: {
-    backgroundColor: "#f0f2f5",
+    background: "#f0f2f5",
     padding: 10,
     borderRadius: 10,
     border: "none",
+    cursor: "pointer",
+    color: "black", // 🔥 botão agora preto
   },
-  modalOverlay: {
-    position: "fixed",
-    inset: 0,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    display: "flex",
-    alignItems: "flex-end",
-    justifyContent: "center",
+
+  commentBox: {
+    marginTop: 10,
   },
-  modal: {
-    backgroundColor: "white",
-    width: "100%",
-    maxWidth: 500,
-    height: "70vh",
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: 20,
-  },
-  modalHeader: {
-    display: "flex",
-    justifyContent: "space-between",
-    marginBottom: 10,
-  },
-  comment: {
-    backgroundColor: "#f0f2f5",
-    padding: 8,
-    borderRadius: 8,
-    marginBottom: 5,
-  },
+
   commentArea: {
     display: "flex",
     gap: 10,
-    marginTop: 15,
+    marginTop: 10,
   },
+
   input: {
     flex: 1,
     padding: 10,
     borderRadius: 10,
     border: "1px solid #ccc",
+  },
+
+  comment: {
+    background: "#f0f2f5",
+    padding: 8,
+    marginTop: 5,
+    borderRadius: 8,
   },
 };
