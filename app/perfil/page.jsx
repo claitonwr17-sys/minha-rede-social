@@ -120,7 +120,7 @@ export default function Perfil() {
 
           {/* BANNER */}
           <img
-            src="/terra.jpg"
+           src="/insta.png"
             alt="Banner"
             style={styles.banner}
           />
@@ -147,11 +147,11 @@ export default function Perfil() {
             <button
               style={styles.botao}
               onMouseEnter={(e) => {
-                e.target.style.backgroundColor = "#1664d9"
+                e.target.style.backgroundColor = "#000"
                 e.target.style.transform = "scale(1.03)"
               }}
               onMouseLeave={(e) => {
-                e.target.style.backgroundColor = "#1877f2"
+                e.target.style.backgroundColor = "#000"
                 e.target.style.transform = "scale(1)"
               }}
             >
