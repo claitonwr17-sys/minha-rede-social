@@ -87,17 +87,21 @@ export async function POST(req) {
       url: resultado.secure_url,
     });
 
-  } catch (erro) {
-    console.log("ERRO COMPLETO:", erro);
+} catch (erro) {
+  console.log("ERRO COMPLETO:", erro);
 
-    return Response.json(
-      {
-        error: "Erro no upload",
-        detalhes: erro?.message || String(erro),
+  return new Response(
+    JSON.stringify({
+      erro: String(erro),
+      mensagem: erro?.message,
+      stack: erro?.stack,
+    }),
+    {
+      status: 500,
+      headers: {
+        "Content-Type": "application/json",
       },
-      {
-        status: 500,
-      }
-    );
-  }
+    }
+  );
+}
 }
