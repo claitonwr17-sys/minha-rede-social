@@ -128,7 +128,8 @@ export default function Imagens() {
     gap: 10,
   }}
   onClick={() => router.push("/ia")}
->
+> 
+
   <img
     src="/logo/logo-simbolo.png"
     alt="IA"
@@ -143,6 +144,7 @@ height: 28,
   <span>IA</span>
 </div>
 
+
         <div style={styles.menu} onClick={() => router.push("/feed")}>
           📰 Feed
         </div>
@@ -155,6 +157,7 @@ height: 28,
           Sair
         </button>
       </div>
+
 
       {/* FEED */}
       <div style={styles.feedArea}>
