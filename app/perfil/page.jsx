@@ -335,7 +335,7 @@ const styles = {
 
   banner: {
   width: "100%",
-  height: 180,
+  height: 140,
   objectFit: "cover"
 },
 
@@ -352,19 +352,21 @@ const styles = {
   },
 
   avatarArea: {
-    marginTop: -60,
-    marginLeft: 30
-  },
+  marginTop: -40,
+  marginLeft: 30,
+  position: "relative",
+  zIndex: 10
+},
 
   avatar: {
-    width: 120,
-    height: 120,
-    borderRadius: "50%",
-    backgroundColor: "white",
-    padding: 6,
-    objectFit: "cover",
-    boxShadow: "0 2px 8px rgba(0,0,0,0.2)"
-  },
+  width: 140,
+  height: 140,
+  borderRadius: "50%",
+  backgroundColor: "white",
+  padding: 6,
+  objectFit: "cover",
+  boxShadow: "0 2px 8px rgba(0,0,0,0.2)"
+},
 
   info: {
     display: "flex",
