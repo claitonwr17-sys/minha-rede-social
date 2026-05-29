@@ -341,12 +341,15 @@ const styles = {
   },
 
   sidebar: {
-    width: 220,
-    background: "#fff",
-    padding: 20,
-    position: "fixed",
-    height: "100vh",
-  },
+  width: 220,
+  background: "#fff",
+  padding: 30, // aumentei
+  position: "fixed",
+  height: "100vh",
+  display: "flex",
+  flexDirection: "column",
+  gap: 18, // espaço entre os itens
+},
 
   logo: {
     fontWeight: "bold",
