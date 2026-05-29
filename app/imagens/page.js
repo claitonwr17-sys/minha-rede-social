@@ -80,23 +80,14 @@ export default function Imagens() {
   }, []);
 
   async function carregarFeed() {
-    const res = await fetch(
-      "https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/get_imagens"
-    );
+  const res = await fetch(
+    "https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/get_imagens"
+  );
 
-    const data = await res.json();
+  const data = await res.json();
 
-    const imagensUnicas = [
-      ...new Map(
-        (data || []).map((item) => [
-          item.image_url || item["URL da imagem"] || item.url || item.imagem,
-          item,
-        ])
-      ).values(),
-    ];
-
-    setImagens(imagensUnicas);
-  }
+  setImagens(data || []);
+}
 
   return (
     <div style={styles.page}>
