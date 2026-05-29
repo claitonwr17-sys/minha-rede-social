@@ -17,6 +17,9 @@ export default function Pag2() {
 
   const [hoverItem, setHoverItem] = useState("");
 
+  const [postSelecionado, setPostSelecionado] = useState(null);
+  const [comentariosAberto, setComentariosAberto] = useState(false);
+
   useEffect(() => {
     buscarPosts();
   }, []);
@@ -277,41 +280,9 @@ export default function Pag2() {
                 <button
                   type="button"
                   style={styles.actionButton}
-                  onClick={async () => {
-                    const comentario = prompt("Digite seu comentário");
-
-                    if (!comentario) return;
-
-                    const comentariosAtuais = post.comentarios || [];
-
-                    const novosComentarios = [
-                      ...comentariosAtuais,
-                      comentario,
-                    ];
-
-                    try {
-                      await fetch(
-                        "https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/PATCH",
-                        {
-                          method: "PATCH",
-                          headers: {
-                            "Content-Type": "application/json",
-                          },
-                          body: JSON.stringify({
-                            post_id: post.id,
-                            comentarios: novosComentarios,
-                            curtir: post.curtir || 0,
-                            amei: post.amei || 0,
-                          }),
-                        }
-                      );
-
-                      buscarPosts();
-                    } catch (error) {
-                      console.error(error);
-
-                      alert("Erro ao salvar comentário");
-                    }
+                  onClick={() => {
+                    setPostSelecionado(post);
+                    setComentariosAberto(true);
                   }}
                 >
                   💬 Comentarios ({post.comentarios?.length || 0})
@@ -321,7 +292,89 @@ export default function Pag2() {
           ))}
       </div>
 
-      {/* MODAL */}
+      {/* MODAL COMENTÁRIOS */}
+      {comentariosAberto && postSelecionado && (
+        <div style={styles.modalOverlay}>
+          <div style={styles.commentsModal}>
+            <div style={styles.commentsHeader}>
+              <span>Comentários</span>
+
+              <button
+                onClick={() => setComentariosAberto(false)}
+                style={styles.closeButton}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div style={styles.commentsList}>
+              {postSelecionado.comentarios?.map((comentario, index) => (
+                <div key={index} style={styles.comment}>
+                  💬 {comentario}
+                </div>
+              ))}
+            </div>
+
+            <div style={styles.commentInputArea}>
+              <input
+                type="text"
+                placeholder="Digite um comentário..."
+                value={texto}
+                onChange={(e) => setTexto(e.target.value)}
+                style={styles.commentInput}
+              />
+
+              <button
+                style={styles.sendButton}
+                onClick={async () => {
+                  if (!texto.trim()) return;
+
+                  const comentariosAtuais =
+                    postSelecionado.comentarios || [];
+
+                  const novosComentarios = [
+                    ...comentariosAtuais,
+                    texto,
+                  ];
+
+                  try {
+                    await fetch(
+                      "https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/PATCH",
+                      {
+                        method: "PATCH",
+                        headers: {
+                          "Content-Type": "application/json",
+                        },
+                        body: JSON.stringify({
+                          post_id: postSelecionado.id,
+                          comentarios: novosComentarios,
+                          curtir: postSelecionado.curtir || 0,
+                          amei: postSelecionado.amei || 0,
+                        }),
+                      }
+                    );
+
+                    setTexto("");
+
+                    buscarPosts();
+
+                    setPostSelecionado({
+                      ...postSelecionado,
+                      comentarios: novosComentarios,
+                    });
+                  } catch (error) {
+                    console.error(error);
+                  }
+                }}
+              >
+                Enviar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL IA */}
       {mostrarModal && (
         <div style={styles.modalOverlay}>
           <div style={styles.modal}>
@@ -510,6 +563,7 @@ const styles = {
     borderRadius: 10,
     cursor: "pointer",
     fontSize: 15,
+    color: "black",
   },
 
   modalOverlay: {
@@ -559,6 +613,67 @@ const styles = {
 
   confirmButton: {
     backgroundColor: "#22c55e",
+    color: "white",
+    border: "none",
+    padding: "10px 16px",
+    borderRadius: 10,
+    cursor: "pointer",
+  },
+
+  commentsModal: {
+    backgroundColor: "white",
+    width: 500,
+    maxHeight: "80vh",
+    borderRadius: 16,
+    padding: 20,
+    display: "flex",
+    flexDirection: "column",
+  },
+
+  commentsHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 15,
+    fontWeight: "bold",
+    fontSize: 18,
+  },
+
+  closeButton: {
+    border: "none",
+    background: "transparent",
+    fontSize: 20,
+    cursor: "pointer",
+  },
+
+  commentsList: {
+    flex: 1,
+    overflowY: "auto",
+    marginBottom: 15,
+  },
+
+  comment: {
+    backgroundColor: "#f0f2f5",
+    padding: 10,
+    borderRadius: 10,
+    marginBottom: 8,
+  },
+
+  commentInputArea: {
+    display: "flex",
+    gap: 10,
+  },
+
+  commentInput: {
+    flex: 1,
+    padding: 10,
+    borderRadius: 10,
+    border: "1px solid #ccc",
+    outline: "none",
+  },
+
+  sendButton: {
+    backgroundColor: "black",
     color: "white",
     border: "none",
     padding: "10px 16px",
