@@ -175,46 +175,46 @@ export default function Pag2() {
         </div>
 
         <div
-          style={{
-            ...styles.sidebarItem,
-            ...(hoverItem === "ia" && styles.sidebarItemHover),
-          }}
-          onMouseEnter={() => setHoverItem("ia")}
-          onMouseLeave={() => setHoverItem("")}
-        >
-          <>
-  <img
-    src="/logo/logo-simbolo.png"
-    alt="IA"
+  style={{
+    ...styles.sidebarItem,
+    ...(hoverItem === "ia" && styles.sidebarItemHover),
+  }}
+  onMouseEnter={() => setHoverItem("ia")}
+  onMouseLeave={() => setHoverItem("")}
+  onClick={() => router.push("/ia")}
+>
+  <div
     style={{
-      width: 24,
-      height: 24,
-      objectFit: "contain"
+      display: "flex",
+      alignItems: "center",
+      gap: 10,
     }}
-  />
+  >
+    <img
+      src="/logo/logo-simbolo.png"
+      alt="IA"
+      style={{
+        width: 24,
+        height: 24,
+        objectFit: "contain",
+      }}
+    />
 
-  <span>IA</span>
-</> 
-        </div>
+    <span>IA</span>
+  </div>
+</div>
 
-        <a
-          href="/imagens"
-          style={{
-            textDecoration: "none",
-            color: "inherit",
-          }}
-        >
-          <div
-            style={{
-              ...styles.sidebarItem,
-              ...(hoverItem === "explorar" && styles.sidebarItemHover),
-            }}
-            onMouseEnter={() => setHoverItem("explorar")}
-            onMouseLeave={() => setHoverItem("")}
-          >
-            Feed
-          </div>
-        </a>
+<div
+  style={{
+    ...styles.sidebarItem,
+    ...(hoverItem === "explorar" && styles.sidebarItemHover),
+  }}
+  onMouseEnter={() => setHoverItem("explorar")}
+  onMouseLeave={() => setHoverItem("")}
+  onClick={() => router.push("/imagens")}
+>
+  Feed
+</div>
 
         <div
           style={{
