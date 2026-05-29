@@ -25,7 +25,7 @@ export default function Perfil() {
         <div>
 
           <div style={styles.logo}>
-            🚀 Conrad
+             Conrad
           </div>
 
           <div style={styles.menu}>
@@ -126,30 +126,23 @@ export default function Perfil() {
           />
 
           {/* FOTO */}
-          <div style={styles.avatarArea}>
+<div style={styles.avatarArea}>
 
-            <img
-              src="/usuario.png"
-              alt="Usuário"
-              style={styles.avatar}
-            />
+  <img
+    src="/insta.png"
+    alt="Usuário"
+    style={styles.avatar}
+  />
 
-          </div>
+</div>
+<div>
+          <div style={styles.nome}>
+  Claiton Wroblewski
+</div>
 
-          {/* INFO */}
-          <div style={styles.info}>
-
-            <div>
-
-              <div style={styles.nome}>
-                Usuário
-              </div>
-
-              <div style={styles.usuario}>
-                @usuario
-              </div>
-
-            </div>
+<div style={styles.usuario}>
+  @claitonwr17
+</div>
 
             <button
               style={styles.botao}
@@ -168,7 +161,7 @@ export default function Perfil() {
           </div>
 
           <div style={styles.bio}>
-            Construindo uma rede social com IA 🚀
+            Construindo uma rede social com IA 
           </div>
 
           {/* ESTATÍSTICAS */}
