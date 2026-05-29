@@ -7,84 +7,147 @@ export default function IA() {
     <div
       style={{
         display: "flex",
-        backgroundColor: "#050505",
-        color: "white",
+        backgroundColor: "#f5f5f7",
         minHeight: "100vh",
         fontFamily: "Inter, sans-serif",
+        color: "#111",
       }}
     >
       {/* SIDEBAR */}
       <div
         style={{
           width: 260,
+          backgroundColor: "white",
+          borderRight: "1px solid #e5e5e5",
           padding: 30,
-          borderRight: "1px solid #1f1f1f",
           position: "fixed",
           height: "100vh",
         }}
       >
-        <h2 style={{ marginBottom: 40 }}>Conrad IA</h2>
+        {/* LOGO */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+            marginBottom: 50,
+          }}
+        >
+          <img
+            src="/logo/logo-simbolo.png"
+            alt="Conrad"
+            style={{
+              width: 46,
+              height: 46,
+              objectFit: "contain",
+            }}
+          />
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 25 }}>
-          <div>🏠 Home</div>
-         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-  <img
-    src="/logo/logo-simbolo.png"
-    alt="IA"
-    style={{
-      width: 32,
-      height: 32,
-      objectFit: "contain"
-    }}
-  />
+          <h2 style={{ margin: 0, fontSize: 34 }}>Conrad IA</h2>
+        </div>
 
-  <span>IA</span>
-</div>
- 
+        {/* MENU */}
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 18,
+          }}
+        >
+          <div style={menuItem}>🏠 Home</div>
 
- 
- 
-          <div>📰 Feed</div>
-          <div>👤 Perfil</div>
-          <div>⚙️ Configurações</div>
+          <div style={menuItem}>
+            <img
+              src="/logo/logo-simbolo.png"
+              alt="IA"
+              style={{
+                width: 24,
+                height: 24,
+                objectFit: "contain",
+              }}
+            />
+
+            <span>IA</span>
+          </div>
+
+          <div style={menuItem}>📰 Feed</div>
+          <div style={menuItem}>👤 Perfil</div>
+          <div style={menuItem}>⚙️ Configurações</div>
         </div>
       </div>
 
-      {/* CONTEÚDO CENTRAL */}
+      {/* CONTEÚDO */}
       <div
         style={{
           marginLeft: 260,
           width: "100%",
+          padding: 40,
           display: "flex",
           justifyContent: "center",
-          padding: 60,
         }}
       >
         <div
           style={{
-            maxWidth: 900,
+            width: "100%",
+            maxWidth: 1200,
             display: "flex",
             flexDirection: "column",
-            gap: 25,
+            gap: 24,
           }}
         >
           {/* HERO */}
           <div style={card}>
-            <h2 style={{ fontSize: 42, marginBottom: 10 }}>
-              🧠 Conrad – Sua Consciência Digital
-            </h2>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 20,
+                marginBottom: 20,
+              }}
+            >
+              <img
+                src="/logo/logo-simbolo.png"
+                alt="Conrad"
+                style={{
+                  width: 70,
+                  height: 70,
+                  objectFit: "contain",
+                }}
+              />
+
+              <h1
+                style={{
+                  fontSize: 58,
+                  margin: 0,
+                  color: "#111",
+                }}
+              >
+                Conrad – Sua Consciência Digital
+              </h1>
+            </div>
+
             <p style={text}>
-              Conrad é uma rede social de IA que ajuda você a pensar antes de postar.
-              Ele analisa o sentimento do texto e gera uma resposta humanizada.
-              Com Google Cloud e Gemini AI, funciona como uma consciência digital.
+              Conrad é uma rede social de IA que ajuda você a pensar antes de
+              postar.
+            </p>
+
+            <p style={text}>
+              Ele analisa o sentimento do texto e gera uma resposta
+              humanizada.
+            </p>
+
+            <p style={text}>
+              Com Google Cloud e Gemini AI, funciona como uma consciência
+              digital.
             </p>
           </div>
 
           {/* POR QUE USAR */}
           <div style={card}>
             <h3 style={title}>🌍 Por que usar o Conrad</h3>
-            <p style={text}>Um simples post pode gerar grandes impactos.</p>
+
             <ul style={list}>
+              <li>Um simples post pode gerar grandes impactos</li>
               <li>Como suas palavras soam para outras pessoas</li>
               <li>Qual emoção seu texto transmite</li>
               <li>Se vale a pena publicar</li>
@@ -94,42 +157,24 @@ export default function IA() {
           {/* COMO FUNCIONA */}
           <div style={card}>
             <h3 style={title}>⚙️ Como funciona</h3>
+
             <ul style={list}>
               <li>Você digita sua postagem</li>
               <li>IA analisa com Google Cloud + Gemini</li>
               <li>Você recebe uma resposta emocional</li>
+              <li>Mais consciência, menos arrependimento</li>
             </ul>
           </div>
 
           {/* BENEFÍCIOS */}
           <div style={card}>
             <h3 style={title}>🌟 Benefícios</h3>
+
             <ul style={list}>
               <li>Evita posts impulsivos</li>
               <li>Aumenta consciência emocional</li>
               <li>Melhora sua comunicação</li>
               <li>Ajuda a entender o impacto das palavras</li>
-            </ul>
-          </div>
-
-          {/* MISSÃO */}
-          <div style={card}>
-            <h3 style={title}>💡 Missão</h3>
-            <p style={text}>
-              Tornar a internet mais empática e humana, ajudando cada pessoa a pensar antes de postar.
-            </p>
-            <p style={text}>
-              💭 Às vezes, só precisamos de um pequeno empurrão da nossa consciência digital.
-            </p>
-          </div>
-
-          {/* TECNOLOGIAS */}
-          <div style={card}>
-            <h3 style={title}>⚙️ Tecnologias</h3>
-            <ul style={list}>
-              <li>Google Cloud Natural Language API</li>
-              <li>Gemini AI</li>
-              <li>AppGyver + Xano</li>
             </ul>
           </div>
         </div>
@@ -138,29 +183,42 @@ export default function IA() {
   );
 }
 
-/* ESTILOS FORA DO COMPONENTE (CORRETO) */
+/* ESTILOS */
+
 const card = {
-  backgroundColor: "#0d0d0d",
-  padding: 25,
-  borderRadius: 16,
-  border: "1px solid #1f1f1f",
+  backgroundColor: "white",
+  padding: 40,
+  borderRadius: 24,
+  border: "1px solid #e5e5e5",
+  boxShadow: "0 2px 10px rgba(0,0,0,0.03)",
 };
 
 const title = {
-  fontSize: 26,
+  fontSize: 42,
   fontWeight: "bold",
-  marginBottom: 15,
+  marginBottom: 20,
+  color: "#111",
 };
 
 const text = {
-  fontSize: 18,
-  color: "#cfcfcf",
-  lineHeight: 1.7,
+  fontSize: 26,
+  color: "#444",
+  lineHeight: 1.8,
 };
 
 const list = {
-  fontSize: 18,
-  color: "#cfcfcf",
-  paddingLeft: 20,
-  lineHeight: 1.8,
+  fontSize: 24,
+  color: "#444",
+  lineHeight: 2,
+  paddingLeft: 25,
+};
+
+const menuItem = {
+  display: "flex",
+  alignItems: "center",
+  gap: 12,
+  fontSize: 28,
+  padding: "14px 18px",
+  borderRadius: 14,
+  cursor: "pointer",
 };
