@@ -36,6 +36,12 @@ export default function IA() {
       objectFit: "contain"
     }}
   />
+
+  <span>IA</span>
+ 
+
+ 
+ 
           <div>📰 Feed</div>
           <div>👤 Perfil</div>
           <div>⚙️ Configurações</div>
