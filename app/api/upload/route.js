@@ -59,11 +59,11 @@ export async function POST(req) {
         },
 
         body: JSON.stringify({
-          "URL da imagem": resultado.secure_url,
-          curtir: 0,
-          amei: 0,
-          comentarios: [],
-        }),
+  URL_da_imagem: resultado.secure_url,
+  curtir: 0,
+  amei: 0,
+  comentarios: [],
+}),
       }
     );
 
