@@ -24,7 +24,7 @@ export default function Pag2() {
   async function buscarPosts() {
     try {
       const response = await fetch(
-        "https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/posts",
+        "https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/posts"
       );
 
       const data = await response.json();
@@ -58,7 +58,7 @@ export default function Pag2() {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({ texto }),
-        },
+        }
       );
 
       const data = await response.json();
@@ -111,10 +111,14 @@ export default function Pag2() {
     if (!postAtual) return;
 
     const novoCurtir =
-      tipo === "curtir" ? (postAtual.curtir || 0) + 1 : postAtual.curtir || 0;
+      tipo === "curtir"
+        ? (postAtual.curtir || 0) + 1
+        : postAtual.curtir || 0;
 
     const novoAmei =
-      tipo === "amei" ? (postAtual.amei || 0) + 1 : postAtual.amei || 0;
+      tipo === "amei"
+        ? (postAtual.amei || 0) + 1
+        : postAtual.amei || 0;
 
     try {
       await fetch("https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/PATCH", {
@@ -136,8 +140,6 @@ export default function Pag2() {
       alert("Erro ao salvar reação");
     }
   }
-
-  console.log(posts);
 
   return (
     <div style={styles.page}>
@@ -261,7 +263,7 @@ export default function Pag2() {
                   style={styles.actionButton}
                   onClick={() => reagirPost(post.id, "curtir")}
                 >
-                 👍🏿 Curtir {post.curtir || 0}
+                  👍🏿 Curtir {post.curtir || 0}
                 </button>
 
                 <button
@@ -269,7 +271,7 @@ export default function Pag2() {
                   style={styles.actionButton}
                   onClick={() => reagirPost(post.id, "amei")}
                 >
-                 🖤 Amei {post.amei || 0}
+                  🖤 Amei {post.amei || 0}
                 </button>
 
                 <button
@@ -282,7 +284,10 @@ export default function Pag2() {
 
                     const comentariosAtuais = post.comentarios || [];
 
-                    const novosComentarios = [...comentariosAtuais, comentario];
+                    const novosComentarios = [
+                      ...comentariosAtuais,
+                      comentario,
+                    ];
 
                     try {
                       await fetch(
@@ -298,8 +303,9 @@ export default function Pag2() {
                             curtir: post.curtir || 0,
                             amei: post.amei || 0,
                           }),
-                        },
+                        }
                       );
+
                       buscarPosts();
                     } catch (error) {
                       console.error(error);
@@ -311,16 +317,6 @@ export default function Pag2() {
                   💬 Comentarios ({post.comentarios?.length || 0})
                 </button>
               </div>
-
-              {post.comentarios && post.comentarios.length > 0 && (
-                <div style={styles.commentsArea}>
-                  {post.comentarios.map((comentario, index) => (
-                    <div key={index} style={styles.comment}>
-                      💬 {comentario}
-                    </div>
-                  ))}
-                </div>
-              )}
             </div>
           ))}
       </div>
@@ -516,20 +512,6 @@ const styles = {
     fontSize: 15,
   },
 
-  commentsArea: {
-    marginTop: 12,
-    backgroundColor: "#f9fafb",
-    padding: 10,
-    borderRadius: 10,
-  },
-
-  comment: {
-    padding: 8,
-    borderBottom: "1px solid #e5e7eb",
-    fontSize: 14,
-    color: "#333",
-  },
-
   modalOverlay: {
     position: "fixed",
     top: 0,
@@ -584,4 +566,3 @@ const styles = {
     cursor: "pointer",
   },
 };
-
