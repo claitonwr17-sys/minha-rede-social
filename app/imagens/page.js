@@ -148,44 +148,46 @@ export default function Imagens() {
                   📸 Escolher imagem
 
                   <input
-                    type="file"
-                    hidden
-                    onChange={async (e) => {
-                      const file = e.target.files?.[0];
+  type="file"
+  hidden
+  onChange={async (e) => {
+    const file = e.target.files?.[0];
 
-                      if (!file) return;
+    if (!file) return;
 
-                      const formData = new FormData();
-                      formData.append("file", file);
+    const formData = new FormData();
+    formData.append("file", file);
 
-                      const res = await fetch("/api/upload", {
-                        method: "POST",
-                        body: formData,
-                      });
+    const res = await fetch("/api/upload", {
+      method: "POST",
+      body: formData,
+    });
 
-                      const data = await res.json();
+    const data = await res.json();
 
-                      if (data.url) {
-                        await fetch(
-                          "https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/salvar_imagem",
-                          {
-                            method: "POST",
-                            headers: {
-                              "Content-Type": "application/json",
-                            },
-                            body: JSON.stringify({
-                              "URL da imagem": data.url,
-                              curtir: 0,
-                              amei: 0,
-                              comentarios: [],
-                            }),
-                          }
-                        );
+    if (data.url) {
+      await fetch(
+        "https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/salvar_imagem",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            "URL da imagem": data.url,
+            curtir: 0,
+            amei: 0,
+            comentarios: [],
+          }),
+        }
+      );
 
-                        carregarFeed();
-                      }
-                    }}
-                  />
+      carregarFeed();
+
+      e.target.value = "";
+    }
+  }}
+/>
                 </label>
               </div>
             </div>
