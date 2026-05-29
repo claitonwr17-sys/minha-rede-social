@@ -8,10 +8,6 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-
-export const maxDuration = 60;
-
-
 export async function POST(req) {
   try {
     const data = await req.formData();
@@ -31,9 +27,12 @@ export async function POST(req) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    console.log("CLOUDINARY NAME:", process.env.CLOUDINARY_CLOUD_NAME);
+    console.log(
+      "CLOUDINARY NAME:",
+      process.env.CLOUDINARY_CLOUD_NAME
+    );
 
-const resultado = await new Promise((resolve, reject) => {
+    const resultado = await new Promise((resolve, reject) => {
       const stream = cloudinary.uploader.upload_stream(
         {
           folder: "conrad",
@@ -89,12 +88,12 @@ const resultado = await new Promise((resolve, reject) => {
     });
 
   } catch (erro) {
-  console.log("ERRO COMPLETO:", erro);
+    console.log("ERRO COMPLETO:", erro);
 
-  return Response.json(
+    return Response.json(
       {
         error: "Erro no upload",
-        detalhes: erro?.message || "Erro desconhecido",
+        detalhes: erro?.message || String(erro),
       },
       {
         status: 500,
