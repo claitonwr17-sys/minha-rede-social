@@ -93,7 +93,27 @@ export default function Imagens() {
     <div style={styles.page}>
       {/* SIDEBAR */}
       <div style={styles.sidebar}>
-        <div style={styles.logo}>📷 Conrad</div>
+        <div
+  style={{
+    display: "flex",
+    alignItems: "center",
+    gap: 10,
+    fontWeight: "bold",
+    fontSize: 28
+  }}
+>
+  <img
+    src="/logo/logo-simbolo.png"
+    alt="Logo"
+    style={{
+      width: 35,
+      height: 35,
+      objectFit: "contain"
+    }}
+  />
+
+  <span>Conrad</span>
+</div>
 
         <div style={styles.menu} onClick={() => router.push("/feed")}>
           🏠 Home
@@ -113,8 +133,8 @@ export default function Imagens() {
     src="/logo/logo-simbolo.png"
     alt="IA"
     style={{
-      width: 40,
-      height: 40,
+     width: 28,
+height: 28,
       borderRadius: 8,
       objectFit: "cover",
     }}
