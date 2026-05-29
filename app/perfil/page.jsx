@@ -58,7 +58,17 @@ export default function Perfil() {
               onMouseEnter={() => setHoverItem("ia")}
               onMouseLeave={() => setHoverItem("")}
             >
-              🤖 IA
+              <img
+  src="/logo.png"
+  alt="IA"
+  style={{
+    width: 28,
+    height: 28,
+    objectFit: "contain"
+  }}
+/>
+
+<span>IA</span>
             </div>
 
             <div
