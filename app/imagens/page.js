@@ -99,9 +99,22 @@ export default function Imagens() {
           🏠 Home
         </div>
 
-        <div style={styles.menu} onClick={() => router.push("/ia")}>
-          🤖 IA
-        </div>
+       <div
+  style={styles.menu}
+  onClick={() => router.push("/ia")}
+>
+  <div style={styles.iaContainer}>
+    
+    <img
+      src="/logo/logo-simbolo.png"
+      alt="IA"
+      style={styles.iaLogo}
+    />
+
+    <span>IA</span>
+
+  </div>
+</div>
 
         <div style={styles.menu} onClick={() => router.push("/feed")}>
           📰 Feed
