@@ -11,7 +11,7 @@ export default function Perfil() {
 
   const [hoverItem, setHoverItem] = useState("")
 
- const [fotoPerfil, setFotoPerfil] = useState("/usuario.png")
+ const [fotoPerfil, setFotoPerfil] = useState("/insta.png")
 
   const [fotoCapa, setFotoCapa] = useState("/insta.png")
 
@@ -50,26 +50,31 @@ export default function Perfil() {
               </div>
             </Link>
 
-            <div
-              style={{
-                ...styles.menuItem,
-                ...(hoverItem === "ia" && styles.menuHover)
-              }}
-              onMouseEnter={() => setHoverItem("ia")}
-              onMouseLeave={() => setHoverItem("")}
-            >
-             <img
-  src="/logo/logo-simbolo.png"
-  alt="IA"
+           <div
   style={{
-    width: 28,
-    height: 28,
-    objectFit: "contain"
+    ...styles.menuItem,
+    ...(hoverItem === "ia" && styles.menuHover),
+    display: "flex",
+    alignItems: "center",
+    gap: 12
   }}
-/>
+  onMouseEnter={() => setHoverItem("ia")}
+  onMouseLeave={() => setHoverItem("")}
+>
 
-<span>IA</span>
-            </div>
+  <img
+    src="/logo/logo-simbolo.png"
+    alt="IA"
+    style={{
+      width: 32,
+      height: 32,
+      objectFit: "contain"
+    }}
+  />
+
+  <span>IA</span>
+
+</div>
 
             <div
               style={{
