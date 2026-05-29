@@ -194,7 +194,7 @@ export default function Pag2() {
   />
 
   <span>IA</span>
-</> IA
+</> 
         </div>
 
         <a
