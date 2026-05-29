@@ -11,7 +11,7 @@ export default function Perfil() {
 
   const [hoverItem, setHoverItem] = useState("")
 
-  const [fotoPerfil, setFotoPerfil] = useState("/insta.png")
+ const [fotoPerfil, setFotoPerfil] = useState("/claiton.png")
 
   const [fotoCapa, setFotoCapa] = useState("/insta.png")
 
