@@ -27,7 +27,9 @@ export async function POST(req) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    const resultado = await new Promise((resolve, reject) => {
+    console.log("CLOUDINARY NAME:", process.env.CLOUDINARY_CLOUD_NAME);
+
+const resultado = await new Promise((resolve, reject) => {
       const stream = cloudinary.uploader.upload_stream(
         {
           folder: "conrad",
@@ -83,9 +85,9 @@ export async function POST(req) {
     });
 
   } catch (erro) {
-    console.error("ERRO CLOUDINARY:", erro);
+  console.log("ERRO COMPLETO:", erro);
 
-    return Response.json(
+  return Response.json(
       {
         error: "Erro no upload",
         detalhes: erro?.message || "Erro desconhecido",
