@@ -51,6 +51,7 @@ export default function Perfil() {
             </Link>
 
            <div
+  
   style={{
     ...styles.menuItem,
     ...(hoverItem === "ia" && styles.menuHover),
@@ -60,6 +61,7 @@ export default function Perfil() {
   }}
   onMouseEnter={() => setHoverItem("ia")}
   onMouseLeave={() => setHoverItem("")}
+ onClick={() => router.push("/IA")}
 >
 
   <img
