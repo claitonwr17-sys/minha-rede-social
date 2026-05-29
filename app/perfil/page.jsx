@@ -11,7 +11,7 @@ export default function Perfil() {
 
   const [hoverItem, setHoverItem] = useState("")
 
- const [fotoPerfil, setFotoPerfil] = useState("/claiton.png")
+ const [fotoPerfil, setFotoPerfil] = useState("/usuario.png")
 
   const [fotoCapa, setFotoCapa] = useState("/insta.png")
 
@@ -334,10 +334,10 @@ const styles = {
   },
 
   banner: {
-    width: "100%",
-    height: 230,
-    objectFit: "cover"
-  },
+  width: "100%",
+  height: 180,
+  objectFit: "cover"
+},
 
   changeCoverButton: {
     position: "absolute",
