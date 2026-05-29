@@ -182,7 +182,19 @@ export default function Pag2() {
           onMouseEnter={() => setHoverItem("ia")}
           onMouseLeave={() => setHoverItem("")}
         >
-          🤖 IA
+          <>
+  <img
+    src="/logo/logo-simbolo.png"
+    alt="IA"
+    style={{
+      width: 24,
+      height: 24,
+      objectFit: "contain"
+    }}
+  />
+
+  <span>IA</span>
+</> IA
         </div>
 
         <a
