@@ -27,7 +27,15 @@ export default function IA() {
 
         <div style={{ display: "flex", flexDirection: "column", gap: 25 }}>
           <div>🏠 Home</div>
-          <div>🧠 IA</div>
+          <img
+    src="/logo/logo-simbolo.png"
+    alt="IA"
+    style={{
+      width: 32,
+      height: 32,
+      objectFit: "contain"
+    }}
+  />
           <div>📰 Feed</div>
           <div>👤 Perfil</div>
           <div>⚙️ Configurações</div>
