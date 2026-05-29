@@ -27,7 +27,8 @@ export default function IA() {
 
         <div style={{ display: "flex", flexDirection: "column", gap: 25 }}>
           <div>🏠 Home</div>
-          <img
+         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+  <img
     src="/logo/logo-simbolo.png"
     alt="IA"
     style={{
@@ -38,6 +39,7 @@ export default function IA() {
   />
 
   <span>IA</span>
+</div>
  
 
  
