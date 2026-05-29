@@ -7,15 +7,11 @@ cloudinary.config({
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
-export const runtime = "nodejs";
+
 
 export const maxDuration = 60;
 
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
+
 export async function POST(req) {
   try {
     const data = await req.formData();
