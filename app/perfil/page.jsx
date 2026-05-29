@@ -301,16 +301,15 @@ const styles = {
   },
 
   content: {
-    flex: 1,
-    padding: 30
-  },
-
-  navbar: {
-    backgroundColor: "white",
-    padding: 20,
-    borderRadius: 16,
-    marginBottom: 30
-  },
+  flex: 1,
+  padding: 10
+},
+ navbar: {
+  backgroundColor: "white",
+  padding: 10,
+  borderRadius: 16,
+  marginBottom: 10
+},
 
   search: {
     width: 300,
@@ -335,10 +334,9 @@ const styles = {
 
   banner: {
   width: "100%",
-  height: 140,
+  height: 260,
   objectFit: "cover"
 },
-
   changeCoverButton: {
     position: "absolute",
     right: 20,
