@@ -100,20 +100,27 @@ export default function Imagens() {
         </div>
 
        <div
-  style={styles.menu}
+  
+  style={{
+    ...styles.menu,
+    display: "flex",
+    alignItems: "center",
+    gap: 10,
+  }}
   onClick={() => router.push("/ia")}
 >
-  <div style={styles.iaContainer}>
-    
-    <img
-      src="/logo/logo-simbolo.png"
-      alt="IA"
-      style={styles.iaLogo}
-    />
+  <img
+    src="/logo/logo-simbolo.png"
+    alt="IA"
+    style={{
+      width: 40,
+      height: 40,
+      borderRadius: 8,
+      objectFit: "cover",
+    }}
+  />
 
-    <span>IA</span>
-
-  </div>
+  <span>IA</span>
 </div>
 
         <div style={styles.menu} onClick={() => router.push("/feed")}>
