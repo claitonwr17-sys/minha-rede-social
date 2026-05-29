@@ -11,6 +11,10 @@ export default function Perfil() {
 
   const [hoverItem, setHoverItem] = useState("")
 
+  const [fotoPerfil, setFotoPerfil] = useState("/insta.png")
+
+  const [fotoCapa, setFotoCapa] = useState("/insta.png")
+
   function logout() {
     router.push("/feed")
   }
@@ -25,26 +29,26 @@ export default function Perfil() {
         <div>
 
           <div style={styles.logo}>
-             Conrad
+            Conrad
           </div>
 
           <div style={styles.menu}>
 
             <Link
-  href="/feed"
-  style={{ textDecoration: "none" }}
->
-  <div
-    style={{
-      ...styles.menuItem,
-      ...(hoverItem === "home" && styles.menuHover)
-    }}
-    onMouseEnter={() => setHoverItem("home")}
-    onMouseLeave={() => setHoverItem("")}
-  >
-    🏠 Home
-  </div>
-</Link>
+              href="/feed"
+              style={{ textDecoration: "none" }}
+            >
+              <div
+                style={{
+                  ...styles.menuItem,
+                  ...(hoverItem === "home" && styles.menuHover)
+                }}
+                onMouseEnter={() => setHoverItem("home")}
+                onMouseLeave={() => setHoverItem("")}
+              >
+                🏠 Home
+              </div>
+            </Link>
 
             <div
               style={{
@@ -57,17 +61,17 @@ export default function Perfil() {
               🤖 IA
             </div>
 
-           <div
-  style={{
-    ...styles.menuItem,
-    ...(hoverItem === "explorar" && styles.menuHover)
-  }}
-  onMouseEnter={() => setHoverItem("explorar")}
-  onMouseLeave={() => setHoverItem("")}
-  onClick={() => router.push("/imagens")}
->
-  📰 Feed
-</div>
+            <div
+              style={{
+                ...styles.menuItem,
+                ...(hoverItem === "explorar" && styles.menuHover)
+              }}
+              onMouseEnter={() => setHoverItem("explorar")}
+              onMouseLeave={() => setHoverItem("")}
+              onClick={() => router.push("/imagens")}
+            >
+              📰 Feed
+            </div>
 
             <div style={styles.menuAtivo}>
               👤 Perfil
@@ -97,7 +101,7 @@ export default function Perfil() {
           onMouseLeave={() => setHoverItem("")}
           onClick={logout}
         >
-           Sair
+          Sair
         </div>
 
       </div>
@@ -119,49 +123,82 @@ export default function Perfil() {
         <div style={styles.card}>
 
           {/* BANNER */}
-          <img
-           src="/insta.png"
-            alt="Banner"
-            style={styles.banner}
-          />
+          <div style={styles.bannerContainer}>
+
+            <img
+              src={fotoCapa}
+              alt="Banner"
+              style={styles.banner}
+            />
+
+            <label style={styles.changeCoverButton}>
+              Alterar capa
+
+              <input
+                type="file"
+                hidden
+                onChange={(e) => {
+                  const file = e.target.files?.[0]
+
+                  if (!file) return
+
+                  const imageUrl = URL.createObjectURL(file)
+
+                  setFotoCapa(imageUrl)
+                }}
+              />
+            </label>
+
+          </div>
 
           {/* FOTO */}
-<div style={styles.avatarArea}>
+          <div style={styles.avatarArea}>
 
-  <img
-    src="/insta.png"
-    alt="Usuário"
-    style={styles.avatar}
-  />
+            <img
+              src={fotoPerfil}
+              alt="Usuário"
+              style={styles.avatar}
+            />
 
-</div>
-<div>
-          <div style={styles.nome}>
-  Claiton Wroblewski
-</div>
+          </div>
 
-<div style={styles.usuario}>
-  @claitonwr17
-</div>
+          {/* INFO */}
+          <div style={styles.info}>
 
-            <button
-              style={styles.botao}
-              onMouseEnter={(e) => {
-                e.target.style.backgroundColor = "#000"
-                e.target.style.transform = "scale(1.03)"
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.backgroundColor = "#000"
-                e.target.style.transform = "scale(1)"
-              }}
-            >
+            <div>
+
+              <div style={styles.nome}>
+                Claiton Wroblewski
+              </div>
+
+              <div style={styles.usuario}>
+                @claitonwr17
+              </div>
+
+            </div>
+
+            <label style={styles.botao}>
               Editar perfil
-            </button>
+
+              <input
+                type="file"
+                hidden
+                onChange={(e) => {
+                  const file = e.target.files?.[0]
+
+                  if (!file) return
+
+                  const imageUrl = URL.createObjectURL(file)
+
+                  setFotoPerfil(imageUrl)
+                }}
+              />
+            </label>
 
           </div>
 
           <div style={styles.bio}>
-            Construindo uma rede social com IA 
+            Construindo uma rede social com IA
           </div>
 
           {/* ESTATÍSTICAS */}
@@ -248,15 +285,16 @@ const styles = {
   },
 
   logout: {
-  backgroundColor: "#000",
-  color: "white",
-  padding: "14px 18px",
-  borderRadius: 12,
-  fontSize: 18,
-  cursor: "pointer",
-  transition: "0.2s",
-  textAlign: "center"
-},
+    backgroundColor: "#000",
+    color: "white",
+    padding: "14px 18px",
+    borderRadius: 12,
+    fontSize: 18,
+    cursor: "pointer",
+    transition: "0.2s",
+    textAlign: "center"
+  },
+
   logoutHover: {
     transform: "translateX(5px)",
     opacity: 0.8
@@ -291,10 +329,26 @@ const styles = {
     margin: "0 auto"
   },
 
+  bannerContainer: {
+    position: "relative"
+  },
+
   banner: {
     width: "100%",
     height: 230,
     objectFit: "cover"
+  },
+
+  changeCoverButton: {
+    position: "absolute",
+    right: 20,
+    bottom: 20,
+    backgroundColor: "#000",
+    color: "white",
+    padding: "10px 14px",
+    borderRadius: 10,
+    cursor: "pointer",
+    fontWeight: "bold"
   },
 
   avatarArea: {
@@ -308,7 +362,7 @@ const styles = {
     borderRadius: "50%",
     backgroundColor: "white",
     padding: 6,
-    objectFit: "contain",
+    objectFit: "cover",
     boxShadow: "0 2px 8px rgba(0,0,0,0.2)"
   },
 
@@ -367,7 +421,7 @@ const styles = {
     color: "#222"
   },
 
-   statTexto: {
+  statTexto: {
     marginTop: 5,
     color: "#666",
     fontSize: 18
