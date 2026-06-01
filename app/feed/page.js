@@ -181,7 +181,7 @@ export default function Pag2() {
   }}
   onMouseEnter={() => setHoverItem("ia")}
   onMouseLeave={() => setHoverItem("")}
-  onClick={() => router.push("/ia")}
+  onClick={() => router.push("/IA")}
 >
   <div
     style={{
