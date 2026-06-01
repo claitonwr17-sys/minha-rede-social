@@ -127,7 +127,7 @@ export default function Imagens() {
     alignItems: "center",
     gap: 10,
   }}
-  onClick={() => router.push("/ia")}
+  onClick={() => router.push("/IA")}
 > 
 
   <img
