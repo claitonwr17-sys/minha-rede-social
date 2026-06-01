@@ -1,8 +1,10 @@
 "use client";
 
 import "@fontsource/inter";
-
+import { useRouter } from "next/navigation";
 export default function IA() {
+  const router = useRouter();
+
   return (
     <div
       style={{
@@ -54,7 +56,12 @@ export default function IA() {
             gap: 18,
           }}
         >
-          <div style={menuItem}>🏠 Home</div>
+          <div
+  style={menuItem}
+  onClick={() => router.push("/feed")}
+>
+  🏠 Home
+</div>
 
           <div style={menuItem}>
             <img
@@ -70,8 +77,18 @@ export default function IA() {
             <span>IA</span>
           </div>
 
-          <div style={menuItem}>📰 Feed</div>
-          <div style={menuItem}>👤 Perfil</div>
+          <div
+  style={menuItem}
+  onClick={() => router.push("/imagens")}
+>
+  📰 Feed
+</div>
+         <div
+  style={menuItem}
+  onClick={() => router.push("/perfil")}
+>
+  👤 Perfil
+</div>
           <div style={menuItem}>⚙️ Configurações</div>
         </div>
       </div>
