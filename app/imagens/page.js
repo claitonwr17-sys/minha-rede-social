@@ -177,65 +177,71 @@ height: 28,
                   Agora mesmo
                 </div>
 
-                {/* BOTÃO UPLOAD */}
-                <label style={styles.uploadButton}>
-                  📸 Escolher imagem
+    {/* BOTÃO UPLOAD + PUBLICAR */}
+<div style={styles.topButtons}>
 
-                  <input
-  type="file"
-  hidden
-  onChange={async (e) => {
-  const file = e.target.files?.[0];
+  <label style={styles.uploadButton}>
+    📸 Escolher imagem
 
-  if (!file) return;
+    <input
+      type="file"
+      hidden
+      onChange={async (e) => {
+        const file = e.target.files?.[0];
 
-  const formData = new FormData();
-  formData.append("file", file);
+        if (!file) return;
 
- const res = await fetch("/api/upload", {
-  method: "POST",
-  body: formData,
-});
+        const formData = new FormData();
+        formData.append("file", file);
 
-  const data = await res.json();
+        const res = await fetch("/api/upload", {
+          method: "POST",
+          body: formData,
+        });
 
-  if (data.url) {
-    await fetch(
-      "https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/salvar_imagem",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          "URL da imagem": data.url,
-          curtir: 0,
-          amei: 0,
-          comentarios: [],
-        }),
-      }
-    );
+        const data = await res.json();
 
-    carregarFeed();
-  }
+        if (data.url) {
+          await fetch(
+            "https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/salvar_imagem",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                "URL da imagem": data.url,
+                curtir: 0,
+                amei: 0,
+                comentarios: [],
+              }),
+            }
+          );
 
-  e.target.value = "";
-}}
-/>
-                </label>
-                <button
-  style={styles.postButton}
-  onClick={() => {
-    alert("Analisar imagem");
-  }}
->
-  Publicar
-</button>
-              </div>
-            </div>
+          carregarFeed();
+        }
 
-            {/* IMAGEM */}
-            <div style={styles.imageBox}>
+        e.target.value = "";
+      }}
+    />
+  </label>
+
+  <button
+    style={styles.postButton}
+    onClick={() => {
+      alert("Analisar imagem");
+    }}
+  >
+    Publicar
+  </button>
+
+</div>
+
+</div>
+</div>
+
+{/* IMAGEM */}
+<div style={styles.imageBox}>
               {img.image_url ||
               img["URL da imagem"] ||
               img.url ||
@@ -417,18 +423,27 @@ const styles = {
     fontSize: 12,
     color: "gray",
   },
+topButtons: {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+  marginTop: 8,
+  width: "100%",
+},
 
-  uploadButton: {
-    display: "inline-block",
-    marginTop: 8,
-    background: "black",
-    color: "white",
-    padding: 8,
-    borderRadius: 10,
-    cursor: "pointer",
-  },
+uploadButton: {
+  display: "inline-block",
+  marginTop: 8,
+  background: "black",
+  color: "white",
+  padding: 8,
+  borderRadius: 10,
+  cursor: "pointer",
+},
+
 postButton: {
   marginTop: 12,
+  marginLeft: "auto",
   backgroundColor: "#000",
   color: "white",
   border: "none",
