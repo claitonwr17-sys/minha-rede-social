@@ -430,7 +430,6 @@ topButtons: {
   alignItems: "center",
   gap: 12,
   marginTop: 10,
-  marginLeft: 150,
 },
 
 uploadButton: {
@@ -445,11 +444,12 @@ uploadButton: {
 },
 
 postButton: {
-  background: "#000",
-  color: "#fff",
+  marginLeft: "auto",
+  backgroundColor: "#000",
+  color: "white",
+  border: "none",
   padding: "12px 18px",
   borderRadius: 10,
-  border: "none",
   cursor: "pointer",
   fontWeight: "bold",
 },
