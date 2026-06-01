@@ -431,10 +431,10 @@ const styles = {
   },
 
   postImage: {
-    width: "100%",
-    height: 300,
-    objectFit: "cover",
-  },
+  width: "100%",
+  maxHeight: 700,
+  objectFit: "contain",
+},
 
   actions: {
     display: "flex",
