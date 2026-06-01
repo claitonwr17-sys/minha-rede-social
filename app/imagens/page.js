@@ -223,6 +223,14 @@ height: 28,
 }}
 />
                 </label>
+                <button
+  style={styles.postButton}
+  onClick={() => {
+    alert("Analisar imagem");
+  }}
+>
+  Publicar
+</button>
               </div>
             </div>
 
@@ -419,6 +427,16 @@ const styles = {
     borderRadius: 10,
     cursor: "pointer",
   },
+postButton: {
+  marginTop: 12,
+  backgroundColor: "#000",
+  color: "white",
+  border: "none",
+  padding: "12px 18px",
+  borderRadius: 10,
+  cursor: "pointer",
+  fontWeight: "bold",
+},
 
   imageBox: {
     marginTop: 15,
