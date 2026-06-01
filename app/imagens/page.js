@@ -176,6 +176,8 @@ height: 28,
                 <div style={styles.time}>
                   Agora mesmo
                 </div>
+                 
+  
 
     {/* BOTÃO UPLOAD + PUBLICAR */}
 <div style={styles.topButtons}>
@@ -428,6 +430,7 @@ topButtons: {
   alignItems: "center",
   gap: 12,
   marginTop: 10,
+  marginLeft: 150,
 },
 
 uploadButton: {
