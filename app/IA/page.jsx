@@ -2,6 +2,7 @@
 
 import "@fontsource/inter";
 import { useRouter } from "next/navigation";
+
 export default function IA() {
   const router = useRouter();
 
@@ -39,13 +40,20 @@ export default function IA() {
             src="/logo/logo-simbolo.png"
             alt="Conrad"
             style={{
-              width: 46,
-              height: 46,
+              width: 34,
+              height: 34,
               objectFit: "contain",
             }}
           />
 
-          <h2 style={{ margin: 0, fontSize: 34 }}>Conrad IA</h2>
+          <h2
+            style={{
+              margin: 0,
+              fontSize: 22,
+            }}
+          >
+            Conrad IA
+          </h2>
         </div>
 
         {/* MENU */}
@@ -57,11 +65,11 @@ export default function IA() {
           }}
         >
           <div
-  style={menuItem}
-  onClick={() => router.push("/feed")}
->
-  🏠 Home
-</div>
+            style={menuItem}
+            onClick={() => router.push("/feed")}
+          >
+            🏠 Home
+          </div>
 
           <div style={menuItem}>
             <img
@@ -78,20 +86,26 @@ export default function IA() {
           </div>
 
           <div
-  style={menuItem}
-  onClick={() => router.push("/imagens")}
->
-  📰 Feed
-</div>
-         <div
-  style={menuItem}
-  onClick={() => router.push("/perfil")}
->
-  👤 Perfil
-</div>
-          <div style={menuItem}>⚙️ Configurações</div>
+            style={menuItem}
+            onClick={() => router.push("/imagens")}
+          >
+            📰 Feed
+          </div>
+
+          <div
+            style={menuItem}
+            onClick={() => router.push("/perfil")}
+          >
+            👤 Perfil
+          </div>
+
+          <div style={menuItem}>
+            ⚙️ Configurações
+          </div>
         </div>
       </div>
+
+      {/* CONTEÚDO */}
 
       {/* CONTEÚDO */}
       <div
@@ -126,15 +140,15 @@ export default function IA() {
                 src="/logo/logo-simbolo.png"
                 alt="Conrad"
                 style={{
-                  width: 70,
-                  height: 70,
+                 width: 50,
+height: 50,
                   objectFit: "contain",
                 }}
               />
 
               <h1
                 style={{
-                  fontSize: 58,
+                 fontSize: 32,
                   margin: 0,
                   color: "#111",
                 }}
@@ -204,38 +218,38 @@ export default function IA() {
 
 const card = {
   backgroundColor: "white",
-  padding: 40,
-  borderRadius: 24,
+  padding: 25,
+  borderRadius: 20,
   border: "1px solid #e5e5e5",
   boxShadow: "0 2px 10px rgba(0,0,0,0.03)",
 };
 
 const title = {
-  fontSize: 42,
+  fontSize: 26,
   fontWeight: "bold",
-  marginBottom: 20,
+  marginBottom: 16,
   color: "#111",
 };
 
 const text = {
-  fontSize: 26,
+  fontSize: 18,
   color: "#444",
-  lineHeight: 1.8,
+  lineHeight: 1.6,
 };
 
 const list = {
-  fontSize: 24,
+  fontSize: 18,
   color: "#444",
-  lineHeight: 2,
-  paddingLeft: 25,
+  lineHeight: 1.8,
+  paddingLeft: 22,
 };
 
 const menuItem = {
   display: "flex",
   alignItems: "center",
-  gap: 12,
-  fontSize: 28,
-  padding: "14px 18px",
-  borderRadius: 14,
+  gap: 10,
+  fontSize: 18,
+  padding: "10px 14px",
+  borderRadius: 12,
   cursor: "pointer",
 };
