@@ -137,51 +137,65 @@ export default function Imagens() {
   }
 
   // =====================================================
-  // PUBLICAR IMAGEM
-  // =====================================================
-  async function publicarImagem() {
-    if (!imagemSelecionada) {
-      alert("Escolha uma imagem primeiro.");
-      return;
-    }
-
-    try {
-      setPublicandoImagem(true);
-
-      const res = await fetch(
-        "https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/salvar_imagem",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            "URL da imagem": imagemSelecionada,
-            curtir: 0,
-            amei: 0,
-            comentarios: [],
-          }),
-        }
-      );
-
-      if (!res.ok) {
-        throw new Error("Erro ao salvar imagem no Xano.");
-      }
-
-      // Limpa a área de publicação
-      setImagemSelecionada(null);
-
-      // Atualiza o feed
-      await carregarFeed();
-
-      alert("Imagem publicada com sucesso!");
-    } catch (error) {
-      console.error(error);
-      alert("Erro ao publicar a imagem.");
-    } finally {
-      setPublicandoImagem(false);
-    }
+// PUBLICAR IMAGEM
+// =====================================================
+async function publicarImagem() {
+  if (!imagemSelecionada) {
+    alert("Escolha uma imagem primeiro.");
+    return;
   }
+
+  try {
+    setPublicandoImagem(true);
+
+    const res = await fetch(
+      "https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/salvar_imagem",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          "URL da imagem": imagemSelecionada,
+          curtir: 0,
+          amei: 0,
+          comentarios: [],
+        }),
+      }
+    );
+
+    // Pega exatamente a resposta enviada pelo Xano
+    const respostaTexto = await res.text();
+
+    console.log("STATUS XANO:", res.status);
+    console.log("RESPOSTA XANO:", respostaTexto);
+
+    if (!res.ok) {
+      throw new Error(
+        `Xano respondeu ${res.status}: ${respostaTexto}`
+      );
+    }
+
+    // Limpa a área de publicação
+    setImagemSelecionada(null);
+
+    // Atualiza o feed
+    await carregarFeed();
+
+    alert("Imagem publicada com sucesso!");
+
+  } catch (error) {
+    console.error("ERRO COMPLETO AO PUBLICAR:", error);
+
+    alert(
+      "Erro ao publicar a imagem.\n\n" +
+      error.message
+    );
+
+  } finally {
+    setPublicandoImagem(false);
+  }
+}
 
   // =====================================================
   // CANCELAR IMAGEM
