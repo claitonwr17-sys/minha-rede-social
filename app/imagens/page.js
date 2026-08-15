@@ -197,7 +197,7 @@ if (!resultadoVision) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          "URL da imagem": imagemSelecionada,
+          URL_da_imagem: imagemSelecionada,
           curtir: 0,
           amei: 0,
           comentarios: [],
