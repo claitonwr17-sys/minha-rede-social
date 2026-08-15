@@ -137,6 +137,43 @@ export default function Imagens() {
   }
 
   // =====================================================
+// GOOGLE VISION
+// =====================================================
+async function analisarComVision(imageUrl) {
+  try {
+    const res = await fetch(
+      "https://apis-sentiment-gemini-vision.claitonwr17.workers.dev/",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          imageUrl: imageUrl,
+        }),
+      }
+    );
+
+    const data = await res.json();
+
+    console.log("===== RESULTADO DO WORKER =====");
+    console.log(data);
+
+    if (!res.ok) {
+      throw new Error(
+        data.detalhes || "Erro ao chamar o Worker."
+      );
+    }
+
+    return data;
+  } catch (error) {
+    console.error("Erro na Google Vision:", error);
+    alert("Erro ao analisar a imagem com a Vision.");
+    return null;
+  }
+}
+
+// =====================================================
 // PUBLICAR IMAGEM
 // =====================================================
 async function publicarImagem() {
@@ -144,10 +181,14 @@ async function publicarImagem() {
     alert("Escolha uma imagem primeiro.");
     return;
   }
-
   try {
     setPublicandoImagem(true);
+const resultadoVision = await analisarComVision(imagemSelecionada);
 
+if (!resultadoVision) {
+  setPublicandoImagem(false);
+  return;
+}
     const res = await fetch(
       "https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/salvar_imagem",
       {
