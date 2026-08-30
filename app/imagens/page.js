@@ -189,21 +189,26 @@ if (!resultadoVision) {
   setPublicandoImagem(false);
   return;
 }
-    const res = await fetch(
-      "https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/salvar_imagem",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          URL_da_imagem: imagemSelecionada,
-          curtir: 0,
-          amei: 0,
-          comentarios: [],
-        }),
-      }
-    );
+
+// DEBUG — antes de chamar o Xano
+console.log("===== CHAMANDO SALVAR_IMAGEM =====");
+console.log("Imagem enviada:", imagemSelecionada);
+
+const res = await fetch(
+  "https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/salvar_imagem",
+  {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      URL_da_imagem: imagemSelecionada,
+      curtir: 0,
+      amei: 0,
+      comentarios: [],
+    }),
+  }
+);
 
     // Pega exatamente a resposta enviada pelo Xano
     const respostaTexto = await res.text();
