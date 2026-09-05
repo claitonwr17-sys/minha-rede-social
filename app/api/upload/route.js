@@ -50,75 +50,25 @@ export async function POST(req) {
       stream.end(buffer);
     });
 
-    const respostaXano = await fetch(
-  "https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/salvar_imagem",
-  {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-
-    body: JSON.stringify({
-      URL_da_imagem: resultado.secure_url,
-    }),
-  }
-);
-
-if (!respostaXano.ok) {
-  const erroTexto = await respostaXano.text();
-
-  console.log("ERRO XANO:", erroTexto);
-
-  return Response.json(
-    {
-      error: "Erro ao salvar no Xano",
-      detalhes: erroTexto,
-    },
-    {
-      status: 500,
-    }
-  );
-}
-
-return Response.json({
-  url: resultado.secure_url,
-});
-
-    if (!respostaXano.ok) {
-      const erroTexto = await respostaXano.text();
-
-      console.log("ERRO XANO:", erroTexto);
-
-      return Response.json(
-        {
-          error: "Erro ao salvar no Xano",
-          detalhes: erroTexto,
-        },
-        {
-          status: 500,
-        }
-      );
-    }
-
     return Response.json({
       url: resultado.secure_url,
     });
 
-} catch (erro) {
-  console.log("ERRO COMPLETO:", erro);
+  } catch (erro) {
+    console.log("ERRO COMPLETO:", erro);
 
-  return new Response(
-    JSON.stringify({
-      erro: String(erro),
-      mensagem: erro?.message,
-      stack: erro?.stack,
-    }),
-    {
-      status: 500,
-      headers: {
-        "Content-Type": "application/json",
-      },
-    }
-  );
-}
+    return new Response(
+      JSON.stringify({
+        erro: String(erro),
+        mensagem: erro?.message,
+        stack: erro?.stack,
+      }),
+      {
+        status: 500,
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+  }
 }
