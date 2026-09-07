@@ -16,9 +16,11 @@ export default function Imagens() {
   // NOVO: IMAGEM QUE ESTÁ SENDO PREPARADA PARA PUBLICAÇÃO
   // =====================================================
   const [imagemSelecionada, setImagemSelecionada] = useState(null);
-  const [enviandoImagem, setEnviandoImagem] = useState(false);
-  const [publicandoImagem, setPublicandoImagem] = useState(false);
+const [enviandoImagem, setEnviandoImagem] = useState(false);
+const [publicandoImagem, setPublicandoImagem] = useState(false);
 
+const [respostaConradAI, setRespostaConradAI] = useState("");
+const [analisandoImagem, setAnalisandoImagem] = useState(false);
   async function curtir(post) {
     await fetch(
       "https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/Reagir_a_iamgens",
@@ -97,44 +99,62 @@ export default function Imagens() {
   }
 
   // =====================================================
-  // ESCOLHER IMAGEM
-  // =====================================================
-  async function escolherImagem(e) {
-    const file = e.target.files?.[0];
+// ESCOLHER IMAGEM
+// =====================================================
+async function escolherImagem(e) {
+  const file = e.target.files?.[0];
 
-    if (!file) return;
+  if (!file) return;
 
-    try {
-      setEnviandoImagem(true);
+  try {
+    setEnviandoImagem(true);
 
-      const formData = new FormData();
-      formData.append("file", file);
+    const formData = new FormData();
+    formData.append("file", file);
 
-      const res = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
-      });
+    const res = await fetch("/api/upload", {
+      method: "POST",
+      body: formData,
+    });
 
-      const data = await res.json();
+    const data = await res.json();
 
-      if (data.url) {
-        // IMPORTANTE:
-        // Aqui NÃO salvamos no Xano ainda.
-        // Apenas guardamos a URL da imagem escolhida.
-        setImagemSelecionada(data.url);
-      } else {
-        alert("Não foi possível enviar a imagem.");
+    if (data.url) {
+      // Guarda a imagem escolhida
+      setImagemSelecionada(data.url);
+
+      // Inicia a análise do Conrad AI
+      setAnalisandoImagem(true);
+
+      try {
+        const resultadoIA = await analisarComVision(data.url);
+
+        const textoIA =
+          resultadoIA?.gemini?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+        if (textoIA) {
+          setRespostaConradAI(textoIA);
+        } else {
+          setRespostaConradAI(
+            "A IA do Conrad não conseguiu gerar uma análise."
+          );
+        }
+      } finally {
+        setAnalisandoImagem(false);
       }
-    } catch (error) {
-      console.error(error);
-      alert("Erro ao enviar a imagem.");
-    } finally {
-      setEnviandoImagem(false);
-
-      // Permite escolher a mesma imagem novamente depois
-      e.target.value = "";
+    } else {
+      alert("Não foi possível enviar a imagem.");
     }
+  } catch (error) {
+    console.error(error);
+    alert("Erro ao enviar a imagem.");
+  } finally {
+    setEnviandoImagem(false);
+
+    // Permite escolher a mesma imagem novamente depois
+    e.target.value = "";
   }
+}
 
   // =====================================================
 // GOOGLE VISION
@@ -381,54 +401,144 @@ const res = await fetch(
           </div>
 
           {/* =================================================
-              CARREGANDO IMAGEM
-          ================================================== */}
-          {enviandoImagem && (
-            <div style={styles.loadingText}>
-              ⏳ Enviando imagem...
-            </div>
-          )}
+    CARREGANDO IMAGEM
+================================================== */}
+{enviandoImagem && (
+  <div style={styles.loadingText}>
+    ⏳ Enviando imagem...
+  </div>
+)}
 
-          {/* =================================================
-              PREVIEW DA IMAGEM ESCOLHIDA
-          ================================================== */}
-          {imagemSelecionada && (
-            <div style={styles.previewArea}>
+{/* =================================================
+    PREVIEW DA IMAGEM ESCOLHIDA
+================================================== */}
+{imagemSelecionada && (
+  <div style={styles.previewArea}>
 
-              <img
-                src={imagemSelecionada}
-                alt="Imagem selecionada"
-                style={styles.previewImage}
-              />
+    <img
+      src={imagemSelecionada}
+      alt="Imagem selecionada"
+      style={styles.previewImage}
+    />
 
-              {/* BOTÕES */}
-              <div style={styles.publishArea}>
+    {/* CONRAD AI */}
+    {analisandoImagem ? (
+      <div
+        style={{
+          marginTop: 16,
+          padding: 16,
+          borderRadius: 14,
+          background: "#f7f7f8",
+          border: "1px solid #e5e5e5",
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
+        }}
+      >
+        <img
+          src="/logo/conrad-ai.png"
+          alt="Conrad AI"
+          style={{
+            width: 42,
+            height: 42,
+            objectFit: "contain",
+          }}
+        />
 
-                <button
-                  style={styles.cancelButton}
-                  onClick={cancelarImagem}
-                  disabled={publicandoImagem}
-                >
-                  Cancelar
-                </button>
+        <div>
+          <div
+            style={{
+              fontWeight: "bold",
+              fontSize: 16,
+            }}
+          >
+            Conrad AI
+          </div>
 
-                <button
-                  style={styles.postButton}
-                  onClick={publicarImagem}
-                  disabled={publicandoImagem}
-                >
-                  {publicandoImagem
-                    ? "Publicando..."
-                    : "Publicar"}
-                </button>
+          <div
+            style={{
+              marginTop: 4,
+              color: "#666",
+              fontSize: 14,
+            }}
+          >
+            Analisando sua imagem...
+          </div>
+        </div>
+      </div>
+    ) : respostaConradAI ? (
+      <div
+        style={{
+          marginTop: 16,
+          padding: 16,
+          borderRadius: 14,
+          background: "#f7f7f8",
+          border: "1px solid #e5e5e5",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            marginBottom: 12,
+          }}
+        >
+          <img
+            src="/logo/conrad-ai.png"
+            alt="Conrad AI"
+            style={{
+              width: 42,
+              height: 42,
+              objectFit: "contain",
+            }}
+          />
 
-              </div>
-
-            </div>
-          )}
-
+          <strong style={{ fontSize: 17 }}>
+            Conrad AI
+          </strong>
         </div>
 
+        <div
+          style={{
+            whiteSpace: "pre-wrap",
+            lineHeight: 1.5,
+            fontSize: 15,
+            color: "#222",
+          }}
+        >
+          {respostaConradAI}
+        </div>
+      </div>
+    ) : null}
+
+    {/* BOTÕES */}
+    <div style={styles.publishArea}>
+
+      <button
+        style={styles.cancelButton}
+        onClick={cancelarImagem}
+        disabled={publicandoImagem}
+      >
+        Cancelar
+      </button>
+
+      <button
+        style={styles.postButton}
+        onClick={publicarImagem}
+        disabled={publicandoImagem}
+      >
+        {publicandoImagem
+          ? "Publicando..."
+          : "Publicar"}
+      </button>
+
+    </div>
+
+  </div>
+)}
+
+</div>
         {/* =================================================
             FEED DE IMAGENS PUBLICADAS
         ================================================== */}
