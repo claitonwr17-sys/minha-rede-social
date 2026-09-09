@@ -484,15 +484,7 @@ const res = await fetch(
             marginBottom: 12,
           }}
         >
-          <img
-            src="/logo/conrad-ai.png"
-            alt="Conrad AI"
-            style={{
-              width: 48,
-            height: 48,
-              objectFit: "contain",
-            }}
-          />
+          
 
           <strong style={{ fontSize: 17 }}>
             Conrad AI
