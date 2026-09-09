@@ -488,8 +488,8 @@ const res = await fetch(
             src="/logo/conrad-ai.png"
             alt="Conrad AI"
             style={{
-              width: 42,
-              height: 42,
+              width: 36,
+              height: 36,
               objectFit: "contain",
             }}
           />
