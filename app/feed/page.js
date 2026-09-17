@@ -390,7 +390,7 @@ export default function Pag2() {
       {mostrarModal && (
         <div style={styles.modalOverlay}>
           <div style={styles.modal}>
-            <div style={styles.modalTitle}>🤖 Conrad AI</div>
+            <div style={styles.modalTitle}>Conrad AI</div>
 
             <div style={styles.modalText}>{respostaIA}</div>
 
