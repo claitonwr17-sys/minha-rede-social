@@ -64,10 +64,12 @@ export default function Pag2() {
         }
       );
 
-      const data = await response.json();
+     const data = await response.json();
 
-      const resposta =
-        data?.response?.result?.interpretacao || "Sem resposta da IA";
+console.log("RESPOSTA COMPLETA DO XANO:", data);
+
+const resposta =
+  data?.response?.result?.interpretacao || "Sem resposta da IA";
 
       setRespostaIA(resposta);
 
