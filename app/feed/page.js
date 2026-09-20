@@ -85,30 +85,34 @@ const resposta =
     setLoading(false);
   }
 
-  async function confirmarPostagem() {
-    try {
-      await fetch("https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/posts", {
+ async function confirmarPostagem() {
+  try {
+    await fetch(
+      "https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/POST_/salvar-post-texto",
+      {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
           texto: textoPendente,
+          resposta_da_api: respostaIA,
         }),
-      });
+      }
+    );
 
-      buscarPosts();
+    buscarPosts();
 
-      setTexto("");
-      setTextoPendente("");
-      setMostrarModal(false);
-      setRespostaIA("");
-    } catch (error) {
-      console.error(error);
+    setTexto("");
+    setTextoPendente("");
+    setMostrarModal(false);
+    setRespostaIA("");
+  } catch (error) {
+    console.error(error);
 
-      alert("Erro ao salvar post");
-    }
+    alert("Erro ao salvar post");
   }
+}
 
   async function reagirPost(id, tipo) {
     const postAtual = posts.find((p) => p.id === id);
