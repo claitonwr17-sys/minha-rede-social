@@ -226,21 +226,22 @@ const res = await fetch(
       curtir: 0,
       amei: 0,
       comentarios: [],
+      usuario_id: 10,
     }),
   }
 );
 
-    // Pega exatamente a resposta enviada pelo Xano
-    const respostaTexto = await res.text();
+// Pega exatamente a resposta enviada pelo Xano
+const respostaTexto = await res.text();
 
-    console.log("STATUS XANO:", res.status);
-    console.log("RESPOSTA XANO:", respostaTexto);
+console.log("STATUS XANO:", res.status);
+console.log("RESPOSTA XANO:", respostaTexto);
 
-    if (!res.ok) {
-      throw new Error(
-        `Xano respondeu ${res.status}: ${respostaTexto}`
-      );
-    }
+if (!res.ok) {
+  throw new Error(
+    `Xano respondeu ${res.status}: ${respostaTexto}`
+  );
+}
 
     // Limpa a área de publicação
     setImagemSelecionada(null);
