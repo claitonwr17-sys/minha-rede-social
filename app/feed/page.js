@@ -97,6 +97,7 @@ const resposta =
         body: JSON.stringify({
           texto: textoPendente,
           resposta_da_api: respostaIA,
+          usuario_id: 10,
         }),
       }
     );
