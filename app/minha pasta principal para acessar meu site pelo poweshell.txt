@@ -7,3 +7,7 @@ git add .
 git commit -m "mensagem da atualização"
 
 git push origin main
+
+const visionApiKey = "AIzaSyBZPHpd2NlswfFbiloz3PvwZSDqUZAK5m4";
+const sentimentApiKey = "AIzaSyBB5bpw-cstL4MQmvV1mCDifK3iANaIXMw";
+const geminiApiKey = "AIzaSyAnWmwo-TFhYydfKV1qd7OVmbRIadB7wLo";

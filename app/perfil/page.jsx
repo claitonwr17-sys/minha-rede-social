@@ -3,7 +3,7 @@
 import "@fontsource/inter"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 
 export default function Perfil() {
 
@@ -11,15 +11,63 @@ export default function Perfil() {
 
   const [hoverItem, setHoverItem] = useState("")
 
- const [fotoPerfil, setFotoPerfil] = useState("/insta.png")
+  const [totalPosts, setTotalPosts] = useState(0)
+
+  const [carregandoPosts, setCarregandoPosts] = useState(true)
+
+  const [fotoPerfil, setFotoPerfil] = useState("/insta.png")
 
   const [fotoCapa, setFotoCapa] = useState("/insta.png")
 
   function logout() {
-    router.push("/feed")
-  }
+  router.push("/feed")
+}
 
-  return (
+async function buscarTotalPosts() {
+  try {
+    setCarregandoPosts(true)
+
+    const [resTexto, resImagens] = await Promise.all([
+      fetch(
+        "https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/posts"
+      ),
+      fetch(
+        "https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/get_imagens"
+      ),
+    ])
+
+    const postsTexto = await resTexto.json()
+    const postsImagens = await resImagens.json()
+
+    const textosDoUsuario = (postsTexto || []).filter(
+      (post) => Number(post.usuario_id) === 10
+    )
+
+    const imagensDoUsuario = (postsImagens || []).filter(
+      (post) => Number(post.usuario_id) === 10
+    )
+
+    const total =
+      textosDoUsuario.length + imagensDoUsuario.length
+
+    setTotalPosts(total)
+
+    console.log("Posts de texto:", textosDoUsuario)
+    console.log("Posts de imagem:", imagensDoUsuario)
+    console.log("TOTAL:", total)
+
+  } catch (error) {
+    console.error("Erro ao buscar posts do perfil:", error)
+  } finally {
+    setCarregandoPosts(false)
+  }
+}
+
+useEffect(() => {
+  buscarTotalPosts()
+}, [])
+
+return (
 
     <div style={styles.page}>
 
@@ -222,7 +270,7 @@ export default function Perfil() {
           <div style={styles.stats}>
 
             <div style={styles.statBox}>
-              <div style={styles.statNumero}>0</div>
+              <div style={styles.statNumero}>{totalPosts}</div>
               <div style={styles.statTexto}>Posts</div>
             </div>
 
