@@ -288,7 +288,7 @@ return (
             Construindo uma rede social com IA
           </div>
 
-          {/* ESTATÍSTICAS */}
+                    {/* ESTATÍSTICAS */}
           <div style={styles.stats}>
 
             <div style={styles.statBox}>
@@ -307,6 +307,52 @@ return (
             </div>
 
           </div>
+
+
+          {/* PUBLICAÇÕES DO PERFIL */}
+          <div style={styles.publicacoes}>
+
+            <div style={styles.tituloPublicacoes}>
+              Publicações
+            </div>
+
+            {carregandoPosts ? (
+              <div style={styles.mensagemPosts}>
+                Carregando publicações...
+              </div>
+            ) : postsPerfil.length === 0 ? (
+              <div style={styles.mensagemPosts}>
+                Nenhuma publicação ainda.
+              </div>
+            ) : (
+              postsPerfil.map((post) => (
+
+                <div
+                  key={`${post.tipo}-${post.id}`}
+                  style={styles.postCard}
+                >
+
+                  {post.tipo === "texto" && (
+                    <div style={styles.postTexto}>
+                      {post.texto}
+                    </div>
+                  )}
+
+                  {post.tipo === "imagem" && (
+                    <img
+                      src={post.imagem}
+                      alt="Publicação"
+                      style={styles.postImagem}
+                    />
+                  )}
+
+                </div>
+
+              ))
+            )}
+
+          </div>
+
 
         </div>
 
@@ -508,9 +554,51 @@ const styles = {
     color: "#222"
   },
 
-  statTexto: {
+    statTexto: {
     marginTop: 5,
     color: "#666",
     fontSize: 18
+  },
+
+  publicacoes: {
+    borderTop: "1px solid #eee",
+    padding: 30
+  },
+
+  tituloPublicacoes: {
+    fontSize: 28,
+    fontWeight: "bold",
+    color: "#222",
+    marginBottom: 20
+  },
+
+  mensagemPosts: {
+    textAlign: "center",
+    color: "#666",
+    fontSize: 18,
+    padding: 30
+  },
+
+  postCard: {
+    backgroundColor: "#f8f9fa",
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 20,
+    border: "1px solid #eee"
+  },
+
+  postTexto: {
+    fontSize: 20,
+    color: "#222",
+    lineHeight: 1.5,
+    whiteSpace: "pre-wrap"
+  },
+
+  postImagem: {
+    width: "100%",
+    maxHeight: 600,
+    objectFit: "cover",
+    borderRadius: 12,
+    display: "block"
   }
 }
