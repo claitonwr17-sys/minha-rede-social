@@ -60,11 +60,11 @@ async function buscarTotalPosts() {
     }))
 
     const publicacoesImagem = imagensDoUsuario.map((post) => ({
-      tipo: "imagem",
-      id: post.id,
-      imagem: post.URL_da_imagem,
-      data: post.id
-    }))
+  tipo: "imagem",
+  id: post.id,
+  imagem: post.image_url,
+  data: post.id
+}))
 
     const todasPublicacoes = [
       ...publicacoesTexto,
