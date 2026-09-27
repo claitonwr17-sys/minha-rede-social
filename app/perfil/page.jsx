@@ -40,8 +40,8 @@ async function buscarTotalPosts() {
     const postsImagens = await resImagens.json()
 
     const textosDoUsuario = (postsTexto || []).filter(
-      (post) => Number(post.usuario_id) === 10
-    )
+  (post) => Number(post._usuario_id) === 10
+)
 
     const imagensDoUsuario = (postsImagens || []).filter(
       (post) => Number(post.usuario_id) === 10
