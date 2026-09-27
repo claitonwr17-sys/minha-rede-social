@@ -12,7 +12,7 @@ export default function Perfil() {
   const [hoverItem, setHoverItem] = useState("")
 
   const [totalPosts, setTotalPosts] = useState(0)
-
+  const [postsPerfil, setPostsPerfil] = useState([])
   const [carregandoPosts, setCarregandoPosts] = useState(true)
 
   const [fotoPerfil, setFotoPerfil] = useState("/insta.png")
@@ -52,8 +52,30 @@ async function buscarTotalPosts() {
 
     setTotalPosts(total)
 
+    const publicacoesTexto = textosDoUsuario.map((post) => ({
+      tipo: "texto",
+      id: post.id,
+      texto: post.texto,
+      data: post.id
+    }))
+
+    const publicacoesImagem = imagensDoUsuario.map((post) => ({
+      tipo: "imagem",
+      id: post.id,
+      imagem: post.URL_da_imagem,
+      data: post.id
+    }))
+
+    const todasPublicacoes = [
+      ...publicacoesTexto,
+      ...publicacoesImagem
+    ].sort((a, b) => Number(b.data) - Number(a.data))
+
+    setPostsPerfil(todasPublicacoes)
+
     console.log("Posts de texto:", textosDoUsuario)
     console.log("Posts de imagem:", imagensDoUsuario)
+    console.log("Publicações do perfil:", todasPublicacoes)
     console.log("TOTAL:", total)
 
   } catch (error) {
