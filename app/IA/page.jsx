@@ -100,8 +100,8 @@ export default function IA() {
           </div>
 
           <div style={menuItem}>
-            ⚙️ Configurações
-          </div>
+            Feed de vídeos
+        </div>  
         </div>
       </div>
 
