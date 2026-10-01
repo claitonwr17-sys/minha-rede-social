@@ -166,14 +166,15 @@ return (
 
             <div
               style={{
-                ...styles.menuItem,
-                ...(hoverItem === "config" && styles.menuHover)
-              }}
-              onMouseEnter={() => setHoverItem("config")}
-              onMouseLeave={() => setHoverItem("")}
-            >
-              Feed de vídeos
-          </div>
+  ...styles.menuItem,
+  ...(hoverItem === "config" && styles.menuHover)
+}}
+onMouseEnter={() => setHoverItem("config")}
+onMouseLeave={() => setHoverItem("")}
+onClick={() => router.push("/feed-videos")}
+>
+  Feed de vídeos
+</div>
 
           </div>
 
