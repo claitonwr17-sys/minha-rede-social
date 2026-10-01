@@ -236,15 +236,16 @@ const resposta =
         </div>
 
         <div
-          style={{
-            ...styles.sidebarItem,
-            ...(hoverItem === "config" && styles.sidebarItemHover),
-          }}
-          onMouseEnter={() => setHoverItem("config")}
-          onMouseLeave={() => setHoverItem("")}
-        >
-         Feed de vídeos
-         </div>
+  style={{
+    ...styles.sidebarItem,
+    ...(hoverItem === "config" && styles.sidebarItemHover),
+  }}
+  onMouseEnter={() => setHoverItem("config")}
+  onMouseLeave={() => setHoverItem("")}
+  onClick={() => router.push("/feed-videos")}
+>
+  Feed de vídeos
+</div>
 
         <button onClick={logout} style={styles.logout}>
           Sair

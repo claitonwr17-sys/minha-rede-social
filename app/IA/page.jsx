@@ -99,9 +99,12 @@ export default function IA() {
             👤 Perfil
           </div>
 
-          <div style={menuItem}>
-            Feed de vídeos
-        </div>  
+          <div
+  style={menuItem}
+  onClick={() => router.push("/feed-videos")}
+>
+  Feed de vídeos
+</div> 
         </div>
       </div>
 

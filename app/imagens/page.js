@@ -345,7 +345,10 @@ if (!res.ok) {
           👤 Perfil
 </div>
 
-<div>
+<div
+  style={styles.menu}
+  onClick={() => router.push("/feed-videos")}
+>
   🎬 Feed de vídeos
 </div>
 
