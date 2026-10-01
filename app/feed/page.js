@@ -243,8 +243,8 @@ const resposta =
           onMouseEnter={() => setHoverItem("config")}
           onMouseLeave={() => setHoverItem("")}
         >
-          ⚙️ Configurações
-        </div>
+         Feed de vídeos
+         </div>
 
         <button onClick={logout} style={styles.logout}>
           Sair

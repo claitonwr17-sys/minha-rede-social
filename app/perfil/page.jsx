@@ -172,8 +172,8 @@ return (
               onMouseEnter={() => setHoverItem("config")}
               onMouseLeave={() => setHoverItem("")}
             >
-              ⚙️ Configurações
-            </div>
+              Feed de vídeos
+          </div>
 
           </div>
 

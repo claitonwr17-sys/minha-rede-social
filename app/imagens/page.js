@@ -343,16 +343,20 @@ if (!res.ok) {
           onClick={() => router.push("/perfil")}
         >
           👤 Perfil
-        </div>
+</div>
 
-        <button
-          style={styles.logout}
-          onClick={voltarHome}
-        >
-          Sair
-        </button>
+<div>
+  🎬 Feed de vídeos
+</div>
 
-      </div>
+<button
+  style={styles.logout}
+  onClick={voltarHome}
+>
+  Sair
+</button>
+
+</div>
 
       {/* =================================================
           ÁREA PRINCIPAL
