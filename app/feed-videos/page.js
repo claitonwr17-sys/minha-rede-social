@@ -22,10 +22,18 @@ export default function FeedVideos() {
 
         <div>
 
+          {/* LOGO CONRAD */}
           <div style={styles.logo}>
-            Conrad
+            <img
+              src="/logo/logo-simbolo.png"
+              alt="Conrad"
+              style={styles.logoImagem}
+            />
+
+            <span>Conrad</span>
           </div>
 
+          {/* MENU */}
           <div style={styles.menu}>
 
             <Link
@@ -94,7 +102,7 @@ export default function FeedVideos() {
             </div>
 
             <div style={styles.menuAtivo}>
-              Feed de vídeos
+              🎬 Feed de vídeos
             </div>
 
           </div>
@@ -118,16 +126,6 @@ export default function FeedVideos() {
 
       {/* CONTEÚDO */}
       <div style={styles.content}>
-
-        {/* NAVBAR */}
-        <div style={styles.navbar}>
-
-          <input
-            placeholder="Pesquisar"
-            style={styles.search}
-          />
-
-        </div>
 
         {/* FEED DE VÍDEOS */}
         <div style={styles.feed}>
@@ -185,10 +183,20 @@ const styles = {
     borderRight: "1px solid #ddd"
   },
 
+  /* LOGO CONRAD */
   logo: {
+    display: "flex",
+    alignItems: "center",
+    gap: 12,
     fontSize: 32,
     fontWeight: "bold",
     marginBottom: 40
+  },
+
+  logoImagem: {
+    width: 44,
+    height: 44,
+    objectFit: "contain"
   },
 
   menu: {
@@ -239,22 +247,7 @@ const styles = {
 
   content: {
     flex: 1,
-    padding: 10
-  },
-
-  navbar: {
-    backgroundColor: "white",
-    padding: 10,
-    borderRadius: 16,
-    marginBottom: 10
-  },
-
-  search: {
-    width: 300,
-    padding: 12,
-    borderRadius: 30,
-    border: "1px solid #ddd",
-    outline: "none"
+    padding: 20
   },
 
   feed: {
