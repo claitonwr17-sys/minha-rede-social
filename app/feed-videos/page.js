@@ -8,10 +8,25 @@ import { useState } from "react"
 export default function FeedVideos() {
 
   const router = useRouter()
+
   const [hoverItem, setHoverItem] = useState("")
+  const [videoSelecionado, setVideoSelecionado] = useState(null)
 
   function logout() {
     router.push("/feed")
+  }
+
+  function escolherVideo(event) {
+
+    const arquivo = event.target.files[0]
+
+    if (!arquivo) {
+      return
+    }
+
+    const videoURL = URL.createObjectURL(arquivo)
+
+    setVideoSelecionado(videoURL)
   }
 
   return (
@@ -24,6 +39,7 @@ export default function FeedVideos() {
 
           {/* LOGO CONRAD */}
           <div style={styles.logo}>
+
             <img
               src="/logo/logo-simbolo.png"
               alt="Conrad"
@@ -31,6 +47,7 @@ export default function FeedVideos() {
             />
 
             <span>Conrad</span>
+
           </div>
 
           {/* MENU */}
@@ -40,6 +57,7 @@ export default function FeedVideos() {
               href="/feed"
               style={{ textDecoration: "none" }}
             >
+
               <div
                 style={{
                   ...styles.menuItem,
@@ -50,6 +68,7 @@ export default function FeedVideos() {
               >
                 🏠 Home
               </div>
+
             </Link>
 
             <div
@@ -64,6 +83,7 @@ export default function FeedVideos() {
               onMouseLeave={() => setHoverItem("")}
               onClick={() => router.push("/IA")}
             >
+
               <img
                 src="/logo/logo-simbolo.png"
                 alt="IA"
@@ -75,6 +95,7 @@ export default function FeedVideos() {
               />
 
               <span>IA</span>
+
             </div>
 
             <div
@@ -127,34 +148,66 @@ export default function FeedVideos() {
       {/* CONTEÚDO */}
       <div style={styles.content}>
 
-        {/* FEED DE VÍDEOS */}
         <div style={styles.feed}>
 
+          {/* TÍTULO */}
           <div style={styles.titulo}>
             Feed de vídeos
           </div>
 
-          <div style={styles.videoCard}>
+          {/* CARTÃO DE PUBLICAÇÃO */}
+          <div style={styles.postCard}>
 
-            <div style={styles.videoArea}>
-              <div style={styles.videoPlaceholder}>
-                🎬
+            <div style={styles.usuario}>
+
+              <div style={styles.avatar}>
+                👤
               </div>
+
+              <div>
+
+                <div style={styles.nomeUsuario}>
+                  Claiton Wroblewski
+                </div>
+
+                <div style={styles.agora}>
+                  Agora mesmo
+                </div>
+
+              </div>
+
             </div>
 
-            <div style={styles.videoInfo}>
+            {/* BOTÃO ESCOLHER VÍDEO */}
+            <label style={styles.botaoVideo}>
 
-              <div style={styles.videoTitulo}>
-                Vídeo
-              </div>
+              🎥 Escolher vídeo
 
-              <div style={styles.videoDescricao}>
-                Seu vídeo aparecerá aqui.
-              </div>
+              <input
+                type="file"
+                accept="video/*"
+                onChange={escolherVideo}
+                style={{ display: "none" }}
+              />
 
-            </div>
+            </label>
 
           </div>
+
+          {/* VÍDEO ESCOLHIDO */}
+          {videoSelecionado && (
+
+            <div style={styles.videoCard}>
+
+              <video
+                src={videoSelecionado}
+                controls
+                style={styles.video}
+              />
+
+            </div>
+
+          )}
 
         </div>
 
@@ -183,7 +236,6 @@ const styles = {
     borderRight: "1px solid #ddd"
   },
 
-  /* LOGO CONRAD */
   logo: {
     display: "flex",
     alignItems: "center",
@@ -265,42 +317,71 @@ const styles = {
     marginBottom: 20
   },
 
-  videoCard: {
+  /* CARTÃO DE PUBLICAÇÃO */
+  postCard: {
     backgroundColor: "white",
     borderRadius: 20,
-    overflow: "hidden",
-    boxShadow: "0 4px 15px rgba(0,0,0,0.08)",
+    padding: 20,
+    marginBottom: 20,
+    boxShadow: "0 4px 15px rgba(0,0,0,0.05)"
+  },
+
+  usuario: {
+    display: "flex",
+    alignItems: "center",
+    gap: 12,
     marginBottom: 20
   },
 
-  videoArea: {
-    width: "100%",
-    height: 500,
-    backgroundColor: "#111",
+  avatar: {
+    width: 52,
+    height: 52,
+    borderRadius: "50%",
+    backgroundColor: "#eee",
     display: "flex",
     alignItems: "center",
-    justifyContent: "center"
+    justifyContent: "center",
+    fontSize: 25
   },
 
-  videoPlaceholder: {
-    fontSize: 70,
-    color: "white"
-  },
-
-  videoInfo: {
-    padding: 25
-  },
-
-  videoTitulo: {
-    fontSize: 24,
+  nomeUsuario: {
+    fontSize: 20,
     fontWeight: "bold",
     color: "#222"
   },
 
-  videoDescricao: {
+  agora: {
+    fontSize: 16,
+    color: "#888",
+    marginTop: 4
+  },
+
+  /* BOTÃO */
+  botaoVideo: {
+    display: "inline-block",
+    backgroundColor: "#000",
+    color: "white",
+    padding: "14px 25px",
+    borderRadius: 12,
     fontSize: 18,
-    color: "#666",
-    marginTop: 8
+    fontWeight: "bold",
+    cursor: "pointer"
+  },
+
+  /* VÍDEO APÓS ESCOLHER */
+  videoCard: {
+    backgroundColor: "white",
+    borderRadius: 20,
+    overflow: "hidden",
+    marginBottom: 20,
+    boxShadow: "0 4px 15px rgba(0,0,0,0.08)"
+  },
+
+  video: {
+    width: "100%",
+    maxHeight: 600,
+    display: "block",
+    backgroundColor: "#000"
   }
 
 }
