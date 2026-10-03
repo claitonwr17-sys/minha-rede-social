@@ -158,11 +158,14 @@ export default function FeedVideos() {
           {/* CARTÃO DE PUBLICAÇÃO */}
           <div style={styles.postCard}>
 
+            {/* USUÁRIO */}
             <div style={styles.usuario}>
 
-              <div style={styles.avatar}>
-                👤
-              </div>
+              <img
+                src="/insta.png"
+                alt="Claiton Wroblewski"
+                style={styles.avatarImage}
+              />
 
               <div>
 
@@ -317,7 +320,6 @@ const styles = {
     marginBottom: 20
   },
 
-  /* CARTÃO DE PUBLICAÇÃO */
   postCard: {
     backgroundColor: "white",
     borderRadius: 20,
@@ -333,15 +335,11 @@ const styles = {
     marginBottom: 20
   },
 
-  avatar: {
+  avatarImage: {
     width: 52,
     height: 52,
     borderRadius: "50%",
-    backgroundColor: "#eee",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    fontSize: 25
+    objectFit: "cover"
   },
 
   nomeUsuario: {
@@ -356,7 +354,6 @@ const styles = {
     marginTop: 4
   },
 
-  /* BOTÃO */
   botaoVideo: {
     display: "inline-block",
     backgroundColor: "#000",
@@ -368,7 +365,6 @@ const styles = {
     cursor: "pointer"
   },
 
-  /* VÍDEO APÓS ESCOLHER */
   videoCard: {
     backgroundColor: "white",
     borderRadius: 20,
