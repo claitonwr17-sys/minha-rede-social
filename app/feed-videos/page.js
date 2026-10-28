@@ -1,3 +1,4 @@
+
 'use client'
 
 import "@fontsource/inter"
@@ -6,7 +7,6 @@ import { useRouter } from "next/navigation"
 import { useState } from "react"
 
 export default function FeedVideos() {
-
   const router = useRouter()
 
   const [hoverItem, setHoverItem] = useState("")
@@ -17,47 +17,43 @@ export default function FeedVideos() {
   }
 
   function escolherVideo(event) {
-
     const arquivo = event.target.files[0]
 
-    if (!arquivo) {
-      return
+    if (!arquivo) return
+
+    if (videoSelecionado) {
+      URL.revokeObjectURL(videoSelecionado)
     }
 
     const videoURL = URL.createObjectURL(arquivo)
-
     setVideoSelecionado(videoURL)
+  }
+
+  function cancelarVideo() {
+    if (videoSelecionado) {
+      URL.revokeObjectURL(videoSelecionado)
+    }
+
+    setVideoSelecionado(null)
   }
 
   return (
     <div style={styles.page}>
-
       {/* SIDEBAR */}
       <div style={styles.sidebar}>
-
         <div>
-
-          {/* LOGO CONRAD */}
           <div style={styles.logo}>
-
             <img
               src="/logo/logo-simbolo.png"
               alt="Conrad"
               style={styles.logoImagem}
             />
-
             <span>Conrad</span>
-
           </div>
 
           {/* MENU */}
           <div style={styles.menu}>
-
-            <Link
-              href="/feed"
-              style={{ textDecoration: "none" }}
-            >
-
+            <Link href="/feed" style={{ textDecoration: "none" }}>
               <div
                 style={{
                   ...styles.menuItem,
@@ -68,7 +64,6 @@ export default function FeedVideos() {
               >
                 🏠 Home
               </div>
-
             </Link>
 
             <div
@@ -83,7 +78,6 @@ export default function FeedVideos() {
               onMouseLeave={() => setHoverItem("")}
               onClick={() => router.push("/IA")}
             >
-
               <img
                 src="/logo/logo-simbolo.png"
                 alt="IA"
@@ -93,9 +87,7 @@ export default function FeedVideos() {
                   objectFit: "contain"
                 }}
               />
-
               <span>IA</span>
-
             </div>
 
             <div
@@ -125,9 +117,7 @@ export default function FeedVideos() {
             <div style={styles.menuAtivo}>
               🎬 Feed de vídeos
             </div>
-
           </div>
-
         </div>
 
         {/* SAIR */}
@@ -142,25 +132,18 @@ export default function FeedVideos() {
         >
           Sair
         </div>
-
       </div>
 
       {/* CONTEÚDO */}
       <div style={styles.content}>
-
         <div style={styles.feed}>
-
-          {/* TÍTULO */}
           <div style={styles.titulo}>
             Feed de vídeos
           </div>
 
           {/* CARTÃO DE PUBLICAÇÃO */}
           <div style={styles.postCard}>
-
-            {/* USUÁRIO */}
             <div style={styles.usuario}>
-
               <img
                 src="/insta.png"
                 alt="Claiton Wroblewski"
@@ -168,22 +151,16 @@ export default function FeedVideos() {
               />
 
               <div>
-
                 <div style={styles.nomeUsuario}>
                   Claiton Wroblewski
                 </div>
-
                 <div style={styles.agora}>
                   Agora mesmo
                 </div>
-
               </div>
-
             </div>
 
-            {/* BOTÃO ESCOLHER VÍDEO */}
             <label style={styles.botaoVideo}>
-
               🎥 Escolher vídeo
 
               <input
@@ -192,36 +169,50 @@ export default function FeedVideos() {
                 onChange={escolherVideo}
                 style={{ display: "none" }}
               />
-
             </label>
-
           </div>
 
           {/* VÍDEO ESCOLHIDO */}
           {videoSelecionado && (
+            <div>
+              <div style={styles.videoCard}>
+                <video
+                  src={videoSelecionado}
+                  controls
+                  style={styles.video}
+                />
+              </div>
 
-            <div style={styles.videoCard}>
+              <div style={styles.acoesVideo}>
+                <button
+                  type="button"
+                  style={styles.botaoPublicar}
+                  onClick={() => {
+                    alert(
+                      "Na próxima etapa vamos conectar a publicação ao Cloudinary e à análise do vídeo."
+                    )
+                  }}
+                >
+                  Publicar vídeo
+                </button>
 
-              <video
-                src={videoSelecionado}
-                controls
-                style={styles.video}
-              />
-
+                <button
+                  type="button"
+                  style={styles.botaoCancelar}
+                  onClick={cancelarVideo}
+                >
+                  Cancelar
+                </button>
+              </div>
             </div>
-
           )}
-
         </div>
-
       </div>
-
     </div>
   )
 }
 
 const styles = {
-
   page: {
     display: "flex",
     backgroundColor: "#f0f2f5",
@@ -378,6 +369,35 @@ const styles = {
     maxHeight: 600,
     display: "block",
     backgroundColor: "#000"
-  }
+  },
 
+  acoesVideo: {
+    display: "flex",
+    gap: 12,
+    marginBottom: 24,
+    justifyContent: "flex-end",
+    flexWrap: "wrap"
+  },
+
+  botaoPublicar: {
+    backgroundColor: "#1877f2",
+    color: "white",
+    border: "none",
+    padding: "14px 24px",
+    borderRadius: 12,
+    fontSize: 16,
+    fontWeight: "bold",
+    cursor: "pointer"
+  },
+
+  botaoCancelar: {
+    backgroundColor: "white",
+    color: "#333",
+    border: "1px solid #ccc",
+    padding: "14px 24px",
+    borderRadius: 12,
+    fontSize: 16,
+    fontWeight: "bold",
+    cursor: "pointer"
+  }
 }
