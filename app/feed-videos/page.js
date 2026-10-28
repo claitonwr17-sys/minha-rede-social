@@ -380,7 +380,7 @@ const styles = {
   },
 
   botaoPublicar: {
-    backgroundColor: "#1877f2",
+   backgroundColor: "#000000",
     color: "white",
     border: "none",
     padding: "14px 24px",
