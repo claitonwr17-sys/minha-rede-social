@@ -10,7 +10,9 @@ export default function FeedVideos() {
   const router = useRouter()
 
   const [hoverItem, setHoverItem] = useState("")
-  const [videoSelecionado, setVideoSelecionado] = useState(null)
+const [videoSelecionado, setVideoSelecionado] = useState(null)
+const [arquivoVideo, setArquivoVideo] = useState(null)
+const [publicando, setPublicando] = useState(false)
 
   function logout() {
     router.push("/feed")
@@ -26,7 +28,8 @@ export default function FeedVideos() {
     }
 
     const videoURL = URL.createObjectURL(arquivo)
-    setVideoSelecionado(videoURL)
+setArquivoVideo(arquivo)
+setVideoSelecionado(videoURL)
   }
 
   function cancelarVideo() {
@@ -34,7 +37,44 @@ export default function FeedVideos() {
       URL.revokeObjectURL(videoSelecionado)
     }
 
-    setVideoSelecionado(null)
+    setArquivoVideo(null)
+setVideoSelecionado(null)
+  }
+
+  async function publicarVideo() {
+    if (!arquivoVideo) {
+      alert("Selecione um vídeo primeiro.")
+      return
+    }
+
+    try {
+      setPublicando(true)
+
+      const formulario = new FormData()
+      formulario.append("file", arquivoVideo)
+
+      const resposta = await fetch("/api/upload-video", {
+        method: "POST",
+        body: formulario,
+      })
+
+      const resultado = await resposta.json()
+
+      if (!resposta.ok) {
+        throw new Error(
+          resultado.error || "Não foi possível enviar o vídeo."
+        )
+      }
+
+      alert("Vídeo enviado ao Cloudinary com sucesso!")
+      console.log("URL do vídeo:", resultado.url)
+      console.log("ID do vídeo:", resultado.public_id)
+    } catch (erro) {
+      console.error("Erro ao publicar vídeo:", erro)
+      alert(erro.message || "Erro ao publicar vídeo.")
+    } finally {
+      setPublicando(false)
+    }
   }
 
   return (
@@ -184,17 +224,16 @@ export default function FeedVideos() {
               </div>
 
               <div style={styles.acoesVideo}>
-                <button
-                  type="button"
-                  style={styles.botaoPublicar}
-                  onClick={() => {
-                    alert(
-                      "Na próxima etapa vamos conectar a publicação ao Cloudinary e à análise do vídeo."
-                    )
-                  }}
-                >
-                  Publicar vídeo
-                </button>
+                
+<button
+  type="button"
+  style={styles.botaoPublicar}
+  onClick={publicarVideo}
+  disabled={publicando}
+>
+  {publicando ? "Enviando vídeo..." : "Publicar vídeo"}
+</button>
+
 
                 <button
                   type="button"
