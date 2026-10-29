@@ -80,7 +80,11 @@ setVideoSelecionado(null)
       )
 
       const resultado = await respostaUpload.json()
-
+      console.log(
+  "Diagnóstico Cloudinary:",
+  respostaUpload.status,
+  resultado
+)
       if (!respostaUpload.ok) {
         throw new Error(
           resultado.error?.message ||
