@@ -50,24 +50,46 @@ setVideoSelecionado(null)
     try {
       setPublicando(true)
 
+      const respostaAssinatura = await fetch(
+        "/api/upload-video-signature",
+        { method: "POST" }
+      )
+
+      const dadosAssinatura = await respostaAssinatura.json()
+
+      if (!respostaAssinatura.ok) {
+        throw new Error(
+          dadosAssinatura.error ||
+            "Não foi possível preparar o envio do vídeo."
+        )
+      }
+
       const formulario = new FormData()
       formulario.append("file", arquivoVideo)
+      formulario.append("api_key", dadosAssinatura.apiKey)
+      formulario.append("timestamp", String(dadosAssinatura.timestamp))
+      formulario.append("signature", dadosAssinatura.signature)
+      formulario.append("folder", dadosAssinatura.folder)
 
-      const resposta = await fetch("/api/upload-video", {
-        method: "POST",
-        body: formulario,
-      })
+      const respostaUpload = await fetch(
+        `https://api.cloudinary.com/v1_1/${dadosAssinatura.cloudName}/video/upload`,
+        {
+          method: "POST",
+          body: formulario,
+        }
+      )
 
-      const resultado = await resposta.json()
+      const resultado = await respostaUpload.json()
 
-      if (!resposta.ok) {
+      if (!respostaUpload.ok) {
         throw new Error(
-          resultado.error || "Não foi possível enviar o vídeo."
+          resultado.error?.message ||
+            "Não foi possível enviar o vídeo ao Cloudinary."
         )
       }
 
       alert("Vídeo enviado ao Cloudinary com sucesso!")
-      console.log("URL do vídeo:", resultado.url)
+      console.log("URL do vídeo:", resultado.secure_url)
       console.log("ID do vídeo:", resultado.public_id)
     } catch (erro) {
       console.error("Erro ao publicar vídeo:", erro)
@@ -76,6 +98,7 @@ setVideoSelecionado(null)
       setPublicando(false)
     }
   }
+
 
   return (
     <div style={styles.page}>
