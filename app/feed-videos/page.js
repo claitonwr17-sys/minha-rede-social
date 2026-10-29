@@ -156,7 +156,7 @@ export default function FeedVideos() {
 
       console.log("Upload concluído no Cloudinary:", resultado.public_id)
 
-      // 3. POST: salvar a publicação no Xano
+      
       const respostaXano = await fetch(XANO_POST_URL, {
         method: "POST",
         headers: {
@@ -167,8 +167,12 @@ export default function FeedVideos() {
           id_cloudinary: resultado.public_id,
           usuario_id: 10,
           status: "publicado",
+          curtidas: 0,
+          amei: 0,
+          comentarios: 0,
         }),
       })
+
 
       const textoResposta = await respostaXano.text()
       let dadosXano = null
