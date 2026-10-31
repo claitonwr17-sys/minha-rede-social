@@ -1,4 +1,3 @@
-
 'use client'
 
 import "@fontsource/inter"
@@ -23,6 +22,10 @@ export default function FeedVideos() {
   const [carregandoVideos, setCarregandoVideos] = useState(true)
   const [erroFeed, setErroFeed] = useState("")
 
+  const [comentariosAbertos, setComentariosAbertos] = useState({})
+  const [novoComentario, setNovoComentario] = useState({})
+  const [atualizandoInteracao, setAtualizandoInteracao] = useState({})
+
   // GET: carregar as publicações salvas no Xano
   async function carregarVideos() {
     try {
@@ -41,7 +44,6 @@ export default function FeedVideos() {
 
       const dados = await resposta.json()
 
-      // Aceita uma lista direta ou uma lista dentro de api1/data
       const lista = Array.isArray(dados)
         ? dados
         : Array.isArray(dados.api1)
@@ -70,6 +72,91 @@ export default function FeedVideos() {
     carregarVideos()
   }, [])
 
+  // Atualizar curtidas, amei e comentários no Xano
+  async function atualizarInteracao(item, alteracoes) {
+    const id = item.id
+
+    if (atualizandoInteracao[id]) return
+
+    setAtualizandoInteracao((anterior) => ({
+      ...anterior,
+      [id]: true,
+    }))
+
+    try {
+      const dados = {
+        post_id: Number(item.id),
+        url_do_video: item.url_do_video ?? "",
+        id_cloudinary: item.id_cloudinary ?? "",
+        legenda: item.legenda ?? null,
+        usuario_id: item.usuario_id ?? 10,
+        status: item.status ?? "publicado",
+
+        curtidas: Number(
+          alteracoes.curtidas ?? item.curtidas ?? 0
+        ),
+
+        amei: Number(
+          alteracoes.amei ?? item.amei ?? 0
+        ),
+
+        comentarios: Array.isArray(alteracoes.comentarios)
+          ? alteracoes.comentarios
+          : Array.isArray(item.comentarios)
+            ? item.comentarios
+            : [],
+      }
+
+      const resposta = await fetch(XANO_POST_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(dados),
+      })
+
+      const texto = await resposta.text()
+
+      if (!resposta.ok) {
+        throw new Error(texto || "Erro ao atualizar interação.")
+      }
+
+      await carregarVideos()
+
+    } catch (erro) {
+      console.error("Erro na interação:", erro)
+      alert("Não foi possível atualizar. Tente novamente.")
+    } finally {
+      setAtualizandoInteracao((anterior) => ({
+        ...anterior,
+        [id]: false,
+      }))
+    }
+  }
+
+  // Adicionar comentário
+  async function enviarComentario(item) {
+    const texto = (novoComentario[item.id] || "").trim()
+
+    if (!texto) {
+      alert("Digite um comentário primeiro.")
+      return
+    }
+
+    const comentarios = Array.isArray(item.comentarios)
+      ? item.comentarios
+      : []
+
+    await atualizarInteracao(item, {
+      comentarios: [...comentarios, texto],
+    })
+
+    setNovoComentario((anterior) => ({
+      ...anterior,
+      [item.id]: "",
+    }))
+  }
+
   function logout() {
     router.push("/feed")
   }
@@ -86,7 +173,6 @@ export default function FeedVideos() {
     setArquivoVideo(arquivo)
     setVideoSelecionado(URL.createObjectURL(arquivo))
 
-    // Permite escolher novamente o mesmo arquivo
     event.target.value = ""
   }
 
@@ -156,25 +242,24 @@ export default function FeedVideos() {
 
       console.log("Upload concluído no Cloudinary:", resultado.public_id)
 
-      
+      // 3. Salvar a publicação no Xano
       const respostaXano = await fetch(XANO_POST_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-       body: JSON.stringify({
-  post_id: null,
-  url_do_video: resultado.secure_url,
-  id_cloudinary: resultado.public_id,
-  legenda: null,
-  usuario_id: 10,
-  status: "publicado",
-  curtidas: 0,
-  amei: 0,
-  comentarios: [],
-}),
+        body: JSON.stringify({
+          post_id: null,
+          url_do_video: resultado.secure_url,
+          id_cloudinary: resultado.public_id,
+          legenda: null,
+          usuario_id: 10,
+          status: "publicado",
+          curtidas: 0,
+          amei: 0,
+          comentarios: [],
+        }),
       })
-
 
       const textoResposta = await respostaXano.text()
       let dadosXano = null
@@ -202,7 +287,7 @@ export default function FeedVideos() {
         )
       }
 
-      // 4. Atualizar o feed com os dados persistidos no Xano
+      // 4. Atualizar o feed
       await carregarVideos()
 
       cancelarVideo()
@@ -392,6 +477,7 @@ export default function FeedVideos() {
           <div style={styles.secaoPublicacoes}>
             <div style={styles.tituloPublicacoes}>
               Vídeos publicados
+
               <button
                 type="button"
                 style={styles.botaoAtualizar}
@@ -448,6 +534,7 @@ export default function FeedVideos() {
                       <div style={styles.nomeUsuario}>
                         Claiton Wroblewski
                       </div>
+
                       <div style={styles.agora}>
                         {item.criado_em
                           ? new Date(
@@ -470,6 +557,101 @@ export default function FeedVideos() {
                     <p style={styles.legenda}>
                       {item.legenda}
                     </p>
+                  )}
+
+                  {/* BOTÕES DE INTERAÇÃO */}
+                  <div style={styles.interacoesVideo}>
+                    <button
+                      type="button"
+                      style={styles.botaoInteracao}
+                      disabled={!!atualizandoInteracao[item.id]}
+                      onClick={() =>
+                        atualizarInteracao(item, {
+                          curtidas: Number(item.curtidas || 0) + 1,
+                        })
+                      }
+                    >
+                      👍 Curtir ({item.curtidas || 0})
+                    </button>
+
+                    <button
+                      type="button"
+                      style={styles.botaoInteracao}
+                      disabled={!!atualizandoInteracao[item.id]}
+                      onClick={() =>
+                        atualizarInteracao(item, {
+                          amei: Number(item.amei || 0) + 1,
+                        })
+                      }
+                    >
+                      ❤️ Amei ({item.amei || 0})
+                    </button>
+
+                    <button
+                      type="button"
+                      style={styles.botaoInteracao}
+                      onClick={() =>
+                        setComentariosAbertos((anterior) => ({
+                          ...anterior,
+                          [item.id]: !anterior[item.id],
+                        }))
+                      }
+                    >
+                      💬 Comentários (
+                      {Array.isArray(item.comentarios)
+                        ? item.comentarios.length
+                        : 0}
+                      )
+                    </button>
+                  </div>
+
+                  {/* ÁREA DE COMENTÁRIOS */}
+                  {comentariosAbertos[item.id] && (
+                    <div style={styles.areaComentarios}>
+                      <div style={styles.listaComentarios}>
+                        {Array.isArray(item.comentarios) &&
+                          item.comentarios.map((comentario, indice) => (
+                            <div
+                              key={indice}
+                              style={styles.comentario}
+                            >
+                              {comentario}
+                            </div>
+                          ))}
+
+                        {(!Array.isArray(item.comentarios) ||
+                          item.comentarios.length === 0) && (
+                          <p style={styles.mensagem}>
+                            Ainda não há comentários.
+                          </p>
+                        )}
+                      </div>
+
+                      <div style={styles.formComentario}>
+                        <input
+                          type="text"
+                          placeholder="Escreva um comentário..."
+                          value={novoComentario[item.id] || ""}
+                          onChange={(event) =>
+                            setNovoComentario((anterior) => ({
+                              ...anterior,
+                              [item.id]: event.target.value,
+                            }))
+                          }
+                          style={styles.inputComentario}
+                          disabled={!!atualizandoInteracao[item.id]}
+                        />
+
+                        <button
+                          type="button"
+                          style={styles.botaoEnviarComentario}
+                          onClick={() => enviarComentario(item)}
+                          disabled={!!atualizandoInteracao[item.id]}
+                        >
+                          Enviar
+                        </button>
+                      </div>
+                    </div>
                   )}
                 </div>
               ))}
@@ -713,6 +895,76 @@ const styles = {
     whiteSpace: "pre-wrap",
     overflowWrap: "anywhere",
     marginTop: 16,
+  },
+
+  interacoesVideo: {
+    display: "flex",
+    gap: 10,
+    flexWrap: "wrap",
+    marginTop: 16,
+    paddingTop: 14,
+    borderTop: "1px solid #eee",
+  },
+
+  botaoInteracao: {
+    backgroundColor: "#000",
+    color: "white",
+    border: "none",
+    borderRadius: 10,
+    padding: "11px 16px",
+    fontSize: 14,
+    fontWeight: "bold",
+    cursor: "pointer",
+  },
+
+  areaComentarios: {
+    marginTop: 18,
+    padding: 16,
+    backgroundColor: "#f7f7f7",
+    borderRadius: 12,
+  },
+
+  listaComentarios: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 10,
+    marginBottom: 14,
+  },
+
+  comentario: {
+    backgroundColor: "white",
+    padding: 12,
+    borderRadius: 10,
+    color: "#333",
+    fontSize: 14,
+    overflowWrap: "anywhere",
+  },
+
+  formComentario: {
+    display: "flex",
+    gap: 10,
+    flexWrap: "wrap",
+  },
+
+  inputComentario: {
+    flex: 1,
+    minWidth: 180,
+    padding: 12,
+    border: "1px solid #ccc",
+    borderRadius: 10,
+    fontSize: 14,
+    outline: "none",
+  },
+
+  botaoEnviarComentario: {
+    backgroundColor: "#000",
+    color: "white",
+    border: "none",
+    borderRadius: 10,
+    padding: "12px 20px",
+    fontSize: 14,
+    fontWeight: "bold",
+    cursor: "pointer",
   },
 
   mensagem: {
