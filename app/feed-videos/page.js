@@ -162,15 +162,17 @@ export default function FeedVideos() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          url_do_video: resultado.secure_url,
-          id_cloudinary: resultado.public_id,
-          usuario_id: 10,
-          status: "publicado",
-          curtidas: 0,
-          amei: 0,
-          comentarios: 0,
-        }),
+       body: JSON.stringify({
+  post_id: null,
+  url_do_video: resultado.secure_url,
+  id_cloudinary: resultado.public_id,
+  legenda: null,
+  usuario_id: 10,
+  status: "publicado",
+  curtidas: 0,
+  amei: 0,
+  comentarios: [],
+}),
       })
 
 
