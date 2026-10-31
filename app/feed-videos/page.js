@@ -559,37 +559,38 @@ export default function FeedVideos() {
                     </p>
                   )}
 
-                  {/* BOTÕES DE INTERAÇÃO */}
+                
+{/* BOTÕES DE INTERAÇÃO */}
 <div style={styles.interacoesVideo}>
   <button
-  type="button"
-  style={styles.botaoCurtirAmei}
-  disabled={!!atualizandoInteracao[item.id]}
-  onClick={() =>
-    atualizarInteracao(item, {
-      curtidas: Number(item.curtidas || 0) + 1,
-    })
-  }
->
-  <span>👍🏿</span> Curtir {item.curtidas || 0}
-</button>
-
-<button
-  type="button"
-  style={styles.botaoCurtirAmei}
-  disabled={!!atualizandoInteracao[item.id]}
-  onClick={() =>
-    atualizarInteracao(item, {
-      amei: Number(item.amei || 0) + 1,
-    })
-  }
->
-  <span>🖤</span> Amei {item.amei || 0}
-</button>
+    type="button"
+    style={styles.botaoCurtirAmei}
+    disabled={!!atualizandoInteracao[item.id]}
+    onClick={() =>
+      atualizarInteracao(item, {
+        curtidas: Number(item.curtidas || 0) + 1,
+      })
+    }
+  >
+    <span>👍🏿</span> Curtir {item.curtidas || 0}
+  </button>
 
   <button
     type="button"
-    style={styles.botaoInteracao}
+    style={styles.botaoCurtirAmei}
+    disabled={!!atualizandoInteracao[item.id]}
+    onClick={() =>
+      atualizarInteracao(item, {
+        amei: Number(item.amei || 0) + 1,
+      })
+    }
+  >
+    <span>🖤</span> Amei {item.amei || 0}
+  </button>
+
+  <button
+    type="button"
+    style={styles.botaoCurtirAmei}
     onClick={() =>
       setComentariosAbertos((anterior) => ({
         ...anterior,
@@ -604,7 +605,7 @@ export default function FeedVideos() {
     )
   </button>
 </div>
-                     
+
   
                 {/* ÁREA DE COMENTÁRIOS */}
                   {comentariosAbertos[item.id] && (
