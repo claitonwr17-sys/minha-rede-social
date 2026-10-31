@@ -571,12 +571,12 @@ export default function FeedVideos() {
                         })
                       }
                     >
-                      👍 Curtir ({item.curtidas || 0})
+                      👍🏿 Curtir ({item.curtidas || 0})
                     </button>
 
                     <button
                       type="button"
-                      style={styles.botaoInteracao}
+                      style={styles.botaoCurtirAmei}
                       disabled={!!atualizandoInteracao[item.id]}
                       onClick={() =>
                         atualizarInteracao(item, {
@@ -584,7 +584,7 @@ export default function FeedVideos() {
                         })
                       }
                     >
-                      ❤️ Amei ({item.amei || 0})
+                      🖤 Amei ({item.amei || 0})
                     </button>
 
                     <button
