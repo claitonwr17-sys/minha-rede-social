@@ -560,52 +560,53 @@ export default function FeedVideos() {
                   )}
 
                   {/* BOTÕES DE INTERAÇÃO */}
-                  <div style={styles.interacoesVideo}>
-                    <button
-                      type="button"
-                      style={styles.botaoInteracao}
-                      disabled={!!atualizandoInteracao[item.id]}
-                      onClick={() =>
-                        atualizarInteracao(item, {
-                          curtidas: Number(item.curtidas || 0) + 1,
-                        })
-                      }
-                    >
-                      👍🏿 Curtir ({item.curtidas || 0})
-                    </button>
+<div style={styles.interacoesVideo}>
+  <button
+    type="button"
+    style={styles.botaoCurtirAmei}
+    disabled={!!atualizandoInteracao[item.id]}
+    onClick={() =>
+      atualizarInteracao(item, {
+        curtidas: Number(item.curtidas || 0) + 1,
+      })
+    }
+  >
+    👍🏿 Curtir {item.curtidas || 0}
+  </button>
 
-                    <button
-                      type="button"
-                      style={styles.botaoCurtirAmei}
-                      disabled={!!atualizandoInteracao[item.id]}
-                      onClick={() =>
-                        atualizarInteracao(item, {
-                          amei: Number(item.amei || 0) + 1,
-                        })
-                      }
-                    >
-                      🖤 Amei ({item.amei || 0})
-                    </button>
+  <button
+    type="button"
+    style={styles.botaoCurtirAmei}
+    disabled={!!atualizandoInteracao[item.id]}
+    onClick={() =>
+      atualizarInteracao(item, {
+        amei: Number(item.amei || 0) + 1,
+      })
+    }
+  >
+    🖤 Amei {item.amei || 0}
+  </button>
 
-                    <button
-                      type="button"
-                      style={styles.botaoInteracao}
-                      onClick={() =>
-                        setComentariosAbertos((anterior) => ({
-                          ...anterior,
-                          [item.id]: !anterior[item.id],
-                        }))
-                      }
-                    >
-                      💬 Comentários (
-                      {Array.isArray(item.comentarios)
-                        ? item.comentarios.length
-                        : 0}
-                      )
-                    </button>
-                  </div>
-
-                  {/* ÁREA DE COMENTÁRIOS */}
+  <button
+    type="button"
+    style={styles.botaoInteracao}
+    onClick={() =>
+      setComentariosAbertos((anterior) => ({
+        ...anterior,
+        [item.id]: !anterior[item.id],
+      }))
+    }
+  >
+    💬 Comentários (
+    {Array.isArray(item.comentarios)
+      ? item.comentarios.length
+      : 0}
+    )
+  </button>
+</div>
+                     
+  
+                {/* ÁREA DE COMENTÁRIOS */}
                   {comentariosAbertos[item.id] && (
                     <div style={styles.areaComentarios}>
                       <div style={styles.listaComentarios}>
