@@ -562,30 +562,30 @@ export default function FeedVideos() {
                   {/* BOTÕES DE INTERAÇÃO */}
 <div style={styles.interacoesVideo}>
   <button
-    type="button"
-    style={styles.botaoCurtirAmei}
-    disabled={!!atualizandoInteracao[item.id]}
-    onClick={() =>
-      atualizarInteracao(item, {
-        curtidas: Number(item.curtidas || 0) + 1,
-      })
-    }
-  >
-    👍🏿 Curtir {item.curtidas || 0}
-  </button>
+  type="button"
+  style={styles.botaoCurtirAmei}
+  disabled={!!atualizandoInteracao[item.id]}
+  onClick={() =>
+    atualizarInteracao(item, {
+      curtidas: Number(item.curtidas || 0) + 1,
+    })
+  }
+>
+  <span>👍🏿</span> Curtir {item.curtidas || 0}
+</button>
 
-  <button
-    type="button"
-    style={styles.botaoCurtirAmei}
-    disabled={!!atualizandoInteracao[item.id]}
-    onClick={() =>
-      atualizarInteracao(item, {
-        amei: Number(item.amei || 0) + 1,
-      })
-    }
-  >
-    🖤 Amei {item.amei || 0}
-  </button>
+<button
+  type="button"
+  style={styles.botaoCurtirAmei}
+  disabled={!!atualizandoInteracao[item.id]}
+  onClick={() =>
+    atualizarInteracao(item, {
+      amei: Number(item.amei || 0) + 1,
+    })
+  }
+>
+  <span>🖤</span> Amei {item.amei || 0}
+</button>
 
   <button
     type="button"
@@ -907,16 +907,16 @@ const styles = {
     borderTop: "1px solid #eee",
   },
 
-  botaoInteracao: {
-    backgroundColor: "#000",
-    color: "white",
-    border: "none",
-    borderRadius: 10,
-    padding: "11px 16px",
-    fontSize: 14,
-    fontWeight: "bold",
-    cursor: "pointer",
-  },
+  botaoCurtirAmei: {
+  backgroundColor: "#ffffff",
+  color: "#000000",
+  border: "1px solid #dddddd",
+  borderRadius: 10,
+  padding: "11px 16px",
+  fontSize: 14,
+  fontWeight: "bold",
+  cursor: "pointer",
+},
 
   areaComentarios: {
     marginTop: 18,
