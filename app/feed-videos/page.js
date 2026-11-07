@@ -10,7 +10,12 @@ const XANO_POST_URL =
 
 const XANO_GET_URL =
   "https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/listar-publicacoes-videos"
+// NOVOS ENDPOINTS DE ANÁLISE
+const XANO_INICIAR_ANALISE_URL =
+  "https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/iniciar_analise_video"
 
+const XANO_CONSULTAR_ANALISE_URL =
+  "https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/consultar_analise_video"
 export default function FeedVideos() {
   const router = useRouter()
 
@@ -18,6 +23,14 @@ export default function FeedVideos() {
   const [videoSelecionado, setVideoSelecionado] = useState(null)
   const [arquivoVideo, setArquivoVideo] = useState(null)
   const [publicando, setPublicando] = useState(false)
+  const [enviandoVideo, setEnviandoVideo] = useState(false)
+const [analisandoVideo, setAnalisandoVideo] = useState(false)
+const [analiseConcluida, setAnaliseConcluida] = useState(false)
+const [resultadoAnalise, setResultadoAnalise] = useState(null)
+const [erroAnalise, setErroAnalise] = useState("")
+const [operationName, setOperationName] = useState("")
+const [urlVideoCloudinary, setUrlVideoCloudinary] = useState("")
+const [idCloudinary, setIdCloudinary] = useState("")
   const [videos, setVideos] = useState([])
   const [carregandoVideos, setCarregandoVideos] = useState(true)
   const [erroFeed, setErroFeed] = useState("")
@@ -162,19 +175,28 @@ export default function FeedVideos() {
   }
 
   function escolherVideo(event) {
-    const arquivo = event.target.files?.[0]
+  const arquivo = event.target.files?.[0]
 
-    if (!arquivo) return
+  if (!arquivo) return
 
-    if (videoSelecionado) {
-      URL.revokeObjectURL(videoSelecionado)
-    }
-
-    setArquivoVideo(arquivo)
-    setVideoSelecionado(URL.createObjectURL(arquivo))
-
-    event.target.value = ""
+  if (videoSelecionado) {
+    URL.revokeObjectURL(videoSelecionado)
   }
+
+  setArquivoVideo(arquivo)
+  setVideoSelecionado(URL.createObjectURL(arquivo))
+
+  setAnaliseConcluida(false)
+  setResultadoAnalise(null)
+  setErroAnalise("")
+  setOperationName("")
+  setUrlVideoCloudinary("")
+  setIdCloudinary("")
+  setAnalisandoVideo(false)
+  setEnviandoVideo(false)
+
+  event.target.value = ""
+}
 
   function cancelarVideo() {
     if (videoSelecionado) {
@@ -184,7 +206,128 @@ export default function FeedVideos() {
     setArquivoVideo(null)
     setVideoSelecionado(null)
   }
+  async function enviarVideoParaAnalise() {
+  if (!arquivoVideo) {
+    alert("Selecione um vídeo primeiro.")
+    return
+  }
 
+  try {
+    setEnviandoVideo(true)
+    setErroAnalise("")
+    setAnaliseConcluida(false)
+    setResultadoAnalise(null)
+
+    // 1. Preparar o upload no Cloudinary
+    const respostaAssinatura = await fetch(
+      "/api/upload-video-signature",
+      { method: "POST" }
+    )
+
+    const dadosAssinatura = await respostaAssinatura.json()
+
+    if (!respostaAssinatura.ok) {
+      throw new Error(
+        dadosAssinatura.error ||
+          "Não foi possível preparar o envio do vídeo."
+      )
+    }
+
+    // 2. Enviar o vídeo ao Cloudinary
+    const formulario = new FormData()
+    formulario.append("file", arquivoVideo)
+    formulario.append("api_key", dadosAssinatura.apiKey)
+    formulario.append("timestamp", String(dadosAssinatura.timestamp))
+    formulario.append("signature", dadosAssinatura.signature)
+    formulario.append("folder", dadosAssinatura.folder)
+
+    const respostaUpload = await fetch(
+      `https://api.cloudinary.com/v1_1/${dadosAssinatura.cloudName}/video/upload`,
+      {
+        method: "POST",
+        body: formulario,
+      }
+    )
+
+    const resultado = await respostaUpload.json()
+
+    if (!respostaUpload.ok) {
+      throw new Error(
+        resultado.error?.message ||
+          "Não foi possível enviar o vídeo ao Cloudinary."
+      )
+    }
+
+    if (!resultado.secure_url || !resultado.public_id) {
+      throw new Error("O Cloudinary não retornou os dados do vídeo.")
+    }
+
+    // 3. Guardar os dados do vídeo
+    setUrlVideoCloudinary(resultado.secure_url)
+    setIdCloudinary(resultado.public_id)
+
+    // 4. Iniciar a análise no Xano
+    const respostaAnalise = await fetch(
+      XANO_INICIAR_ANALISE_URL,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          videoUri: resultado.secure_url,
+          operationName: "",
+        }),
+      }
+    )
+
+    const textoResposta = await respostaAnalise.text()
+    let dadosAnalise = null
+
+    try {
+      dadosAnalise = textoResposta
+        ? JSON.parse(textoResposta)
+        : null
+    } catch {
+      dadosAnalise = textoResposta
+    }
+
+    console.log(
+      "Resposta do início da análise no Xano:",
+      respostaAnalise.status,
+      dadosAnalise
+    )
+
+    if (!respostaAnalise.ok) {
+      throw new Error("O Xano não conseguiu iniciar a análise.")
+    }
+
+    const nomeOperacao =
+      dadosAnalise?.operationName ||
+      dadosAnalise?.nome_da_operacao ||
+      dadosAnalise?.result?.operationName ||
+      dadosAnalise?.response?.result?.operationName ||
+      dadosAnalise?.api1?.response?.result?.operationName
+
+    if (!nomeOperacao) {
+      throw new Error(
+        "A análise foi solicitada, mas não encontramos o identificador da operação. Verifique o console."
+      )
+    }
+
+    setOperationName(nomeOperacao)
+    setAnalisandoVideo(true)
+
+    alert("Análise iniciada com sucesso!")
+
+  } catch (erro) {
+    console.error("Erro ao iniciar análise:", erro)
+    setErroAnalise(erro.message || "Erro ao iniciar análise.")
+    alert(erro.message || "Erro ao iniciar análise.")
+  } finally {
+    setEnviandoVideo(false)
+  }
+}
   async function publicarVideo() {
     if (!arquivoVideo) {
       alert("Selecione um vídeo primeiro.")
@@ -449,29 +592,39 @@ export default function FeedVideos() {
               </div>
 
               <div style={styles.acoesVideo}>
-                <button
-                  type="button"
-                  style={{
-                    ...styles.botaoPublicar,
-                    opacity: publicando ? 0.6 : 1,
-                  }}
-                  onClick={publicarVideo}
-                  disabled={publicando}
-                >
-                  {publicando ? "Enviando vídeo..." : "Publicar vídeo"}
-                </button>
+  <button
+    type="button"
+    style={styles.botaoPublicar}
+    onClick={enviarVideoParaAnalise}
+    disabled={enviandoVideo || analisandoVideo || analiseConcluida}
+  >
+    {enviandoVideo
+      ? "Enviando vídeo..."
+      : analisandoVideo
+      ? "Análise em andamento..."
+      : "Analisar vídeo"}
+  </button>
 
-                <button
-                  type="button"
-                  style={styles.botaoCancelar}
-                  onClick={cancelarVideo}
-                  disabled={publicando}
-                >
-                  Cancelar
-                </button>
-              </div>
-            </div>
-          )}
+  <button
+    type="button"
+    style={styles.botaoPublicar}
+    onClick={publicarVideo}
+    disabled={!analiseConcluida || publicando}
+  >
+    {publicando ? "Enviando vídeo..." : "Publicar vídeo"}
+  </button>
+
+  <button
+    type="button"
+    style={styles.botaoCancelar}
+    onClick={cancelarVideo}
+    disabled={publicando || enviandoVideo || analisandoVideo}
+  >
+    Cancelar
+  </button>
+</div>
+</div>
+)}
 
           {/* PUBLICAÇÕES SALVAS NO XANO */}
           <div style={styles.secaoPublicacoes}>
