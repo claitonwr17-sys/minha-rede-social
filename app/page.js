@@ -153,7 +153,7 @@ export default function Home() {
 
               <p className="text-gray-700 mb-4">
                 Conrad é uma rede social de inteligência artificial criada para ajudar
-                você a pensar antes de postar. O app analisa o sentimento e o tom
+                você a pensar antes de postar. A IA analisa o sentimento e o tom
                 emocional das suas postagens — identificando se são positivas,
                 negativas ou neutras — e oferece uma resposta humanizada.
               </p>
