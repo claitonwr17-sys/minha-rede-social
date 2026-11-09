@@ -84,7 +84,16 @@ const [idCloudinary, setIdCloudinary] = useState("")
   useEffect(() => {
     carregarVideos()
   }, [])
+// Acompanhar automaticamente a análise do vídeo
+useEffect(() => {
+  if (!analisandoVideo || !operationName) return
 
+  const intervalo = setInterval(() => {
+    consultarResultadoAnalise()
+  }, 3000)
+
+  return () => clearInterval(intervalo)
+}, [analisandoVideo, operationName])
   // Atualizar curtidas, amei e comentários no Xano
   async function atualizarInteracao(item, alteracoes) {
     const id = item.id
@@ -328,6 +337,45 @@ const [idCloudinary, setIdCloudinary] = useState("")
     setEnviandoVideo(false)
   }
 }
+
+async function consultarResultadoAnalise() {
+  if (!operationName) return
+
+  try {
+    const resposta = await fetch(
+      `${XANO_CONSULTAR_ANALISE_URL}?operation_name=${encodeURIComponent(operationName)}`,
+      {
+        method: "GET",
+        cache: "no-store",
+      }
+    )
+
+    const texto = await resposta.text()
+    const dados = texto ? JSON.parse(texto) : null
+
+    console.log("Resultado da consulta da análise:", dados)
+
+    if (!resposta.ok) {
+      throw new Error("Erro ao consultar o resultado da análise.")
+    }
+
+    if (dados?.status === "concluido") {
+      setResultadoAnalise(dados)
+      setAnaliseConcluida(true)
+      setAnalisandoVideo(false)
+    } else if (dados?.status === "erro") {
+      setErroAnalise(
+        dados.detalhes || "Não foi possível concluir a análise."
+      )
+      setAnalisandoVideo(false)
+    }
+
+  } catch (erro) {
+    console.error("Erro ao consultar análise:", erro)
+    setErroAnalise(erro.message || "Erro ao consultar análise.")
+  }
+}
+
   async function publicarVideo() {
     if (!arquivoVideo) {
       alert("Selecione um vídeo primeiro.")
