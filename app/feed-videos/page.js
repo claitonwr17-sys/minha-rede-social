@@ -207,14 +207,22 @@ useEffect(() => {
   event.target.value = ""
 }
 
-  function cancelarVideo() {
-    if (videoSelecionado) {
-      URL.revokeObjectURL(videoSelecionado)
-    }
-
-    setArquivoVideo(null)
-    setVideoSelecionado(null)
+ function cancelarVideo() {
+  if (videoSelecionado) {
+    URL.revokeObjectURL(videoSelecionado)
   }
+
+  setArquivoVideo(null)
+  setVideoSelecionado(null)
+  setAnaliseConcluida(false)
+  setResultadoAnalise(null)
+  setErroAnalise("")
+  setOperationName("")
+  setUrlVideoCloudinary("")
+  setIdCloudinary("")
+  setAnalisandoVideo(false)
+  setEnviandoVideo(false)
+}
   async function enviarVideoParaAnalise() {
   if (!arquivoVideo) {
     alert("Selecione um vídeo primeiro.")
@@ -355,142 +363,119 @@ async function consultarResultadoAnalise() {
 
     console.log("Resultado da consulta da análise:", dados)
 
-    if (!resposta.ok) {
-      throw new Error("Erro ao consultar o resultado da análise.")
-    }
+    
+   const resultado =
+  dados?.api1?.response?.result ||
+  dados?.api1?.result ||
+  dados?.response?.result ||
+  dados?.result ||
+  dados
 
-    if (dados?.status === "concluido") {
-      setResultadoAnalise(dados)
+    console.log("Resultado identificado:", resultado)
+
+    if (resultado?.status === "concluido") {
+      setResultadoAnalise(resultado)
       setAnaliseConcluida(true)
       setAnalisandoVideo(false)
-    } else if (dados?.status === "erro") {
+      setErroAnalise("")
+    } else if (
+      resultado?.status === "parcial" ||
+      resultado?.status === "erro"
+    ) {
       setErroAnalise(
-        dados.detalhes || "Não foi possível concluir a análise."
+        resultado.detalhes ||
+        resultado.mensagem ||
+        "A análise não foi concluída."
       )
-      setAnalisandoVideo(false)
-    }
 
+      setAnalisandoVideo(false)
+      setAnaliseConcluida(false)
+    } else if (!resposta.ok) {
+      throw new Error("Erro ao consultar o resultado da análise.")
+    }
   } catch (erro) {
     console.error("Erro ao consultar análise:", erro)
     setErroAnalise(erro.message || "Erro ao consultar análise.")
+    setAnalisandoVideo(false)
   }
 }
-
   async function publicarVideo() {
-    if (!arquivoVideo) {
-      alert("Selecione um vídeo primeiro.")
-      return
-    }
+  if (!arquivoVideo) {
+    alert("Selecione um vídeo primeiro.")
+    return
+  }
+
+  if (!analiseConcluida) {
+    alert("Aguarde a conclusão da análise antes de publicar.")
+    return
+  }
+
+  if (!urlVideoCloudinary || !idCloudinary) {
+    alert("Não encontramos os dados do vídeo no Cloudinary. Faça a análise novamente.")
+    return
+  }
+
+  try {
+    setPublicando(true)
+
+    // 1. Salvar a publicação no Xano usando o upload já realizado
+    const respostaXano = await fetch(XANO_POST_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        post_id: null,
+        url_do_video: urlVideoCloudinary,
+        id_cloudinary: idCloudinary,
+        legenda: null,
+        usuario_id: 10,
+        status: "publicado",
+        curtidas: 0,
+        amei: 0,
+        comentarios: [],
+      }),
+    })
+
+    const textoResposta = await respostaXano.text()
+    let dadosXano = null
 
     try {
-      setPublicando(true)
-
-      // 1. Preparar o upload no Cloudinary
-      const respostaAssinatura = await fetch(
-        "/api/upload-video-signature",
-        { method: "POST" }
-      )
-
-      const dadosAssinatura = await respostaAssinatura.json()
-
-      if (!respostaAssinatura.ok) {
-        throw new Error(
-          dadosAssinatura.error ||
-            "Não foi possível preparar o envio do vídeo."
-        )
-      }
-
-      // 2. Enviar o arquivo ao Cloudinary
-      const formulario = new FormData()
-      formulario.append("file", arquivoVideo)
-      formulario.append("api_key", dadosAssinatura.apiKey)
-      formulario.append("timestamp", String(dadosAssinatura.timestamp))
-      formulario.append("signature", dadosAssinatura.signature)
-      formulario.append("folder", dadosAssinatura.folder)
-
-      const respostaUpload = await fetch(
-        `https://api.cloudinary.com/v1_1/${dadosAssinatura.cloudName}/video/upload`,
-        {
-          method: "POST",
-          body: formulario,
-        }
-      )
-
-      const resultado = await respostaUpload.json()
-
-      if (!respostaUpload.ok) {
-        throw new Error(
-          resultado.error?.message ||
-            "Não foi possível enviar o vídeo ao Cloudinary."
-        )
-      }
-
-      if (!resultado.secure_url || !resultado.public_id) {
-        throw new Error(
-          "O Cloudinary não retornou a URL ou o identificador do vídeo."
-        )
-      }
-
-      console.log("Upload concluído no Cloudinary:", resultado.public_id)
-
-      // 3. Salvar a publicação no Xano
-      const respostaXano = await fetch(XANO_POST_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          post_id: null,
-          url_do_video: resultado.secure_url,
-          id_cloudinary: resultado.public_id,
-          legenda: null,
-          usuario_id: 10,
-          status: "publicado",
-          curtidas: 0,
-          amei: 0,
-          comentarios: [],
-        }),
-      })
-
-      const textoResposta = await respostaXano.text()
-      let dadosXano = null
-
-      try {
-        dadosXano = textoResposta ? JSON.parse(textoResposta) : null
-      } catch {
-        dadosXano = textoResposta
-      }
-
-      console.log(
-        "Resposta do POST no Xano:",
-        respostaXano.status,
-        dadosXano
-      )
-
-      if (!respostaXano.ok) {
-        throw new Error(
-          typeof dadosXano === "object" && dadosXano
-            ? dadosXano.message ||
-                dadosXano.mensagem ||
-                dadosXano.error ||
-                `O Xano não salvou a publicação. HTTP ${respostaXano.status}`
-            : `O Xano não salvou a publicação. HTTP ${respostaXano.status}`
-        )
-      }
-
-      // 4. Atualizar o feed
-      await carregarVideos()
-
-      cancelarVideo()
-
-      alert("Vídeo publicado e salvo no Xano com sucesso!")
-    } catch (erro) {
-      console.error("Erro ao publicar vídeo:", erro)
-      alert(erro.message || "Erro ao publicar vídeo.")
-    } finally {
-      setPublicando(false)
+      dadosXano = textoResposta ? JSON.parse(textoResposta) : null
+    } catch {
+      dadosXano = textoResposta
     }
+
+    console.log(
+      "Resposta do POST no Xano:",
+      respostaXano.status,
+      dadosXano
+    )
+
+    if (!respostaXano.ok) {
+      throw new Error(
+        typeof dadosXano === "object" && dadosXano
+          ? dadosXano.message ||
+              dadosXano.mensagem ||
+              dadosXano.error ||
+              `O Xano não salvou a publicação. HTTP ${respostaXano.status}`
+          : `O Xano não salvou a publicação. HTTP ${respostaXano.status}`
+      )
+    }
+
+    // 2. Atualizar o feed
+    await carregarVideos()
+
+    cancelarVideo()
+
+    alert("Vídeo publicado e salvo no Xano com sucesso!")
+  } catch (erro) {
+    console.error("Erro ao publicar vídeo:", erro)
+    alert(erro.message || "Erro ao publicar vídeo.")
+  } finally {
+    setPublicando(false)
   }
+}
 
   return (
     <div style={styles.page}>
