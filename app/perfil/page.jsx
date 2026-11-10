@@ -1,3 +1,4 @@
+
 'use client'
 
 import "@fontsource/inter"
@@ -6,98 +7,122 @@ import { useRouter } from "next/navigation"
 import { useState, useEffect } from "react"
 
 export default function Perfil() {
-
   const router = useRouter()
 
   const [hoverItem, setHoverItem] = useState("")
-
   const [totalPosts, setTotalPosts] = useState(0)
   const [postsPerfil, setPostsPerfil] = useState([])
   const [carregandoPosts, setCarregandoPosts] = useState(true)
-
   const [fotoPerfil, setFotoPerfil] = useState("/insta.png")
-
   const [fotoCapa, setFotoCapa] = useState("/insta.png")
 
   function logout() {
-  router.push("/feed")
-}
-
-async function buscarTotalPosts() {
-  try {
-    setCarregandoPosts(true)
-
-    const [resTexto, resImagens] = await Promise.all([
-      fetch(
-        "https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/posts"
-      ),
-      fetch(
-        "https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/get_imagens"
-      ),
-    ])
-
-    const postsTexto = await resTexto.json()
-    const postsImagens = await resImagens.json()
-
-    const textosDoUsuario = (postsTexto || []).filter(
-  (post) => Number(post._usuario_id) === 10
-)
-
-    const imagensDoUsuario = (postsImagens || []).filter(
-      (post) => Number(post.usuario_id) === 10
-    )
-
-    const total =
-      textosDoUsuario.length + imagensDoUsuario.length
-
-    setTotalPosts(total)
-
-    const publicacoesTexto = textosDoUsuario.map((post) => ({
-      tipo: "texto",
-      id: post.id,
-      texto: post.texto,
-      data: post.id
-    }))
-
-    const publicacoesImagem = imagensDoUsuario.map((post) => ({
-  tipo: "imagem",
-  id: post.id,
-  imagem: post.image_url,
-  data: post.id
-}))
-
-    const todasPublicacoes = [
-      ...publicacoesTexto,
-      ...publicacoesImagem
-    ].sort((a, b) => Number(b.data) - Number(a.data))
-
-    setPostsPerfil(todasPublicacoes)
-
-    console.log("Posts de texto:", textosDoUsuario)
-    console.log("Posts de imagem:", imagensDoUsuario)
-    console.log("Publicações do perfil:", todasPublicacoes)
-    console.log("TOTAL:", total)
-
-  } catch (error) {
-    console.error("Erro ao buscar posts do perfil:", error)
-  } finally {
-    setCarregandoPosts(false)
+    router.push("/feed")
   }
-}
 
-useEffect(() => {
-  buscarTotalPosts()
-}, [])
+  async function buscarTotalPosts() {
+    try {
+      setCarregandoPosts(true)
 
-return (
+      const [resTexto, resImagens, resVideos] = await Promise.all([
+        fetch("https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/posts"),
+        fetch("https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/get_imagens"),
+        fetch("https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/listar-publicacoes-videos"),
+      ])
 
+      if (!resTexto.ok || !resImagens.ok || !resVideos.ok) {
+        throw new Error("Erro ao buscar publicações do Xano")
+      }
+
+      const postsTexto = await resTexto.json()
+      const postsImagens = await resImagens.json()
+      const respostaVideos = await resVideos.json()
+
+      const postsVideos = Array.isArray(respostaVideos)
+        ? respostaVideos
+        : Array.isArray(respostaVideos?.items)
+          ? respostaVideos.items
+          : Array.isArray(respostaVideos?.result)
+            ? respostaVideos.result
+            : []
+
+      console.log("Vídeos retornados pelo Xano:", respostaVideos)
+
+      const textosDoUsuario = (postsTexto || []).filter(
+        (post) => Number(post._usuario_id) === 10
+      )
+
+      const imagensDoUsuario = (postsImagens || []).filter(
+        (post) => Number(post.usuario_id) === 10
+      )
+
+      const videosDoUsuario = postsVideos.filter(
+        (post) => Number(post.usuario_id) === 10
+      )
+
+      console.log("Vídeos do usuário:", videosDoUsuario)
+
+      const total =
+        textosDoUsuario.length +
+        imagensDoUsuario.length +
+        videosDoUsuario.length
+
+      setTotalPosts(total)
+
+      const publicacoesTexto = textosDoUsuario.map((post) => ({
+        tipo: "texto",
+        id: post.id,
+        texto: post.texto,
+        data: post.id
+      }))
+
+      const publicacoesImagem = imagensDoUsuario.map((post) => ({
+        tipo: "imagem",
+        id: post.id,
+        imagem: post.image_url,
+        data: post.id
+      }))
+
+      const publicacoesVideo = videosDoUsuario.map((post) => ({
+        tipo: "video",
+        id: post.id,
+        video: post.url_do_video,
+        legenda: post.legenda || "",
+        data: post.id
+      }))
+
+      const todasPublicacoes = [
+        ...publicacoesTexto,
+        ...publicacoesImagem,
+        ...publicacoesVideo
+      ].sort((a, b) => Number(b.data) - Number(a.data))
+
+      setPostsPerfil(todasPublicacoes)
+
+      console.log("Posts de texto:", textosDoUsuario)
+      console.log("Posts de imagem:", imagensDoUsuario)
+      console.log("Posts de vídeo:", videosDoUsuario)
+      console.log("Publicações do perfil:", todasPublicacoes)
+      console.log("TOTAL:", total)
+
+    } catch (error) {
+      console.error("Erro ao buscar posts do perfil:", error)
+    } finally {
+      setCarregandoPosts(false)
+    }
+  }
+
+  useEffect(() => {
+    buscarTotalPosts()
+  }, [])
+
+  return (
     <div style={styles.page}>
 
       {/* SIDEBAR */}
       <div style={styles.sidebar}>
 
         <div>
-
           <div style={styles.logo}>
             Conrad
           </div>
@@ -120,33 +145,30 @@ return (
               </div>
             </Link>
 
-           <div
-  
-  style={{
-    ...styles.menuItem,
-    ...(hoverItem === "ia" && styles.menuHover),
-    display: "flex",
-    alignItems: "center",
-    gap: 12
-  }}
-  onMouseEnter={() => setHoverItem("ia")}
-  onMouseLeave={() => setHoverItem("")}
- onClick={() => router.push("/IA")}
->
+            <div
+              style={{
+                ...styles.menuItem,
+                ...(hoverItem === "ia" && styles.menuHover),
+                display: "flex",
+                alignItems: "center",
+                gap: 12
+              }}
+              onMouseEnter={() => setHoverItem("ia")}
+              onMouseLeave={() => setHoverItem("")}
+              onClick={() => router.push("/IA")}
+            >
+              <img
+                src="/logo/logo-simbolo.png"
+                alt="IA"
+                style={{
+                  width: 32,
+                  height: 32,
+                  objectFit: "contain"
+                }}
+              />
 
-  <img
-    src="/logo/logo-simbolo.png"
-    alt="IA"
-    style={{
-      width: 32,
-      height: 32,
-      objectFit: "contain"
-    }}
-  />
-
-  <span>IA</span>
-
-</div>
+              <span>IA</span>
+            </div>
 
             <div
               style={{
@@ -166,18 +188,17 @@ return (
 
             <div
               style={{
-  ...styles.menuItem,
-  ...(hoverItem === "config" && styles.menuHover)
-}}
-onMouseEnter={() => setHoverItem("config")}
-onMouseLeave={() => setHoverItem("")}
-onClick={() => router.push("/feed-videos")}
->
-  Feed de vídeos
-</div>
+                ...styles.menuItem,
+                ...(hoverItem === "config" && styles.menuHover)
+              }}
+              onMouseEnter={() => setHoverItem("config")}
+              onMouseLeave={() => setHoverItem("")}
+              onClick={() => router.push("/feed-videos")}
+            >
+              Feed de vídeos
+            </div>
 
           </div>
-
         </div>
 
         <div
@@ -199,12 +220,10 @@ onClick={() => router.push("/feed-videos")}
 
         {/* NAVBAR */}
         <div style={styles.navbar}>
-
           <input
             placeholder="Pesquisar"
             style={styles.search}
           />
-
         </div>
 
         {/* CARD PERFIL */}
@@ -227,11 +246,9 @@ onClick={() => router.push("/feed-videos")}
                 hidden
                 onChange={(e) => {
                   const file = e.target.files?.[0]
-
                   if (!file) return
 
                   const imageUrl = URL.createObjectURL(file)
-
                   setFotoCapa(imageUrl)
                 }}
               />
@@ -241,20 +258,17 @@ onClick={() => router.push("/feed-videos")}
 
           {/* FOTO */}
           <div style={styles.avatarArea}>
-
             <img
               src={fotoPerfil}
               alt="Usuário"
               style={styles.avatar}
             />
-
           </div>
 
           {/* INFO */}
           <div style={styles.info}>
 
             <div>
-
               <div style={styles.nome}>
                 Claiton Wroblewski
               </div>
@@ -262,7 +276,6 @@ onClick={() => router.push("/feed-videos")}
               <div style={styles.usuario}>
                 @claitonwr17
               </div>
-
             </div>
 
             <label style={styles.botao}>
@@ -273,11 +286,9 @@ onClick={() => router.push("/feed-videos")}
                 hidden
                 onChange={(e) => {
                   const file = e.target.files?.[0]
-
                   if (!file) return
 
                   const imageUrl = URL.createObjectURL(file)
-
                   setFotoPerfil(imageUrl)
                 }}
               />
@@ -289,12 +300,16 @@ onClick={() => router.push("/feed-videos")}
             Construindo uma rede social com IA
           </div>
 
-                    {/* ESTATÍSTICAS */}
+          {/* ESTATÍSTICAS */}
           <div style={styles.stats}>
 
             <div style={styles.statBox}>
-              <div style={styles.statNumero}>{totalPosts}</div>
-              <div style={styles.statTexto}>Posts</div>
+              <div style={styles.statNumero}>
+                {totalPosts}
+              </div>
+              <div style={styles.statTexto}>
+                Posts
+              </div>
             </div>
 
             <div style={styles.statBox}>
@@ -308,7 +323,6 @@ onClick={() => router.push("/feed-videos")}
             </div>
 
           </div>
-
 
           {/* PUBLICAÇÕES DO PERFIL */}
           <div style={styles.publicacoes}>
@@ -347,13 +361,30 @@ onClick={() => router.push("/feed-videos")}
                     />
                   )}
 
+                  {post.tipo === "video" && (
+                    <div>
+                      <video
+                        src={post.video}
+                        controls
+                        playsInline
+                        preload="metadata"
+                        style={styles.postVideo}
+                      />
+
+                      {post.legenda && (
+                        <p style={styles.postTexto}>
+                          {post.legenda}
+                        </p>
+                      )}
+                    </div>
+                  )}
+
                 </div>
 
               ))
             )}
 
           </div>
-
 
         </div>
 
@@ -430,20 +461,21 @@ const styles = {
   },
 
   logoutHover: {
-    transform: "translateX(5px)",
+    transform: "translateY(5px)",
     opacity: 0.8
   },
 
   content: {
-  flex: 1,
-  padding: 10
-},
- navbar: {
-  backgroundColor: "white",
-  padding: 10,
-  borderRadius: 16,
-  marginBottom: 10
-},
+    flex: 1,
+    padding: 10
+  },
+
+  navbar: {
+    backgroundColor: "white",
+    padding: 10,
+    borderRadius: 16,
+    marginBottom: 10
+  },
 
   search: {
     width: 300,
@@ -467,10 +499,11 @@ const styles = {
   },
 
   banner: {
-  width: "100%",
-  height: 260,
-  objectFit: "cover"
-},
+    width: "100%",
+    height: 260,
+    objectFit: "cover"
+  },
+
   changeCoverButton: {
     position: "absolute",
     right: 20,
@@ -484,21 +517,21 @@ const styles = {
   },
 
   avatarArea: {
-  marginTop: -40,
-  marginLeft: 30,
-  position: "relative",
-  zIndex: 10
-},
+    marginTop: -40,
+    marginLeft: 30,
+    position: "relative",
+    zIndex: 10
+  },
 
   avatar: {
-  width: 140,
-  height: 140,
-  borderRadius: "50%",
-  backgroundColor: "white",
-  padding: 6,
-  objectFit: "cover",
-  boxShadow: "0 2px 8px rgba(0,0,0,0.2)"
-},
+    width: 140,
+    height: 140,
+    borderRadius: "50%",
+    backgroundColor: "white",
+    padding: 6,
+    objectFit: "cover",
+    boxShadow: "0 2px 8px rgba(0,0,0,0.2)"
+  },
 
   info: {
     display: "flex",
@@ -555,7 +588,7 @@ const styles = {
     color: "#222"
   },
 
-    statTexto: {
+  statTexto: {
     marginTop: 5,
     color: "#666",
     fontSize: 18
@@ -601,5 +634,14 @@ const styles = {
     objectFit: "cover",
     borderRadius: 12,
     display: "block"
+  },
+
+  postVideo: {
+    width: "100%",
+    maxHeight: 600,
+    objectFit: "contain",
+    borderRadius: 12,
+    display: "block",
+    backgroundColor: "#000"
   }
 }
