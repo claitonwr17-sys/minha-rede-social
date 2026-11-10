@@ -569,7 +569,42 @@ export default function FeedVideos() {
             : `O Xano não salvou a publicação. HTTP ${respostaXano.status}`
         )
       }
+      // Salvar uma cópia do vídeo no Google Cloud Storage.
+try {
+  const respostaStorage = await fetch(
+    "https://sentiment-gemini-vision-video.claitonwr17.workers.dev/",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        acao: "salvar_video",
+        videoUri: dadosCloudinary.secure_url,
+      }),
+    }
+  )
 
+  const dadosStorage = await respostaStorage.json()
+
+  if (!respostaStorage.ok || dadosStorage.status !== "salvo") {
+    throw new Error(
+      dadosStorage.detalhes ||
+      dadosStorage.erro ||
+      "O Google Storage não confirmou a gravação."
+    )
+  }
+
+  console.log(
+    "Vídeo salvo no Google Storage:",
+    dadosStorage.videoUri
+  )
+} catch (erroStorage) {
+  console.error(
+    "Falha ao salvar vídeo no Google Storage:",
+    erroStorage
+  )
+}
       // Atualizar o feed.
       await carregarVideos()
 
