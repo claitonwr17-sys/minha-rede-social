@@ -1,36 +1,40 @@
+
 'use client'
 
 import "@fontsource/inter"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 
 const XANO_POST_URL =
   "https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/publicacoes_videos"
 
 const XANO_GET_URL =
   "https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/listar-publicacoes-videos"
-// NOVOS ENDPOINTS DE ANÁLISE
+
 const XANO_INICIAR_ANALISE_URL =
   "https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/iniciar_analise_video"
 
 const XANO_CONSULTAR_ANALISE_URL =
   "https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/consultar_analise_video"
+
 export default function FeedVideos() {
   const router = useRouter()
 
   const [hoverItem, setHoverItem] = useState("")
   const [videoSelecionado, setVideoSelecionado] = useState(null)
   const [arquivoVideo, setArquivoVideo] = useState(null)
+
   const [publicando, setPublicando] = useState(false)
   const [enviandoVideo, setEnviandoVideo] = useState(false)
-const [analisandoVideo, setAnalisandoVideo] = useState(false)
-const [analiseConcluida, setAnaliseConcluida] = useState(false)
-const [resultadoAnalise, setResultadoAnalise] = useState(null)
-const [erroAnalise, setErroAnalise] = useState("")
-const [operationName, setOperationName] = useState("")
-const [urlVideoCloudinary, setUrlVideoCloudinary] = useState("")
-const [idCloudinary, setIdCloudinary] = useState("")
+  const [analisandoVideo, setAnalisandoVideo] = useState(false)
+  const [analiseConcluida, setAnaliseConcluida] = useState(false)
+  const [resultadoAnalise, setResultadoAnalise] = useState(null)
+  const [erroAnalise, setErroAnalise] = useState("")
+  const [operationName, setOperationName] = useState("")
+  const [urlVideoCloudinary, setUrlVideoCloudinary] = useState("")
+  const [idCloudinary, setIdCloudinary] = useState("")
+
   const [videos, setVideos] = useState([])
   const [carregandoVideos, setCarregandoVideos] = useState(true)
   const [erroFeed, setErroFeed] = useState("")
@@ -39,7 +43,15 @@ const [idCloudinary, setIdCloudinary] = useState("")
   const [novoComentario, setNovoComentario] = useState({})
   const [atualizandoInteracao, setAtualizandoInteracao] = useState({})
 
-  // GET: carregar as publicações salvas no Xano
+  // Guarda o upload para evitar enviar o mesmo vídeo duas vezes.
+  const uploadEmAndamentoRef = useRef(null)
+  const arquivoAtualRef = useRef(null)
+  const dadosUploadRef = useRef(null)
+
+  // Impede que a análise antiga seja aplicada a outro vídeo.
+  const versaoVideoRef = useRef(0)
+
+  // GET: carregar publicações salvas no Xano.
   async function carregarVideos() {
     try {
       setErroFeed("")
@@ -80,21 +92,22 @@ const [idCloudinary, setIdCloudinary] = useState("")
     }
   }
 
-  // Carregar o feed quando a página abrir
   useEffect(() => {
     carregarVideos()
   }, [])
-// Acompanhar automaticamente a análise do vídeo
-useEffect(() => {
-  if (!analisandoVideo || !operationName) return
 
-  const intervalo = setInterval(() => {
-    consultarResultadoAnalise()
-  }, 3000)
+  // Consultar automaticamente o resultado da análise.
+  useEffect(() => {
+    if (!analisandoVideo || !operationName) return
 
-  return () => clearInterval(intervalo)
-}, [analisandoVideo, operationName])
-  // Atualizar curtidas, amei e comentários no Xano
+    const intervalo = setInterval(() => {
+      consultarResultadoAnalise()
+    }, 3000)
+
+    return () => clearInterval(intervalo)
+  }, [analisandoVideo, operationName])
+
+  // Atualizar curtidas, amei e comentários no Xano.
   async function atualizarInteracao(item, alteracoes) {
     const id = item.id
 
@@ -144,7 +157,6 @@ useEffect(() => {
       }
 
       await carregarVideos()
-
     } catch (erro) {
       console.error("Erro na interação:", erro)
       alert("Não foi possível atualizar. Tente novamente.")
@@ -156,7 +168,6 @@ useEffect(() => {
     }
   }
 
-  // Adicionar comentário
   async function enviarComentario(item) {
     const texto = (novoComentario[item.id] || "").trim()
 
@@ -183,299 +194,402 @@ useEffect(() => {
     router.push("/feed")
   }
 
+  // Selecionar um vídeo.
   function escolherVideo(event) {
-  const arquivo = event.target.files?.[0]
+    const arquivo = event.target.files?.[0]
 
-  if (!arquivo) return
+    if (!arquivo) return
 
-  if (videoSelecionado) {
-    URL.revokeObjectURL(videoSelecionado)
-  }
+    if (publicando || enviandoVideo || analisandoVideo) {
+      alert("Aguarde a operação atual terminar.")
+      return
+    }
 
-  setArquivoVideo(arquivo)
-  setVideoSelecionado(URL.createObjectURL(arquivo))
+    if (videoSelecionado) {
+      URL.revokeObjectURL(videoSelecionado)
+    }
 
-  setAnaliseConcluida(false)
-  setResultadoAnalise(null)
-  setErroAnalise("")
-  setOperationName("")
-  setUrlVideoCloudinary("")
-  setIdCloudinary("")
-  setAnalisandoVideo(false)
-  setEnviandoVideo(false)
+    versaoVideoRef.current += 1
+    arquivoAtualRef.current = arquivo
+    dadosUploadRef.current = null
+    uploadEmAndamentoRef.current = null
 
-  event.target.value = ""
-}
+    setArquivoVideo(arquivo)
+    setVideoSelecionado(URL.createObjectURL(arquivo))
 
- function cancelarVideo() {
-  if (videoSelecionado) {
-    URL.revokeObjectURL(videoSelecionado)
-  }
-
-  setArquivoVideo(null)
-  setVideoSelecionado(null)
-  setAnaliseConcluida(false)
-  setResultadoAnalise(null)
-  setErroAnalise("")
-  setOperationName("")
-  setUrlVideoCloudinary("")
-  setIdCloudinary("")
-  setAnalisandoVideo(false)
-  setEnviandoVideo(false)
-}
-  async function enviarVideoParaAnalise() {
-  if (!arquivoVideo) {
-    alert("Selecione um vídeo primeiro.")
-    return
-  }
-
-  try {
-    setEnviandoVideo(true)
-    setErroAnalise("")
     setAnaliseConcluida(false)
     setResultadoAnalise(null)
+    setErroAnalise("")
+    setOperationName("")
+    setUrlVideoCloudinary("")
+    setIdCloudinary("")
+    setAnalisandoVideo(false)
+    setEnviandoVideo(false)
 
-    // 1. Preparar o upload no Cloudinary
-    const respostaAssinatura = await fetch(
-      "/api/upload-video-signature",
-      { method: "POST" }
-    )
+    event.target.value = ""
+  }
 
-    const dadosAssinatura = await respostaAssinatura.json()
+  function cancelarVideo() {
+    if (publicando || enviandoVideo || analisandoVideo) {
+      return
+    }
 
-    if (!respostaAssinatura.ok) {
-      throw new Error(
-        dadosAssinatura.error ||
+    if (videoSelecionado) {
+      URL.revokeObjectURL(videoSelecionado)
+    }
+
+    versaoVideoRef.current += 1
+    arquivoAtualRef.current = null
+    dadosUploadRef.current = null
+    uploadEmAndamentoRef.current = null
+
+    setArquivoVideo(null)
+    setVideoSelecionado(null)
+    setAnaliseConcluida(false)
+    setResultadoAnalise(null)
+    setErroAnalise("")
+    setOperationName("")
+    setUrlVideoCloudinary("")
+    setIdCloudinary("")
+    setAnalisandoVideo(false)
+    setEnviandoVideo(false)
+  }
+
+  // Upload independente da análise.
+  // Tanto Publicar quanto Analisar podem usar esta função.
+  async function garantirUploadCloudinary() {
+    if (!arquivoVideo) {
+      throw new Error("Selecione um vídeo primeiro.")
+    }
+
+    if (
+      dadosUploadRef.current &&
+      arquivoAtualRef.current === arquivoVideo
+    ) {
+      return dadosUploadRef.current
+    }
+
+    if (uploadEmAndamentoRef.current) {
+      return uploadEmAndamentoRef.current
+    }
+
+    const arquivoDestaOperacao = arquivoVideo
+    const versaoDestaOperacao = versaoVideoRef.current
+
+    const promessa = (async () => {
+      // 1. Obter assinatura do upload.
+      const respostaAssinatura = await fetch(
+        "/api/upload-video-signature",
+        { method: "POST" }
+      )
+
+      const dadosAssinatura = await respostaAssinatura.json()
+
+      if (!respostaAssinatura.ok) {
+        throw new Error(
+          dadosAssinatura.error ||
           "Não foi possível preparar o envio do vídeo."
-      )
-    }
-
-    // 2. Enviar o vídeo ao Cloudinary
-    const formulario = new FormData()
-    formulario.append("file", arquivoVideo)
-    formulario.append("api_key", dadosAssinatura.apiKey)
-    formulario.append("timestamp", String(dadosAssinatura.timestamp))
-    formulario.append("signature", dadosAssinatura.signature)
-    formulario.append("folder", dadosAssinatura.folder)
-
-    const respostaUpload = await fetch(
-      `https://api.cloudinary.com/v1_1/${dadosAssinatura.cloudName}/video/upload`,
-      {
-        method: "POST",
-        body: formulario,
+        )
       }
-    )
 
-    const resultado = await respostaUpload.json()
+      // 2. Enviar arquivo ao Cloudinary.
+      const formulario = new FormData()
 
-    if (!respostaUpload.ok) {
-      throw new Error(
-        resultado.error?.message ||
-          "Não foi possível enviar o vídeo ao Cloudinary."
+      formulario.append("file", arquivoDestaOperacao)
+      formulario.append("api_key", dadosAssinatura.apiKey)
+      formulario.append(
+        "timestamp",
+        String(dadosAssinatura.timestamp)
       )
+      formulario.append("signature", dadosAssinatura.signature)
+      formulario.append("folder", dadosAssinatura.folder)
+
+      const respostaUpload = await fetch(
+        `https://api.cloudinary.com/v1_1/${dadosAssinatura.cloudName}/video/upload`,
+        {
+          method: "POST",
+          body: formulario,
+        }
+      )
+
+      const resultado = await respostaUpload.json()
+
+      if (!respostaUpload.ok) {
+        throw new Error(
+          resultado.error?.message ||
+          "Não foi possível enviar o vídeo ao Cloudinary."
+        )
+      }
+
+      if (!resultado.secure_url || !resultado.public_id) {
+        throw new Error(
+          "O Cloudinary não retornou os dados do vídeo."
+        )
+      }
+
+      if (
+        versaoVideoRef.current !== versaoDestaOperacao ||
+        arquivoAtualRef.current !== arquivoDestaOperacao
+      ) {
+        throw new Error(
+          "O vídeo selecionado mudou durante o envio."
+        )
+      }
+
+      const dados = {
+        secure_url: resultado.secure_url,
+        public_id: resultado.public_id,
+      }
+
+      dadosUploadRef.current = dados
+      setUrlVideoCloudinary(dados.secure_url)
+      setIdCloudinary(dados.public_id)
+
+      return dados
+    })()
+
+    uploadEmAndamentoRef.current = promessa
+    setEnviandoVideo(true)
+
+    try {
+      return await promessa
+    } finally {
+      if (uploadEmAndamentoRef.current === promessa) {
+        uploadEmAndamentoRef.current = null
+      }
+      setEnviandoVideo(false)
+    }
+  }
+
+  // Análise opcional.
+  async function enviarVideoParaAnalise() {
+    if (!arquivoVideo) {
+      alert("Selecione um vídeo primeiro.")
+      return
     }
 
-    if (!resultado.secure_url || !resultado.public_id) {
-      throw new Error("O Cloudinary não retornou os dados do vídeo.")
+    if (enviandoVideo || publicando || analisandoVideo) {
+      return
     }
 
-    // 3. Guardar os dados do vídeo
-    setUrlVideoCloudinary(resultado.secure_url)
-    setIdCloudinary(resultado.public_id)
+    try {
+      setErroAnalise("")
+      setAnaliseConcluida(false)
+      setResultadoAnalise(null)
+      setOperationName("")
 
-    // 4. Iniciar a análise no Xano
-    const respostaAnalise = await fetch(
-      XANO_INICIAR_ANALISE_URL,
-      {
+      const resultado = await garantirUploadCloudinary()
+
+      // Iniciar análise usando a URL do Cloudinary.
+      const respostaAnalise = await fetch(
+        XANO_INICIAR_ANALISE_URL,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            videoUri: resultado.secure_url,
+            operationName: "",
+          }),
+        }
+      )
+
+      const textoResposta = await respostaAnalise.text()
+      let dadosAnalise = null
+
+      try {
+        dadosAnalise = textoResposta
+          ? JSON.parse(textoResposta)
+          : null
+      } catch {
+        dadosAnalise = textoResposta
+      }
+
+      console.log(
+        "Resposta do início da análise no Xano:",
+        respostaAnalise.status,
+        dadosAnalise
+      )
+
+      if (!respostaAnalise.ok) {
+        throw new Error(
+          "O Xano não conseguiu iniciar a análise."
+        )
+      }
+
+      const nomeOperacao =
+        dadosAnalise?.operationName ||
+        dadosAnalise?.nome_da_operacao ||
+        dadosAnalise?.result?.operationName ||
+        dadosAnalise?.response?.result?.operationName ||
+        dadosAnalise?.api1?.response?.result?.operationName
+
+      if (!nomeOperacao) {
+        throw new Error(
+          "A análise foi solicitada, mas não encontramos o identificador da operação. Verifique o console."
+        )
+      }
+
+      setOperationName(nomeOperacao)
+      setAnalisandoVideo(true)
+
+      alert("Análise iniciada com sucesso!")
+    } catch (erro) {
+      console.error("Erro ao iniciar análise:", erro)
+      setErroAnalise(
+        erro.message || "Erro ao iniciar análise."
+      )
+      alert(erro.message || "Erro ao iniciar análise.")
+    }
+  }
+
+  // Consultar o resultado da análise.
+  async function consultarResultadoAnalise() {
+    if (!operationName) return
+
+    try {
+      const resposta = await fetch(
+        `${XANO_CONSULTAR_ANALISE_URL}?operation_name=${encodeURIComponent(operationName)}`,
+        {
+          method: "GET",
+          cache: "no-store",
+        }
+      )
+
+      const texto = await resposta.text()
+      const dados = texto ? JSON.parse(texto) : null
+
+      console.log(
+        "Resultado da consulta da análise:",
+        dados
+      )
+
+      const resultado =
+        dados?.api1?.response?.result ||
+        dados?.api1?.result ||
+        dados?.response?.result ||
+        dados?.result ||
+        dados
+
+      console.log("Resultado identificado:", resultado)
+
+      if (resultado?.status === "concluido") {
+        setResultadoAnalise(resultado)
+        setAnaliseConcluida(true)
+        setAnalisandoVideo(false)
+        setErroAnalise("")
+      } else if (
+        resultado?.status === "parcial" ||
+        resultado?.status === "erro"
+      ) {
+        setErroAnalise(
+          resultado.detalhes ||
+          resultado.mensagem ||
+          "A análise não foi concluída."
+        )
+
+        setAnalisandoVideo(false)
+        setAnaliseConcluida(false)
+      } else if (!resposta.ok) {
+        throw new Error(
+          "Erro ao consultar o resultado da análise."
+        )
+      }
+    } catch (erro) {
+      console.error("Erro ao consultar análise:", erro)
+      setErroAnalise(
+        erro.message || "Erro ao consultar análise."
+      )
+      setAnalisandoVideo(false)
+    }
+  }
+
+  // Publicação independente da análise.
+  async function publicarVideo() {
+    if (!arquivoVideo) {
+      alert("Selecione um vídeo primeiro.")
+      return
+    }
+
+    if (publicando || enviandoVideo) {
+      return
+    }
+
+    try {
+      setPublicando(true)
+
+      // Upload, se ainda não foi realizado.
+      const dadosCloudinary =
+        await garantirUploadCloudinary()
+
+      // Salvar a publicação no Xano.
+      const respostaXano = await fetch(XANO_POST_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          videoUri: resultado.secure_url,
-          operationName: "",
+          post_id: null,
+          url_do_video: dadosCloudinary.secure_url,
+          id_cloudinary: dadosCloudinary.public_id,
+          legenda: null,
+          usuario_id: 10,
+          status: "publicado",
+          curtidas: 0,
+          amei: 0,
+          comentarios: [],
         }),
+      })
+
+      const textoResposta = await respostaXano.text()
+      let dadosXano = null
+
+      try {
+        dadosXano = textoResposta
+          ? JSON.parse(textoResposta)
+          : null
+      } catch {
+        dadosXano = textoResposta
       }
-    )
 
-    const textoResposta = await respostaAnalise.text()
-    let dadosAnalise = null
-
-    try {
-      dadosAnalise = textoResposta
-        ? JSON.parse(textoResposta)
-        : null
-    } catch {
-      dadosAnalise = textoResposta
-    }
-
-    console.log(
-      "Resposta do início da análise no Xano:",
-      respostaAnalise.status,
-      dadosAnalise
-    )
-
-    if (!respostaAnalise.ok) {
-      throw new Error("O Xano não conseguiu iniciar a análise.")
-    }
-
-    const nomeOperacao =
-      dadosAnalise?.operationName ||
-      dadosAnalise?.nome_da_operacao ||
-      dadosAnalise?.result?.operationName ||
-      dadosAnalise?.response?.result?.operationName ||
-      dadosAnalise?.api1?.response?.result?.operationName
-
-    if (!nomeOperacao) {
-      throw new Error(
-        "A análise foi solicitada, mas não encontramos o identificador da operação. Verifique o console."
-      )
-    }
-
-    setOperationName(nomeOperacao)
-    setAnalisandoVideo(true)
-
-    alert("Análise iniciada com sucesso!")
-
-  } catch (erro) {
-    console.error("Erro ao iniciar análise:", erro)
-    setErroAnalise(erro.message || "Erro ao iniciar análise.")
-    alert(erro.message || "Erro ao iniciar análise.")
-  } finally {
-    setEnviandoVideo(false)
-  }
-}
-
-async function consultarResultadoAnalise() {
-  if (!operationName) return
-
-  try {
-    const resposta = await fetch(
-      `${XANO_CONSULTAR_ANALISE_URL}?operation_name=${encodeURIComponent(operationName)}`,
-      {
-        method: "GET",
-        cache: "no-store",
-      }
-    )
-
-    const texto = await resposta.text()
-    const dados = texto ? JSON.parse(texto) : null
-
-    console.log("Resultado da consulta da análise:", dados)
-
-    
-   const resultado =
-  dados?.api1?.response?.result ||
-  dados?.api1?.result ||
-  dados?.response?.result ||
-  dados?.result ||
-  dados
-
-    console.log("Resultado identificado:", resultado)
-
-    if (resultado?.status === "concluido") {
-      setResultadoAnalise(resultado)
-      setAnaliseConcluida(true)
-      setAnalisandoVideo(false)
-      setErroAnalise("")
-    } else if (
-      resultado?.status === "parcial" ||
-      resultado?.status === "erro"
-    ) {
-      setErroAnalise(
-        resultado.detalhes ||
-        resultado.mensagem ||
-        "A análise não foi concluída."
+      console.log(
+        "Resposta do POST no Xano:",
+        respostaXano.status,
+        dadosXano
       )
 
-      setAnalisandoVideo(false)
-      setAnaliseConcluida(false)
-    } else if (!resposta.ok) {
-      throw new Error("Erro ao consultar o resultado da análise.")
-    }
-  } catch (erro) {
-    console.error("Erro ao consultar análise:", erro)
-    setErroAnalise(erro.message || "Erro ao consultar análise.")
-    setAnalisandoVideo(false)
-  }
-}
-  async function publicarVideo() {
-  if (!arquivoVideo) {
-    alert("Selecione um vídeo primeiro.")
-    return
-  }
-
-  if (!analiseConcluida) {
-    alert("Aguarde a conclusão da análise antes de publicar.")
-    return
-  }
-
-  if (!urlVideoCloudinary || !idCloudinary) {
-    alert("Não encontramos os dados do vídeo no Cloudinary. Faça a análise novamente.")
-    return
-  }
-
-  try {
-    setPublicando(true)
-
-    // 1. Salvar a publicação no Xano usando o upload já realizado
-    const respostaXano = await fetch(XANO_POST_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        post_id: null,
-        url_do_video: urlVideoCloudinary,
-        id_cloudinary: idCloudinary,
-        legenda: null,
-        usuario_id: 10,
-        status: "publicado",
-        curtidas: 0,
-        amei: 0,
-        comentarios: [],
-      }),
-    })
-
-    const textoResposta = await respostaXano.text()
-    let dadosXano = null
-
-    try {
-      dadosXano = textoResposta ? JSON.parse(textoResposta) : null
-    } catch {
-      dadosXano = textoResposta
-    }
-
-    console.log(
-      "Resposta do POST no Xano:",
-      respostaXano.status,
-      dadosXano
-    )
-
-    if (!respostaXano.ok) {
-      throw new Error(
-        typeof dadosXano === "object" && dadosXano
-          ? dadosXano.message ||
+      if (!respostaXano.ok) {
+        throw new Error(
+          typeof dadosXano === "object" && dadosXano
+            ? dadosXano.message ||
               dadosXano.mensagem ||
               dadosXano.error ||
               `O Xano não salvou a publicação. HTTP ${respostaXano.status}`
-          : `O Xano não salvou a publicação. HTTP ${respostaXano.status}`
+            : `O Xano não salvou a publicação. HTTP ${respostaXano.status}`
+        )
+      }
+
+      // Atualizar o feed.
+      await carregarVideos()
+
+      // Limpar a seleção após publicar.
+      // O resultado de uma análise em andamento pode continuar
+      // sendo consultado enquanto a página estiver aberta.
+      if (!analisandoVideo) {
+        cancelarVideo()
+      }
+
+      alert(
+        "Vídeo publicado e salvo no Xano com sucesso!"
       )
+    } catch (erro) {
+      console.error("Erro ao publicar vídeo:", erro)
+      alert(erro.message || "Erro ao publicar vídeo.")
+    } finally {
+      setPublicando(false)
     }
-
-    // 2. Atualizar o feed
-    await carregarVideos()
-
-    cancelarVideo()
-
-    alert("Vídeo publicado e salvo no Xano com sucesso!")
-  } catch (erro) {
-    console.error("Erro ao publicar vídeo:", erro)
-    alert(erro.message || "Erro ao publicar vídeo.")
-  } finally {
-    setPublicando(false)
   }
-}
 
   return (
     <div style={styles.page}>
@@ -493,11 +607,16 @@ async function consultarResultadoAnalise() {
 
           {/* MENU */}
           <div style={styles.menu}>
-            <Link href="/feed" style={{ textDecoration: "none" }}>
+            <Link
+              href="/feed"
+              style={{ textDecoration: "none" }}
+            >
               <div
                 style={{
                   ...styles.menuItem,
-                  ...(hoverItem === "home" ? styles.menuHover : {}),
+                  ...(hoverItem === "home"
+                    ? styles.menuHover
+                    : {}),
                 }}
                 onMouseEnter={() => setHoverItem("home")}
                 onMouseLeave={() => setHoverItem("")}
@@ -509,7 +628,9 @@ async function consultarResultadoAnalise() {
             <div
               style={{
                 ...styles.menuItem,
-                ...(hoverItem === "ia" ? styles.menuHover : {}),
+                ...(hoverItem === "ia"
+                  ? styles.menuHover
+                  : {}),
                 display: "flex",
                 alignItems: "center",
                 gap: 12,
@@ -533,7 +654,9 @@ async function consultarResultadoAnalise() {
             <div
               style={{
                 ...styles.menuItem,
-                ...(hoverItem === "feed" ? styles.menuHover : {}),
+                ...(hoverItem === "feed"
+                  ? styles.menuHover
+                  : {}),
               }}
               onMouseEnter={() => setHoverItem("feed")}
               onMouseLeave={() => setHoverItem("")}
@@ -545,7 +668,9 @@ async function consultarResultadoAnalise() {
             <div
               style={{
                 ...styles.menuItem,
-                ...(hoverItem === "perfil" ? styles.menuHover : {}),
+                ...(hoverItem === "perfil"
+                  ? styles.menuHover
+                  : {}),
               }}
               onMouseEnter={() => setHoverItem("perfil")}
               onMouseLeave={() => setHoverItem("")}
@@ -564,7 +689,9 @@ async function consultarResultadoAnalise() {
         <div
           style={{
             ...styles.logout,
-            ...(hoverItem === "logout" ? styles.logoutHover : {}),
+            ...(hoverItem === "logout"
+              ? styles.logoutHover
+              : {}),
           }}
           onMouseEnter={() => setHoverItem("logout")}
           onMouseLeave={() => setHoverItem("")}
@@ -607,7 +734,11 @@ async function consultarResultadoAnalise() {
                 accept="video/*"
                 onChange={escolherVideo}
                 style={{ display: "none" }}
-                disabled={publicando}
+                disabled={
+                  publicando ||
+                  enviandoVideo ||
+                  analisandoVideo
+                }
               />
             </label>
           </div>
@@ -625,39 +756,55 @@ async function consultarResultadoAnalise() {
               </div>
 
               <div style={styles.acoesVideo}>
-  <button
-    type="button"
-    style={styles.botaoPublicar}
-    onClick={enviarVideoParaAnalise}
-    disabled={enviandoVideo || analisandoVideo || analiseConcluida}
-  >
-    {enviandoVideo
-      ? "Enviando vídeo..."
-      : analisandoVideo
-      ? "Análise em andamento..."
-      : "Analisar vídeo"}
-  </button>
+                {/* ANÁLISE OPCIONAL */}
+                <button
+                  type="button"
+                  style={styles.botaoPublicar}
+                  onClick={enviarVideoParaAnalise}
+                  disabled={
+                    enviandoVideo ||
+                    publicando ||
+                    analisandoVideo ||
+                    analiseConcluida
+                  }
+                >
+                  {enviandoVideo
+                    ? "Enviando vídeo..."
+                    : analisandoVideo
+                      ? "Análise em andamento..."
+                      : "Analisar vídeo"}
+                </button>
 
-  <button
-    type="button"
-    style={styles.botaoPublicar}
-    onClick={publicarVideo}
-    disabled={!analiseConcluida || publicando}
-  >
-    {publicando ? "Enviando vídeo..." : "Publicar vídeo"}
-  </button>
+                {/* PUBLICAÇÃO SEM ANÁLISE OBRIGATÓRIA */}
+                <button
+                  type="button"
+                  style={styles.botaoPublicar}
+                  onClick={publicarVideo}
+                  disabled={
+                    publicando ||
+                    enviandoVideo
+                  }
+                >
+                  {publicando
+                    ? "Publicando vídeo..."
+                    : "Publicar vídeo"}
+                </button>
 
-  <button
-    type="button"
-    style={styles.botaoCancelar}
-    onClick={cancelarVideo}
-    disabled={publicando || enviandoVideo || analisandoVideo}
-  >
-    Cancelar
-  </button>
-</div>
-</div>
-)}
+                <button
+                  type="button"
+                  style={styles.botaoCancelar}
+                  onClick={cancelarVideo}
+                  disabled={
+                    publicando ||
+                    enviandoVideo ||
+                    analisandoVideo
+                  }
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* PUBLICAÇÕES SALVAS NO XANO */}
           <div style={styles.secaoPublicacoes}>
@@ -670,7 +817,9 @@ async function consultarResultadoAnalise() {
                 onClick={carregarVideos}
                 disabled={carregandoVideos}
               >
-                {carregandoVideos ? "Carregando..." : "Atualizar"}
+                {carregandoVideos
+                  ? "Carregando..."
+                  : "Atualizar"}
               </button>
             </div>
 
@@ -745,69 +894,82 @@ async function consultarResultadoAnalise() {
                     </p>
                   )}
 
-                
-{/* BOTÕES DE INTERAÇÃO */}
-<div style={styles.interacoesVideo}>
-  <button
-    type="button"
-    style={styles.botaoCurtirAmei}
-    disabled={!!atualizandoInteracao[item.id]}
-    onClick={() =>
-      atualizarInteracao(item, {
-        curtidas: Number(item.curtidas || 0) + 1,
-      })
-    }
-  >
-    <span>👍🏿</span> Curtir {item.curtidas || 0}
-  </button>
+                  {/* BOTÕES DE INTERAÇÃO */}
+                  <div style={styles.interacoesVideo}>
+                    <button
+                      type="button"
+                      style={styles.botaoCurtirAmei}
+                      disabled={
+                        !!atualizandoInteracao[item.id]
+                      }
+                      onClick={() =>
+                        atualizarInteracao(item, {
+                          curtidas:
+                            Number(item.curtidas || 0) + 1,
+                        })
+                      }
+                    >
+                      <span>👍🏿</span> Curtir{" "}
+                      {item.curtidas || 0}
+                    </button>
 
-  <button
-    type="button"
-    style={styles.botaoCurtirAmei}
-    disabled={!!atualizandoInteracao[item.id]}
-    onClick={() =>
-      atualizarInteracao(item, {
-        amei: Number(item.amei || 0) + 1,
-      })
-    }
-  >
-    <span>🖤</span> Amei {item.amei || 0}
-  </button>
+                    <button
+                      type="button"
+                      style={styles.botaoCurtirAmei}
+                      disabled={
+                        !!atualizandoInteracao[item.id]
+                      }
+                      onClick={() =>
+                        atualizarInteracao(item, {
+                          amei:
+                            Number(item.amei || 0) + 1,
+                        })
+                      }
+                    >
+                      <span>🖤</span> Amei{" "}
+                      {item.amei || 0}
+                    </button>
 
-  <button
-    type="button"
-    style={styles.botaoCurtirAmei}
-    onClick={() =>
-      setComentariosAbertos((anterior) => ({
-        ...anterior,
-        [item.id]: !anterior[item.id],
-      }))
-    }
-  >
-    💬 Comentários (
-    {Array.isArray(item.comentarios)
-      ? item.comentarios.length
-      : 0}
-    )
-  </button>
-</div>
+                    <button
+                      type="button"
+                      style={styles.botaoCurtirAmei}
+                      onClick={() =>
+                        setComentariosAbertos(
+                          (anterior) => ({
+                            ...anterior,
+                            [item.id]:
+                              !anterior[item.id],
+                          })
+                        )
+                      }
+                    >
+                      💬 Comentários (
+                      {Array.isArray(item.comentarios)
+                        ? item.comentarios.length
+                        : 0}
+                      )
+                    </button>
+                  </div>
 
-  
-                {/* ÁREA DE COMENTÁRIOS */}
+                  {/* ÁREA DE COMENTÁRIOS */}
                   {comentariosAbertos[item.id] && (
                     <div style={styles.areaComentarios}>
                       <div style={styles.listaComentarios}>
                         {Array.isArray(item.comentarios) &&
-                          item.comentarios.map((comentario, indice) => (
-                            <div
-                              key={indice}
-                              style={styles.comentario}
-                            >
-                              {comentario}
-                            </div>
-                          ))}
+                          item.comentarios.map(
+                            (comentario, indice) => (
+                              <div
+                                key={indice}
+                                style={styles.comentario}
+                              >
+                                {comentario}
+                              </div>
+                            )
+                          )}
 
-                        {(!Array.isArray(item.comentarios) ||
+                        {(!Array.isArray(
+                          item.comentarios
+                        ) ||
                           item.comentarios.length === 0) && (
                           <p style={styles.mensagem}>
                             Ainda não há comentários.
@@ -819,22 +981,33 @@ async function consultarResultadoAnalise() {
                         <input
                           type="text"
                           placeholder="Escreva um comentário..."
-                          value={novoComentario[item.id] || ""}
+                          value={
+                            novoComentario[item.id] || ""
+                          }
                           onChange={(event) =>
-                            setNovoComentario((anterior) => ({
-                              ...anterior,
-                              [item.id]: event.target.value,
-                            }))
+                            setNovoComentario(
+                              (anterior) => ({
+                                ...anterior,
+                                [item.id]:
+                                  event.target.value,
+                              })
+                            )
                           }
                           style={styles.inputComentario}
-                          disabled={!!atualizandoInteracao[item.id]}
+                          disabled={
+                            !!atualizandoInteracao[item.id]
+                          }
                         />
 
                         <button
                           type="button"
                           style={styles.botaoEnviarComentario}
-                          onClick={() => enviarComentario(item)}
-                          disabled={!!atualizandoInteracao[item.id]}
+                          onClick={() =>
+                            enviarComentario(item)
+                          }
+                          disabled={
+                            !!atualizandoInteracao[item.id]
+                          }
                         >
                           Enviar
                         </button>
@@ -918,7 +1091,6 @@ const styles = {
     backgroundColor: "#000",
     color: "white",
     padding: "14px 18px",
-    borderRadius: 12,
     fontSize: 18,
     cursor: "pointer",
     transition: "0.2s",
@@ -1095,15 +1267,15 @@ const styles = {
   },
 
   botaoCurtirAmei: {
-  backgroundColor: "#ffffff",
-  color: "#000000",
-  border: "1px solid #dddddd",
-  borderRadius: 10,
-  padding: "11px 16px",
-  fontSize: 14,
-  fontWeight: "bold",
-  cursor: "pointer",
-},
+    backgroundColor: "#ffffff",
+    color: "#000000",
+    border: "1px solid #dddddd",
+    borderRadius: 10,
+    padding: "11px 16px",
+    fontSize: 14,
+    fontWeight: "bold",
+    cursor: "pointer",
+  },
 
   areaComentarios: {
     marginTop: 18,
@@ -1148,8 +1320,8 @@ const styles = {
     backgroundColor: "#000",
     color: "white",
     border: "none",
-    borderRadius: 10,
     padding: "12px 20px",
+    borderRadius: 10,
     fontSize: 14,
     fontWeight: "bold",
     cursor: "pointer",
