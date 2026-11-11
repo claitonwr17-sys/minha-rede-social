@@ -1,4 +1,3 @@
-
 'use client'
 
 import "@fontsource/inter"
@@ -569,42 +568,44 @@ export default function FeedVideos() {
             : `O Xano não salvou a publicação. HTTP ${respostaXano.status}`
         )
       }
+
       // Salvar uma cópia do vídeo no Google Cloud Storage.
-try {
-  const respostaStorage = await fetch(
-    "https://sentiment-gemini-vision-video.claitonwr17.workers.dev/",
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        acao: "salvar_video",
-        videoUri: dadosCloudinary.secure_url,
-      }),
-    }
-  )
+      try {
+        const respostaStorage = await fetch(
+          "https://sentiment-gemini-vision-video.claitonwr17.workers.dev/",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              acao: "salvar_video",
+              videoUri: dadosCloudinary.secure_url,
+            }),
+          }
+        )
 
-  const dadosStorage = await respostaStorage.json()
+        const dadosStorage = await respostaStorage.json()
 
-  if (!respostaStorage.ok || dadosStorage.status !== "salvo") {
-    throw new Error(
-      dadosStorage.detalhes ||
-      dadosStorage.erro ||
-      "O Google Storage não confirmou a gravação."
-    )
-  }
+        if (!respostaStorage.ok || dadosStorage.status !== "salvo") {
+          throw new Error(
+            dadosStorage.detalhes ||
+            dadosStorage.erro ||
+            "O Google Storage não confirmou a gravação."
+          )
+        }
 
-  console.log(
-    "Vídeo salvo no Google Storage:",
-    dadosStorage.videoUri
-  )
-} catch (erroStorage) {
-  console.error(
-    "Falha ao salvar vídeo no Google Storage:",
-    erroStorage
-  )
-}
+        console.log(
+          "Vídeo salvo no Google Storage:",
+          dadosStorage.videoUri
+        )
+      } catch (erroStorage) {
+        console.error(
+          "Falha ao salvar vídeo no Google Storage:",
+          erroStorage
+        )
+      }
+
       // Atualizar o feed.
       await carregarVideos()
 
@@ -838,6 +839,99 @@ try {
                   Cancelar
                 </button>
               </div>
+
+              {/* RESULTADO DA ANÁLISE — exibido antes da publicação */}
+              {analisandoVideo && (
+                <div style={styles.painelAnalise} role="status">
+                  <h3 style={styles.tituloAnalise}>
+                    Análise do vídeo
+                  </h3>
+                  <p style={styles.mensagem}>
+                    Análise em andamento. Aguarde o resultado...
+                  </p>
+                </div>
+              )}
+
+              {erroAnalise && (
+                <div style={styles.erro} role="alert">
+                  <strong>
+                    Não foi possível concluir a análise.
+                  </strong>
+                  <p>{erroAnalise}</p>
+                </div>
+              )}
+
+              {analiseConcluida && resultadoAnalise && (
+                <div style={styles.painelAnalise}>
+                  <h3 style={styles.tituloAnalise}>
+                    Análise do vídeo concluída
+                  </h3>
+
+                  {(resultadoAnalise.geminiAnaliseFinal ||
+                    resultadoAnalise.geminiAnaliseTextual) && (
+                    <div style={styles.blocoAnalise}>
+                      <h4 style={styles.subtituloAnalise}>
+                        Interpretação do Gemini
+                      </h4>
+                      <p style={styles.textoAnalise}>
+                        {resultadoAnalise.geminiAnaliseFinal ||
+                          resultadoAnalise.geminiAnaliseTextual}
+                      </p>
+                    </div>
+                  )}
+
+                  {resultadoAnalise.naturalLanguageSentimento && (
+                    <div style={styles.blocoAnalise}>
+                      <h4 style={styles.subtituloAnalise}>
+                        Sentimento identificado
+                      </h4>
+                      <p style={styles.textoAnalise}>
+                        <strong>Classificação: </strong>
+                        {resultadoAnalise.naturalLanguageSentimento.classificacao ||
+                          "Não informada"}
+                      </p>
+                      {typeof resultadoAnalise.naturalLanguageSentimento.score === "number" && (
+                        <p style={styles.textoAnalise}>
+                          <strong>Pontuação: </strong>
+                          {resultadoAnalise.naturalLanguageSentimento.score}
+                        </p>
+                      )}
+                      {typeof resultadoAnalise.naturalLanguageSentimento.magnitude === "number" && (
+                        <p style={styles.textoAnalise}>
+                          <strong>Magnitude: </strong>
+                          {resultadoAnalise.naturalLanguageSentimento.magnitude}
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {resultadoAnalise.resultado && (
+                    <div style={styles.blocoAnalise}>
+                      <h4 style={styles.subtituloAnalise}>
+                        Informações visuais
+                      </h4>
+                      {typeof resultadoAnalise.resultado.quantidadeDeCenas === "number" && (
+                        <p style={styles.textoAnalise}>
+                          <strong>Quantidade de cenas: </strong>
+                          {resultadoAnalise.resultado.quantidadeDeCenas}
+                        </p>
+                      )}
+                      {typeof resultadoAnalise.resultado.conteudoExplicito?.quadrosAnalisados === "number" && (
+                        <p style={styles.textoAnalise}>
+                          <strong>Quadros analisados: </strong>
+                          {resultadoAnalise.resultado.conteudoExplicito.quadrosAnalisados}
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {resultadoAnalise.observacao && (
+                    <p style={styles.observacaoAnalise}>
+                      {resultadoAnalise.observacao}
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
@@ -1092,12 +1186,6 @@ const styles = {
     objectFit: "contain",
   },
 
-  menu: {
-    display: "flex",
-    flexDirection: "column",
-    gap: 15,
-  },
-
   menuItem: {
     padding: "14px 18px",
     borderRadius: 12,
@@ -1105,6 +1193,12 @@ const styles = {
     color: "#444",
     fontSize: 18,
     transition: "0.2s",
+  },
+
+  menu: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 15,
   },
 
   menuHover: {
@@ -1133,7 +1227,7 @@ const styles = {
   },
 
   logoutHover: {
-    transform: "translateX(5px)",
+    transform: "translateY(-2px)",
     opacity: 0.8,
   },
 
@@ -1366,6 +1460,51 @@ const styles = {
     color: "#666",
     fontSize: 16,
     lineHeight: 1.5,
+  },
+
+  painelAnalise: {
+    backgroundColor: "white",
+    border: "1px solid #e2e8f0",
+    borderRadius: 16,
+    padding: 22,
+    marginBottom: 24,
+    boxShadow: "0 4px 15px rgba(0,0,0,0.05)",
+  },
+
+  tituloAnalise: {
+    fontSize: 22,
+    color: "#222",
+    marginTop: 0,
+    marginBottom: 18,
+  },
+
+  blocoAnalise: {
+    marginBottom: 18,
+  },
+
+  subtituloAnalise: {
+    fontSize: 17,
+    color: "#222",
+    marginTop: 0,
+    marginBottom: 8,
+  },
+
+  textoAnalise: {
+    color: "#333",
+    fontSize: 15,
+    lineHeight: 1.7,
+    whiteSpace: "pre-wrap",
+    overflowWrap: "anywhere",
+    marginTop: 6,
+    marginBottom: 6,
+  },
+
+  observacaoAnalise: {
+    color: "#666",
+    fontSize: 14,
+    lineHeight: 1.6,
+    borderTop: "1px solid #eee",
+    paddingTop: 12,
   },
 
   erro: {
