@@ -340,6 +340,15 @@ export default function FeedVideos() {
     return () => clearInterval(intervalo)
   }, [analisandoVideo, operationName])
 
+  // Fecha apenas a análise do vídeo selecionado.
+  function fecharAnalisePublicada(id) {
+    setAnalisesPublicadas((anterior) => {
+      const atualizadas = { ...anterior }
+      delete atualizadas[String(id)]
+      return atualizadas
+    })
+  }
+
   // NOVO: iniciar uma nova análise para um vídeo publicado.
   async function analisarPublicacao(item) {
     const id = String(
@@ -1779,14 +1788,38 @@ export default function FeedVideos() {
                       </div>
                     )}
 
-                    {/* NOVO: RESULTADO INDIVIDUAL */}
+                    
                     {resultadoPublicado && (
-                      <ResultadoAnaliseVideo
-                        resultado={
-                          resultadoPublicado
-                        }
-                        publicado={true}
-                      />
+                      <div>
+                        <ResultadoAnaliseVideo
+                          resultado={resultadoPublicado}
+                          publicado={true}
+                        />
+
+                        <div style={{
+                          display: "flex",
+                          justifyContent: "flex-end",
+                          marginTop: 10,
+                          marginBottom: 20,
+                        }}>
+                          <button
+                            type="button"
+                            onClick={() => fecharAnalisePublicada(id)}
+                            style={{
+                              backgroundColor: "#111827",
+                              color: "#ffffff",
+                              border: "none",
+                              borderRadius: 10,
+                              padding: "12px 22px",
+                              fontSize: 15,
+                              fontWeight: "bold",
+                              cursor: "pointer",
+                            }}
+                          >
+                            ✕ Fechar análise
+                          </button>
+                        </div>
+                      </div>
                     )}
 
                     {/* ÁREA DE COMENTÁRIOS */}
