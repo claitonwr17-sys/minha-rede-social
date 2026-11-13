@@ -134,6 +134,112 @@ function descreverInformacoesVisuais(resultado) {
   return partes.join(" ")
 }
 
+// Identifica o resultado devolvido pelas diferentes estruturas do Xano.
+function extrairResultadoAnalise(dados) {
+  return (
+    dados?.api1?.response?.result ||
+    dados?.api1?.result ||
+    dados?.response?.result ||
+    dados?.result ||
+    dados
+  )
+}
+
+// Identifica a operação retornada pelo Xano.
+function extrairNomeOperacao(dados) {
+  return (
+    dados?.operationName ||
+    dados?.nome_da_operacao ||
+    dados?.result?.operationName ||
+    dados?.response?.result?.operationName ||
+    dados?.api1?.response?.result?.operationName ||
+    ""
+  )
+}
+
+// Componente para mostrar a análise de forma compreensível.
+function ResultadoAnaliseVideo({ resultado, publicado = false }) {
+  if (!resultado) return null
+
+  const interpretacao =
+    resultado.geminiAnaliseFinal ||
+    resultado.geminiAnaliseTextual
+
+  const sentimento =
+    resultado.naturalLanguageSentimento
+
+  const informacoesVisuais =
+    resultado.resultado
+
+  return (
+    <div
+      style={
+        publicado
+          ? styles.painelAnalisePublicada
+          : styles.painelAnalise
+      }
+    >
+      <h3 style={styles.tituloAnalise}>
+        {publicado
+          ? "✨ Análise do vídeo concluída"
+          : "Análise do vídeo concluída"}
+      </h3>
+
+      {interpretacao && (
+        <div style={styles.blocoAnalise}>
+          <h4 style={styles.subtituloAnalise}>
+            Interpretação do Gemini
+          </h4>
+
+          <p style={styles.textoAnalise}>
+            {interpretacao}
+          </p>
+        </div>
+      )}
+
+      {sentimento && (
+        <div style={styles.blocoAnalise}>
+          <h4 style={styles.subtituloAnalise}>
+            Sentimento identificado
+          </h4>
+
+          <p style={styles.textoAnalise}>
+            {descreverSentimento(sentimento)}
+          </p>
+        </div>
+      )}
+
+      {informacoesVisuais && (
+        <div style={styles.blocoAnalise}>
+          <h4 style={styles.subtituloAnalise}>
+            Informações visuais
+          </h4>
+
+          <p style={styles.textoAnalise}>
+            {descreverInformacoesVisuais(informacoesVisuais)}
+          </p>
+        </div>
+      )}
+
+      {resultado.observacao && (
+        <p style={styles.observacaoAnalise}>
+          {resultado.observacao}
+        </p>
+      )}
+
+      {!interpretacao &&
+        !sentimento &&
+        !informacoesVisuais &&
+        !resultado.observacao && (
+          <p style={styles.mensagem}>
+            A análise foi concluída, mas não foram
+            retornadas informações para exibição.
+          </p>
+        )}
+    </div>
+  )
+}
+
 export default function FeedVideos() {
   const router = useRouter()
 
@@ -159,6 +265,9 @@ export default function FeedVideos() {
   const [novoComentario, setNovoComentario] = useState({})
   const [atualizandoInteracao, setAtualizandoInteracao] = useState({})
 
+  // NOVO: análises independentes para vídeos publicados.
+  const [analisesPublicadas, setAnalisesPublicadas] = useState({})
+
   // Guarda o upload para evitar enviar o mesmo vídeo duas vezes.
   const uploadEmAndamentoRef = useRef(null)
   const arquivoAtualRef = useRef(null)
@@ -166,6 +275,12 @@ export default function FeedVideos() {
 
   // Impede que a análise antiga seja aplicada a outro vídeo.
   const versaoVideoRef = useRef(0)
+
+  // NOVO: impede consultas simultâneas duplicadas.
+  const consultasPublicadasRef = useRef(new Set())
+
+  // NOVO: impede dois cliques simultâneos no mesmo vídeo.
+  const iniciandoPublicadasRef = useRef(new Set())
 
   // GET: carregar publicações salvas no Xano.
   async function carregarVideos() {
@@ -214,7 +329,7 @@ export default function FeedVideos() {
     carregarVideos()
   }, [])
 
-  // Consultar automaticamente o resultado da análise.
+  // Consultar automaticamente a análise antes da publicação.
   useEffect(() => {
     if (!analisandoVideo || !operationName) return
 
@@ -224,6 +339,265 @@ export default function FeedVideos() {
 
     return () => clearInterval(intervalo)
   }, [analisandoVideo, operationName])
+
+  // NOVO: iniciar uma nova análise para um vídeo publicado.
+  async function analisarPublicacao(item) {
+    const id = String(
+      item.id ?? item.id_cloudinary ?? ""
+    )
+
+    const videoUri = item.url_do_video
+
+    if (!id || !videoUri) {
+      alert(
+        "Esta publicação não possui um vídeo válido para análise."
+      )
+      return
+    }
+
+    if (iniciandoPublicadasRef.current.has(id)) {
+      return
+    }
+
+    if (
+      analisesPublicadas[id]?.status === "iniciando" ||
+      analisesPublicadas[id]?.status === "processando"
+    ) {
+      return
+    }
+
+    iniciandoPublicadasRef.current.add(id)
+
+    // Limpa a análise anterior para solicitar uma nova.
+    setAnalisesPublicadas((anterior) => ({
+      ...anterior,
+      [id]: {
+        status: "iniciando",
+        operationName: "",
+        resultado: null,
+        erro: "",
+      },
+    }))
+
+    try {
+      const resposta = await fetch(
+        XANO_INICIAR_ANALISE_URL,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            videoUri,
+            operationName: "",
+          }),
+        }
+      )
+
+      const texto = await resposta.text()
+      let dados = null
+
+      try {
+        dados = texto ? JSON.parse(texto) : null
+      } catch {
+        dados = texto
+      }
+
+      console.log(
+        "Início da análise da publicação:",
+        id,
+        resposta.status,
+        dados
+      )
+
+      if (!resposta.ok) {
+        throw new Error(
+          "O Xano não conseguiu iniciar a análise desta publicação."
+        )
+      }
+
+      const nomeOperacao = extrairNomeOperacao(dados)
+
+      if (!nomeOperacao) {
+        throw new Error(
+          "A análise foi solicitada, mas o Xano não retornou o identificador da operação."
+        )
+      }
+
+      setAnalisesPublicadas((anterior) => ({
+        ...anterior,
+        [id]: {
+          status: "processando",
+          operationName: nomeOperacao,
+          resultado: null,
+          erro: "",
+        },
+      }))
+    } catch (erro) {
+      console.error(
+        "Erro ao analisar publicação:",
+        erro
+      )
+
+      setAnalisesPublicadas((anterior) => ({
+        ...anterior,
+        [id]: {
+          status: "erro",
+          operationName: "",
+          resultado: null,
+          erro:
+            erro.message ||
+            "Não foi possível iniciar a análise.",
+        },
+      }))
+    } finally {
+      iniciandoPublicadasRef.current.delete(id)
+    }
+  }
+
+  // NOVO: consultar a análise de uma publicação.
+  async function consultarAnalisePublicada(
+    id,
+    nomeOperacao
+  ) {
+    const chaveConsulta = `${id}:${nomeOperacao}`
+
+    if (
+      consultasPublicadasRef.current.has(chaveConsulta)
+    ) {
+      return
+    }
+
+    consultasPublicadasRef.current.add(chaveConsulta)
+
+    try {
+      const resposta = await fetch(
+        `${XANO_CONSULTAR_ANALISE_URL}?operation_name=${encodeURIComponent(nomeOperacao)}`,
+        {
+          method: "GET",
+          cache: "no-store",
+        }
+      )
+
+      const texto = await resposta.text()
+      let dados = null
+
+      try {
+        dados = texto ? JSON.parse(texto) : null
+      } catch {
+        throw new Error(
+          "O Xano retornou uma resposta inválida."
+        )
+      }
+
+      const resultado = extrairResultadoAnalise(dados)
+
+      if (!resposta.ok) {
+        throw new Error(
+          resultado?.mensagem ||
+          resultado?.detalhes ||
+          "Erro ao consultar a análise."
+        )
+      }
+
+      if (resultado?.status === "concluido") {
+        setAnalisesPublicadas((anterior) => {
+          if (
+            anterior[id]?.operationName !== nomeOperacao
+          ) {
+            return anterior
+          }
+
+          return {
+            ...anterior,
+            [id]: {
+              status: "concluido",
+              operationName: nomeOperacao,
+              resultado,
+              erro: "",
+            },
+          }
+        })
+      } else if (
+        resultado?.status === "parcial" ||
+        resultado?.status === "erro"
+      ) {
+        setAnalisesPublicadas((anterior) => {
+          if (
+            anterior[id]?.operationName !== nomeOperacao
+          ) {
+            return anterior
+          }
+
+          return {
+            ...anterior,
+            [id]: {
+              status: "erro",
+              operationName: nomeOperacao,
+              resultado: null,
+              erro:
+                resultado.detalhes ||
+                resultado.mensagem ||
+                "A análise não foi concluída.",
+            },
+          }
+        })
+      }
+    } catch (erro) {
+      console.error(
+        "Erro ao consultar análise publicada:",
+        erro
+      )
+
+      setAnalisesPublicadas((anterior) => {
+        if (
+          anterior[id]?.operationName !== nomeOperacao
+        ) {
+          return anterior
+        }
+
+        return {
+          ...anterior,
+          [id]: {
+            status: "erro",
+            operationName: nomeOperacao,
+            resultado: null,
+            erro:
+              erro.message ||
+              "Não foi possível consultar a análise.",
+          },
+        }
+      })
+    } finally {
+      consultasPublicadasRef.current.delete(
+        chaveConsulta
+      )
+    }
+  }
+
+  // NOVO: acompanha todas as análises publicadas.
+  useEffect(() => {
+    const pendentes = Object.entries(
+      analisesPublicadas
+    ).filter(
+      ([, analise]) =>
+        analise.status === "processando" &&
+        analise.operationName
+    )
+
+    if (pendentes.length === 0) return
+
+    const intervalo = setInterval(() => {
+      pendentes.forEach(([id, analise]) => {
+        consultarAnalisePublicada(
+          id,
+          analise.operationName
+        )
+      })
+    }, 3000)
+
+    return () => clearInterval(intervalo)
+  }, [analisesPublicadas])
 
   // Atualizar curtidas, amei e comentários no Xano.
   async function atualizarInteracao(item, alteracoes) {
@@ -253,7 +627,9 @@ export default function FeedVideos() {
           alteracoes.amei ?? item.amei ?? 0
         ),
 
-        comentarios: Array.isArray(alteracoes.comentarios)
+        comentarios: Array.isArray(
+          alteracoes.comentarios
+        )
           ? alteracoes.comentarios
           : Array.isArray(item.comentarios)
             ? item.comentarios
@@ -279,7 +655,9 @@ export default function FeedVideos() {
       await carregarVideos()
     } catch (erro) {
       console.error("Erro na interação:", erro)
-      alert("Não foi possível atualizar. Tente novamente.")
+      alert(
+        "Não foi possível atualizar. Tente novamente."
+      )
     } finally {
       setAtualizandoInteracao((anterior) => ({
         ...anterior,
@@ -289,14 +667,18 @@ export default function FeedVideos() {
   }
 
   async function enviarComentario(item) {
-    const texto = (novoComentario[item.id] || "").trim()
+    const texto = (
+      novoComentario[item.id] || ""
+    ).trim()
 
     if (!texto) {
       alert("Digite um comentário primeiro.")
       return
     }
 
-    const comentarios = Array.isArray(item.comentarios)
+    const comentarios = Array.isArray(
+      item.comentarios
+    )
       ? item.comentarios
       : []
 
@@ -320,7 +702,11 @@ export default function FeedVideos() {
 
     if (!arquivo) return
 
-    if (publicando || enviandoVideo || analisandoVideo) {
+    if (
+      publicando ||
+      enviandoVideo ||
+      analisandoVideo
+    ) {
       alert("Aguarde a operação atual terminar.")
       return
     }
@@ -335,7 +721,9 @@ export default function FeedVideos() {
     uploadEmAndamentoRef.current = null
 
     setArquivoVideo(arquivo)
-    setVideoSelecionado(URL.createObjectURL(arquivo))
+    setVideoSelecionado(
+      URL.createObjectURL(arquivo)
+    )
 
     setAnaliseConcluida(false)
     setResultadoAnalise(null)
@@ -350,7 +738,11 @@ export default function FeedVideos() {
   }
 
   function cancelarVideo() {
-    if (publicando || enviandoVideo || analisandoVideo) {
+    if (
+      publicando ||
+      enviandoVideo ||
+      analisandoVideo
+    ) {
       return
     }
 
@@ -379,7 +771,9 @@ export default function FeedVideos() {
   // Tanto Publicar quanto Analisar podem usar esta função.
   async function garantirUploadCloudinary() {
     if (!arquivoVideo) {
-      throw new Error("Selecione um vídeo primeiro.")
+      throw new Error(
+        "Selecione um vídeo primeiro."
+      )
     }
 
     if (
@@ -394,7 +788,8 @@ export default function FeedVideos() {
     }
 
     const arquivoDestaOperacao = arquivoVideo
-    const versaoDestaOperacao = versaoVideoRef.current
+    const versaoDestaOperacao =
+      versaoVideoRef.current
 
     const promessa = (async () => {
       // 1. Obter assinatura do upload.
@@ -416,8 +811,14 @@ export default function FeedVideos() {
       // 2. Enviar arquivo ao Cloudinary.
       const formulario = new FormData()
 
-      formulario.append("file", arquivoDestaOperacao)
-      formulario.append("api_key", dadosAssinatura.apiKey)
+      formulario.append(
+        "file",
+        arquivoDestaOperacao
+      )
+      formulario.append(
+        "api_key",
+        dadosAssinatura.apiKey
+      )
       formulario.append(
         "timestamp",
         String(dadosAssinatura.timestamp)
@@ -426,7 +827,10 @@ export default function FeedVideos() {
         "signature",
         dadosAssinatura.signature
       )
-      formulario.append("folder", dadosAssinatura.folder)
+      formulario.append(
+        "folder",
+        dadosAssinatura.folder
+      )
 
       const respostaUpload = await fetch(
         `https://api.cloudinary.com/v1_1/${dadosAssinatura.cloudName}/video/upload`,
@@ -436,7 +840,8 @@ export default function FeedVideos() {
         }
       )
 
-      const resultado = await respostaUpload.json()
+      const resultado =
+        await respostaUpload.json()
 
       if (!respostaUpload.ok) {
         throw new Error(
@@ -445,15 +850,20 @@ export default function FeedVideos() {
         )
       }
 
-      if (!resultado.secure_url || !resultado.public_id) {
+      if (
+        !resultado.secure_url ||
+        !resultado.public_id
+      ) {
         throw new Error(
           "O Cloudinary não retornou os dados do vídeo."
         )
       }
 
       if (
-        versaoVideoRef.current !== versaoDestaOperacao ||
-        arquivoAtualRef.current !== arquivoDestaOperacao
+        versaoVideoRef.current !==
+          versaoDestaOperacao ||
+        arquivoAtualRef.current !==
+          arquivoDestaOperacao
       ) {
         throw new Error(
           "O vídeo selecionado mudou durante o envio."
@@ -466,7 +876,9 @@ export default function FeedVideos() {
       }
 
       dadosUploadRef.current = dados
-      setUrlVideoCloudinary(dados.secure_url)
+      setUrlVideoCloudinary(
+        dados.secure_url
+      )
       setIdCloudinary(dados.public_id)
 
       return dados
@@ -478,7 +890,9 @@ export default function FeedVideos() {
     try {
       return await promessa
     } finally {
-      if (uploadEmAndamentoRef.current === promessa) {
+      if (
+        uploadEmAndamentoRef.current === promessa
+      ) {
         uploadEmAndamentoRef.current = null
       }
 
@@ -486,14 +900,18 @@ export default function FeedVideos() {
     }
   }
 
-  // Análise opcional.
+  // Análise opcional antes da publicação.
   async function enviarVideoParaAnalise() {
     if (!arquivoVideo) {
       alert("Selecione um vídeo primeiro.")
       return
     }
 
-    if (enviandoVideo || publicando || analisandoVideo) {
+    if (
+      enviandoVideo ||
+      publicando ||
+      analisandoVideo
+    ) {
       return
     }
 
@@ -503,9 +921,9 @@ export default function FeedVideos() {
       setResultadoAnalise(null)
       setOperationName("")
 
-      const resultado = await garantirUploadCloudinary()
+      const resultado =
+        await garantirUploadCloudinary()
 
-      // Iniciar análise usando a URL do Cloudinary.
       const respostaAnalise = await fetch(
         XANO_INICIAR_ANALISE_URL,
         {
@@ -520,7 +938,9 @@ export default function FeedVideos() {
         }
       )
 
-      const textoResposta = await respostaAnalise.text()
+      const textoResposta =
+        await respostaAnalise.text()
+
       let dadosAnalise = null
 
       try {
@@ -544,11 +964,7 @@ export default function FeedVideos() {
       }
 
       const nomeOperacao =
-        dadosAnalise?.operationName ||
-        dadosAnalise?.nome_da_operacao ||
-        dadosAnalise?.result?.operationName ||
-        dadosAnalise?.response?.result?.operationName ||
-        dadosAnalise?.api1?.response?.result?.operationName
+        extrairNomeOperacao(dadosAnalise)
 
       if (!nomeOperacao) {
         throw new Error(
@@ -561,15 +977,22 @@ export default function FeedVideos() {
 
       alert("Análise iniciada com sucesso!")
     } catch (erro) {
-      console.error("Erro ao iniciar análise:", erro)
-      setErroAnalise(
-        erro.message || "Erro ao iniciar análise."
+      console.error(
+        "Erro ao iniciar análise:",
+        erro
       )
-      alert(erro.message || "Erro ao iniciar análise.")
+      setErroAnalise(
+        erro.message ||
+        "Erro ao iniciar análise."
+      )
+      alert(
+        erro.message ||
+        "Erro ao iniciar análise."
+      )
     }
   }
 
-  // Consultar o resultado da análise.
+  // Consultar o resultado da análise antes da publicação.
   async function consultarResultadoAnalise() {
     if (!operationName) return
 
@@ -583,7 +1006,9 @@ export default function FeedVideos() {
       )
 
       const texto = await resposta.text()
-      const dados = texto ? JSON.parse(texto) : null
+      const dados = texto
+        ? JSON.parse(texto)
+        : null
 
       console.log(
         "Resultado da consulta da análise:",
@@ -591,18 +1016,16 @@ export default function FeedVideos() {
       )
 
       const resultado =
-        dados?.api1?.response?.result ||
-        dados?.api1?.result ||
-        dados?.response?.result ||
-        dados?.result ||
-        dados
+        extrairResultadoAnalise(dados)
 
       console.log(
         "Resultado identificado:",
         resultado
       )
 
-      if (resultado?.status === "concluido") {
+      if (
+        resultado?.status === "concluido"
+      ) {
         setResultadoAnalise(resultado)
         setAnaliseConcluida(true)
         setAnalisandoVideo(false)
@@ -630,7 +1053,8 @@ export default function FeedVideos() {
         erro
       )
       setErroAnalise(
-        erro.message || "Erro ao consultar análise."
+        erro.message ||
+        "Erro ao consultar análise."
       )
       setAnalisandoVideo(false)
     }
@@ -643,7 +1067,10 @@ export default function FeedVideos() {
       return
     }
 
-    if (publicando || enviandoVideo) {
+    if (
+      publicando ||
+      enviandoVideo
+    ) {
       return
     }
 
@@ -655,25 +1082,32 @@ export default function FeedVideos() {
         await garantirUploadCloudinary()
 
       // Salvar a publicação no Xano.
-      const respostaXano = await fetch(XANO_POST_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          post_id: null,
-          url_do_video: dadosCloudinary.secure_url,
-          id_cloudinary: dadosCloudinary.public_id,
-          legenda: null,
-          usuario_id: 10,
-          status: "publicado",
-          curtidas: 0,
-          amei: 0,
-          comentarios: [],
-        }),
-      })
+      const respostaXano = await fetch(
+        XANO_POST_URL,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            post_id: null,
+            url_do_video:
+              dadosCloudinary.secure_url,
+            id_cloudinary:
+              dadosCloudinary.public_id,
+            legenda: null,
+            usuario_id: 10,
+            status: "publicado",
+            curtidas: 0,
+            amei: 0,
+            comentarios: [],
+          }),
+        }
+      )
 
-      const textoResposta = await respostaXano.text()
+      const textoResposta =
+        await respostaXano.text()
+
       let dadosXano = null
 
       try {
@@ -692,7 +1126,8 @@ export default function FeedVideos() {
 
       if (!respostaXano.ok) {
         throw new Error(
-          typeof dadosXano === "object" && dadosXano
+          typeof dadosXano === "object" &&
+          dadosXano
             ? dadosXano.message ||
               dadosXano.mensagem ||
               dadosXano.error ||
@@ -701,7 +1136,7 @@ export default function FeedVideos() {
         )
       }
 
-      // Salvar uma cópia do vídeo no Google Cloud Storage.
+      // Salvar uma cópia no Google Cloud Storage.
       try {
         const respostaStorage = await fetch(
           "https://sentiment-gemini-vision-video.claitonwr17.workers.dev/",
@@ -712,7 +1147,8 @@ export default function FeedVideos() {
             },
             body: JSON.stringify({
               acao: "salvar_video",
-              videoUri: dadosCloudinary.secure_url,
+              videoUri:
+                dadosCloudinary.secure_url,
             }),
           }
         )
@@ -745,9 +1181,6 @@ export default function FeedVideos() {
       // Atualizar o feed.
       await carregarVideos()
 
-      // Limpar a seleção após publicar.
-      // O resultado de uma análise em andamento pode continuar
-      // sendo consultado enquanto a página estiver aberta.
       if (!analisandoVideo) {
         cancelarVideo()
       }
@@ -756,9 +1189,13 @@ export default function FeedVideos() {
         "Vídeo publicado e salvo no Xano com sucesso!"
       )
     } catch (erro) {
-      console.error("Erro ao publicar vídeo:", erro)
+      console.error(
+        "Erro ao publicar vídeo:",
+        erro
+      )
       alert(
-        erro.message || "Erro ao publicar vídeo."
+        erro.message ||
+        "Erro ao publicar vídeo."
       )
     } finally {
       setPublicando(false)
@@ -783,7 +1220,9 @@ export default function FeedVideos() {
           <div style={styles.menu}>
             <Link
               href="/feed"
-              style={{ textDecoration: "none" }}
+              style={{
+                textDecoration: "none",
+              }}
             >
               <div
                 style={{
@@ -792,8 +1231,12 @@ export default function FeedVideos() {
                     ? styles.menuHover
                     : {}),
                 }}
-                onMouseEnter={() => setHoverItem("home")}
-                onMouseLeave={() => setHoverItem("")}
+                onMouseEnter={() =>
+                  setHoverItem("home")
+                }
+                onMouseLeave={() =>
+                  setHoverItem("")
+                }
               >
                 🏠 Home
               </div>
@@ -809,9 +1252,15 @@ export default function FeedVideos() {
                 alignItems: "center",
                 gap: 12,
               }}
-              onMouseEnter={() => setHoverItem("ia")}
-              onMouseLeave={() => setHoverItem("")}
-              onClick={() => router.push("/IA")}
+              onMouseEnter={() =>
+                setHoverItem("ia")
+              }
+              onMouseLeave={() =>
+                setHoverItem("")
+              }
+              onClick={() =>
+                router.push("/IA")
+              }
             >
               <img
                 src="/logo/logo-simbolo.png"
@@ -832,9 +1281,15 @@ export default function FeedVideos() {
                   ? styles.menuHover
                   : {}),
               }}
-              onMouseEnter={() => setHoverItem("feed")}
-              onMouseLeave={() => setHoverItem("")}
-              onClick={() => router.push("/imagens")}
+              onMouseEnter={() =>
+                setHoverItem("feed")
+              }
+              onMouseLeave={() =>
+                setHoverItem("")
+              }
+              onClick={() =>
+                router.push("/imagens")
+              }
             >
               📰 Feed
             </div>
@@ -846,9 +1301,15 @@ export default function FeedVideos() {
                   ? styles.menuHover
                   : {}),
               }}
-              onMouseEnter={() => setHoverItem("perfil")}
-              onMouseLeave={() => setHoverItem("")}
-              onClick={() => router.push("/perfil")}
+              onMouseEnter={() =>
+                setHoverItem("perfil")
+              }
+              onMouseLeave={() =>
+                setHoverItem("")
+              }
+              onClick={() =>
+                router.push("/perfil")
+              }
             >
               👤 Perfil
             </div>
@@ -867,8 +1328,12 @@ export default function FeedVideos() {
               ? styles.logoutHover
               : {}),
           }}
-          onMouseEnter={() => setHoverItem("logout")}
-          onMouseLeave={() => setHoverItem("")}
+          onMouseEnter={() =>
+            setHoverItem("logout")
+          }
+          onMouseLeave={() =>
+            setHoverItem("")
+          }
           onClick={logout}
         >
           Sair
@@ -895,6 +1360,7 @@ export default function FeedVideos() {
                 <div style={styles.nomeUsuario}>
                   Claiton Wroblewski
                 </div>
+
                 <div style={styles.agora}>
                   Publicar um novo vídeo
                 </div>
@@ -907,7 +1373,9 @@ export default function FeedVideos() {
                 type="file"
                 accept="video/*"
                 onChange={escolherVideo}
-                style={{ display: "none" }}
+                style={{
+                  display: "none",
+                }}
                 disabled={
                   publicando ||
                   enviandoVideo ||
@@ -934,7 +1402,9 @@ export default function FeedVideos() {
                 <button
                   type="button"
                   style={styles.botaoPublicar}
-                  onClick={enviarVideoParaAnalise}
+                  onClick={
+                    enviarVideoParaAnalise
+                  }
                   disabled={
                     enviandoVideo ||
                     publicando ||
@@ -978,7 +1448,7 @@ export default function FeedVideos() {
                 </button>
               </div>
 
-              {/* RESULTADO DA ANÁLISE */}
+              {/* RESULTADO DA ANÁLISE ANTES DA PUBLICAÇÃO */}
               {analisandoVideo && (
                 <div
                   style={styles.painelAnalise}
@@ -987,8 +1457,10 @@ export default function FeedVideos() {
                   <h3 style={styles.tituloAnalise}>
                     Análise do vídeo
                   </h3>
+
                   <p style={styles.mensagem}>
-                    Análise em andamento. Aguarde o resultado...
+                    Análise em andamento.
+                    Aguarde o resultado...
                   </p>
                 </div>
               )}
@@ -999,67 +1471,21 @@ export default function FeedVideos() {
                   role="alert"
                 >
                   <strong>
-                    Não foi possível concluir a análise.
+                    Não foi possível concluir
+                    a análise.
                   </strong>
                   <p>{erroAnalise}</p>
                 </div>
               )}
 
-              {analiseConcluida && resultadoAnalise && (
-                <div style={styles.painelAnalise}>
-                  <h3 style={styles.tituloAnalise}>
-                    Análise do vídeo concluída
-                  </h3>
-
-                  {/* INTERPRETAÇÃO DO GEMINI */}
-                  {(resultadoAnalise.geminiAnaliseFinal ||
-                    resultadoAnalise.geminiAnaliseTextual) && (
-                    <div style={styles.blocoAnalise}>
-                      <h4 style={styles.subtituloAnalise}>
-                        Interpretação do Gemini
-                      </h4>
-                      <p style={styles.textoAnalise}>
-                        {resultadoAnalise.geminiAnaliseFinal ||
-                          resultadoAnalise.geminiAnaliseTextual}
-                      </p>
-                    </div>
-                  )}
-
-                  {/* SENTIMENTO EM LINGUAGEM HUMANA */}
-                  {resultadoAnalise.naturalLanguageSentimento && (
-                    <div style={styles.blocoAnalise}>
-                      <h4 style={styles.subtituloAnalise}>
-                        Sentimento identificado
-                      </h4>
-                      <p style={styles.textoAnalise}>
-                        {descreverSentimento(
-                          resultadoAnalise.naturalLanguageSentimento
-                        )}
-                      </p>
-                    </div>
-                  )}
-
-                  {/* INFORMAÇÕES VISUAIS EM LINGUAGEM HUMANA */}
-                  {resultadoAnalise.resultado && (
-                    <div style={styles.blocoAnalise}>
-                      <h4 style={styles.subtituloAnalise}>
-                        Informações visuais
-                      </h4>
-                      <p style={styles.textoAnalise}>
-                        {descreverInformacoesVisuais(
-                          resultadoAnalise.resultado
-                        )}
-                      </p>
-                    </div>
-                  )}
-
-                  {resultadoAnalise.observacao && (
-                    <p style={styles.observacaoAnalise}>
-                      {resultadoAnalise.observacao}
-                    </p>
-                  )}
-                </div>
-              )}
+              {analiseConcluida &&
+                resultadoAnalise && (
+                  <ResultadoAnaliseVideo
+                    resultado={
+                      resultadoAnalise
+                    }
+                  />
+                )}
             </div>
           )}
 
@@ -1086,193 +1512,396 @@ export default function FeedVideos() {
               </p>
             )}
 
-            {!carregandoVideos && erroFeed && (
-              <div style={styles.erro}>
-                <p>{erroFeed}</p>
-                <button
-                  type="button"
-                  style={styles.botaoCancelar}
-                  onClick={carregarVideos}
-                >
-                  Tentar novamente
-                </button>
-              </div>
-            )}
+            {!carregandoVideos &&
+              erroFeed && (
+                <div style={styles.erro}>
+                  <p>{erroFeed}</p>
+
+                  <button
+                    type="button"
+                    style={styles.botaoCancelar}
+                    onClick={carregarVideos}
+                  >
+                    Tentar novamente
+                  </button>
+                </div>
+              )}
 
             {!carregandoVideos &&
               !erroFeed &&
               videos.length === 0 && (
                 <div style={styles.postCard}>
                   <p style={styles.mensagem}>
-                    Ainda não há vídeos publicados.
+                    Ainda não há vídeos
+                    publicados.
                   </p>
                 </div>
               )}
 
             {!erroFeed &&
-              videos.map((item) => (
-                <div
-                  key={item.id ?? item.id_cloudinary}
-                  style={styles.publicacaoCard}
-                >
-                  <div style={styles.usuario}>
-                    <img
-                      src="/insta.png"
-                      alt="Conrad"
-                      style={styles.avatarImage}
-                    />
+              videos.map((item) => {
+                const id = String(
+                  item.id ??
+                  item.id_cloudinary ??
+                  ""
+                )
 
-                    <div>
-                      <div style={styles.nomeUsuario}>
-                        Claiton Wroblewski
-                      </div>
+                const analise =
+                  analisesPublicadas[id]
 
-                      <div style={styles.agora}>
-                        {item.criado_em
-                          ? new Date(
-                              Number(item.criado_em)
-                            ).toLocaleString("pt-BR")
-                          : "Publicação do Conrad"}
-                      </div>
-                    </div>
-                  </div>
+                const analisandoPublicacao =
+                  analise?.status ===
+                    "iniciando" ||
+                  analise?.status ===
+                    "processando"
 
-                  <video
-                    src={item.url_do_video}
-                    controls
-                    playsInline
-                    preload="metadata"
-                    style={styles.video}
-                  />
+                const resultadoPublicado =
+                  analise?.status ===
+                  "concluido"
+                    ? analise.resultado
+                    : null
 
-                  {item.legenda && (
-                    <p style={styles.legenda}>
-                      {item.legenda}
-                    </p>
-                  )}
+                return (
+                  <div
+                    key={id}
+                    style={
+                      styles.publicacaoCard
+                    }
+                  >
+                    <div style={styles.usuario}>
+                      <img
+                        src="/insta.png"
+                        alt="Conrad"
+                        style={
+                          styles.avatarImage
+                        }
+                      />
 
-                  {/* BOTÕES DE INTERAÇÃO */}
-                  <div style={styles.interacoesVideo}>
-                    <button
-                      type="button"
-                      style={styles.botaoCurtirAmei}
-                      disabled={
-                        !!atualizandoInteracao[item.id]
-                      }
-                      onClick={() =>
-                        atualizarInteracao(item, {
-                          curtidas:
-                            Number(item.curtidas || 0) + 1,
-                        })
-                      }
-                    >
-                      <span>👍🏿</span> Curtir{" "}
-                      {item.curtidas || 0}
-                    </button>
-
-                    <button
-                      type="button"
-                      style={styles.botaoCurtirAmei}
-                      disabled={
-                        !!atualizandoInteracao[item.id]
-                      }
-                      onClick={() =>
-                        atualizarInteracao(item, {
-                          amei:
-                            Number(item.amei || 0) + 1,
-                        })
-                      }
-                    >
-                      <span>🖤</span> Amei{" "}
-                      {item.amei || 0}
-                    </button>
-
-                    <button
-                      type="button"
-                      style={styles.botaoCurtirAmei}
-                      onClick={() =>
-                        setComentariosAbertos(
-                          (anterior) => ({
-                            ...anterior,
-                            [item.id]:
-                              !anterior[item.id],
-                          })
-                        )
-                      }
-                    >
-                      💬 Comentários (
-                      {Array.isArray(item.comentarios)
-                        ? item.comentarios.length
-                        : 0}
-                      )
-                    </button>
-                  </div>
-
-                  {/* ÁREA DE COMENTÁRIOS */}
-                  {comentariosAbertos[item.id] && (
-                    <div style={styles.areaComentarios}>
-                      <div style={styles.listaComentarios}>
-                        {Array.isArray(item.comentarios) &&
-                          item.comentarios.map(
-                            (comentario, indice) => (
-                              <div
-                                key={indice}
-                                style={styles.comentario}
-                              >
-                                {comentario}
-                              </div>
-                            )
-                          )}
-
-                        {(!Array.isArray(
-                          item.comentarios
-                        ) ||
-                          item.comentarios.length === 0) && (
-                          <p style={styles.mensagem}>
-                            Ainda não há comentários.
-                          </p>
-                        )}
-                      </div>
-
-                      <div style={styles.formComentario}>
-                        <input
-                          type="text"
-                          placeholder="Escreva um comentário..."
-                          value={
-                            novoComentario[item.id] || ""
-                          }
-                          onChange={(event) =>
-                            setNovoComentario(
-                              (anterior) => ({
-                                ...anterior,
-                                [item.id]:
-                                  event.target.value,
-                              })
-                            )
-                          }
-                          style={styles.inputComentario}
-                          disabled={
-                            !!atualizandoInteracao[item.id]
-                          }
-                        />
-
-                        <button
-                          type="button"
-                          style={styles.botaoEnviarComentario}
-                          onClick={() =>
-                            enviarComentario(item)
-                          }
-                          disabled={
-                            !!atualizandoInteracao[item.id]
+                      <div>
+                        <div
+                          style={
+                            styles.nomeUsuario
                           }
                         >
-                          Enviar
-                        </button>
+                          Claiton Wroblewski
+                        </div>
+
+                        <div
+                          style={styles.agora}
+                        >
+                          {item.criado_em
+                            ? new Date(
+                                Number(
+                                  item.criado_em
+                                )
+                              ).toLocaleString(
+                                "pt-BR"
+                              )
+                            : "Publicação do Conrad"}
+                        </div>
                       </div>
                     </div>
-                  )}
-                </div>
-              ))}
+
+                    <video
+                      src={
+                        item.url_do_video
+                      }
+                      controls
+                      playsInline
+                      preload="metadata"
+                      style={styles.video}
+                    />
+
+                    {item.legenda && (
+                      <p
+                        style={
+                          styles.legenda
+                        }
+                      >
+                        {item.legenda}
+                      </p>
+                    )}
+
+                    {/* BOTÕES DE INTERAÇÃO */}
+                    <div
+                      style={
+                        styles.interacoesVideo
+                      }
+                    >
+                      <button
+                        type="button"
+                        style={
+                          styles.botaoCurtirAmei
+                        }
+                        disabled={
+                          !!atualizandoInteracao[
+                            item.id
+                          ]
+                        }
+                        onClick={() =>
+                          atualizarInteracao(
+                            item,
+                            {
+                              curtidas:
+                                Number(
+                                  item.curtidas ||
+                                  0
+                                ) + 1,
+                            }
+                          )
+                        }
+                      >
+                        <span>👍🏿</span>
+                        {" "}Curtir{" "}
+                        {item.curtidas || 0}
+                      </button>
+
+                      <button
+                        type="button"
+                        style={
+                          styles.botaoCurtirAmei
+                        }
+                        disabled={
+                          !!atualizandoInteracao[
+                            item.id
+                          ]
+                        }
+                        onClick={() =>
+                          atualizarInteracao(
+                            item,
+                            {
+                              amei:
+                                Number(
+                                  item.amei ||
+                                  0
+                                ) + 1,
+                            }
+                          )
+                        }
+                      >
+                        <span>🖤</span>
+                        {" "}Amei{" "}
+                        {item.amei || 0}
+                      </button>
+
+                      <button
+                        type="button"
+                        style={
+                          styles.botaoCurtirAmei
+                        }
+                        onClick={() =>
+                          setComentariosAbertos(
+                            (anterior) => ({
+                              ...anterior,
+                              [item.id]:
+                                !anterior[
+                                  item.id
+                                ],
+                            })
+                          )
+                        }
+                      >
+                        💬 Comentários (
+                        {Array.isArray(
+                          item.comentarios
+                        )
+                          ? item.comentarios
+                              .length
+                          : 0}
+                        )
+                      </button>
+
+                      {/* NOVO BOTÃO: ANÁLISE DE VÍDEO PUBLICADO */}
+                      <button
+                        type="button"
+                        style={
+                          styles.botaoAnalisarIA
+                        }
+                        disabled={
+                          analisandoPublicacao
+                        }
+                        onClick={() =>
+                          analisarPublicacao(
+                            item
+                          )
+                        }
+                      >
+                        {analisandoPublicacao
+                          ? "✨ Analisando com IA..."
+                          : "✨ Analisar com IA"}
+                      </button>
+                    </div>
+
+                    {/* NOVO: ACOMPANHAMENTO DA ANÁLISE */}
+                    {analisandoPublicacao && (
+                      <div
+                        style={
+                          styles.painelAnalisePublicada
+                        }
+                        role="status"
+                      >
+                        <h3
+                          style={
+                            styles.tituloAnalise
+                          }
+                        >
+                          ✨ Análise com IA
+                        </h3>
+
+                        <p
+                          style={
+                            styles.mensagem
+                          }
+                        >
+                          {analise.status ===
+                          "iniciando"
+                            ? "Iniciando uma nova análise deste vídeo..."
+                            : "A inteligência artificial está analisando este vídeo. Aguarde o resultado..."}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* NOVO: ERRO DA ANÁLISE */}
+                    {analise?.status ===
+                      "erro" && (
+                      <div
+                        style={styles.erro}
+                        role="alert"
+                      >
+                        <strong>
+                          Não foi possível
+                          concluir a análise.
+                        </strong>
+
+                        <p>
+                          {analise.erro}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* NOVO: RESULTADO INDIVIDUAL */}
+                    {resultadoPublicado && (
+                      <ResultadoAnaliseVideo
+                        resultado={
+                          resultadoPublicado
+                        }
+                        publicado={true}
+                      />
+                    )}
+
+                    {/* ÁREA DE COMENTÁRIOS */}
+                    {comentariosAbertos[
+                      item.id
+                    ] && (
+                      <div
+                        style={
+                          styles.areaComentarios
+                        }
+                      >
+                        <div
+                          style={
+                            styles.listaComentarios
+                          }
+                        >
+                          {Array.isArray(
+                            item.comentarios
+                          ) &&
+                            item.comentarios.map(
+                              (
+                                comentario,
+                                indice
+                              ) => (
+                                <div
+                                  key={
+                                    indice
+                                  }
+                                  style={
+                                    styles.comentario
+                                  }
+                                >
+                                  {
+                                    comentario
+                                  }
+                                </div>
+                              )
+                            )}
+
+                          {(!Array.isArray(
+                            item.comentarios
+                          ) ||
+                            item.comentarios
+                              .length ===
+                              0) && (
+                            <p
+                              style={
+                                styles.mensagem
+                              }
+                            >
+                              Ainda não há
+                              comentários.
+                            </p>
+                          )}
+                        </div>
+
+                        <div
+                          style={
+                            styles.formComentario
+                          }
+                        >
+                          <input
+                            type="text"
+                            placeholder="Escreva um comentário..."
+                            value={
+                              novoComentario[
+                                item.id
+                              ] || ""
+                            }
+                            onChange={(
+                              event
+                            ) =>
+                              setNovoComentario(
+                                (anterior) => ({
+                                  ...anterior,
+                                  [item.id]:
+                                    event.target
+                                      .value,
+                                })
+                              )
+                            }
+                            style={
+                              styles.inputComentario
+                            }
+                            disabled={
+                              !!atualizandoInteracao[
+                                item.id
+                              ]
+                            }
+                          />
+
+                          <button
+                            type="button"
+                            style={
+                              styles.botaoEnviarComentario
+                            }
+                            onClick={() =>
+                              enviarComentario(
+                                item
+                              )
+                            }
+                            disabled={
+                              !!atualizandoInteracao[
+                                item.id
+                              ]
+                            }
+                          >
+                            Enviar
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
           </div>
         </div>
       </div>
@@ -1532,6 +2161,28 @@ const styles = {
     fontSize: 14,
     fontWeight: "bold",
     cursor: "pointer",
+  },
+
+  // NOVO: botão de análise dos vídeos publicados.
+  botaoAnalisarIA: {
+    backgroundColor: "#111827",
+    color: "#ffffff",
+    border: "1px solid #111827",
+    borderRadius: 10,
+    padding: "11px 16px",
+    fontSize: 14,
+    fontWeight: "bold",
+    cursor: "pointer",
+  },
+
+  // NOVO: resultado exibido abaixo da publicação.
+  painelAnalisePublicada: {
+    backgroundColor: "#f8fafc",
+    border: "1px solid #e2e8f0",
+    borderRadius: 16,
+    padding: 22,
+    marginTop: 18,
+    marginBottom: 18,
   },
 
   areaComentarios: {
