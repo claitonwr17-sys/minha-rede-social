@@ -1,3 +1,4 @@
+
 'use client'
 
 import "@fontsource/inter"
@@ -16,6 +17,122 @@ const XANO_INICIAR_ANALISE_URL =
 
 const XANO_CONSULTAR_ANALISE_URL =
   "https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/consultar_analise_video"
+
+// Converte o resultado técnico do sentimento em linguagem humana.
+function descreverSentimento(sentimento) {
+  if (!sentimento || typeof sentimento !== "object") {
+    return null
+  }
+
+  const classificacao = String(
+    sentimento.classificacao || ""
+  ).trim().toLowerCase()
+
+  const score = sentimento.score
+  const magnitude = sentimento.magnitude
+
+  let descricao =
+    "A análise não apresentou uma classificação emocional definida."
+
+  if (classificacao.includes("neutr")) {
+    descricao =
+      "O texto analisado apresenta um tom predominantemente neutro, sem uma tendência claramente positiva ou negativa."
+  } else if (classificacao.includes("positiv")) {
+    descricao =
+      "O texto analisado apresenta uma tendência positiva."
+  } else if (classificacao.includes("negativ")) {
+    descricao =
+      "O texto analisado apresenta uma tendência negativa."
+  } else if (
+    classificacao.includes("mist") ||
+    classificacao.includes("mixed")
+  ) {
+    descricao =
+      "O texto analisado reúne sinais de sentimentos positivos e negativos."
+  } else if (classificacao) {
+    descricao =
+      `O sentimento do texto foi classificado como ${sentimento.classificacao}.`
+  } else if (
+    typeof score === "number" &&
+    Number.isFinite(score)
+  ) {
+    if (score > 0.25) {
+      descricao =
+        "O texto analisado apresenta uma tendência positiva."
+    } else if (score < -0.25) {
+      descricao =
+        "O texto analisado apresenta uma tendência negativa."
+    } else {
+      descricao =
+        "O texto analisado não apresenta uma tendência emocional claramente positiva ou negativa."
+    }
+  }
+
+  // A magnitude depende também da quantidade de texto analisado.
+  // Por isso não atribuímos uma intensidade emocional sem contexto.
+  if (
+    typeof magnitude === "number" &&
+    Number.isFinite(magnitude) &&
+    magnitude > 0
+  ) {
+    return (
+      descricao +
+      " A ferramenta também identificou sinais de emoção ao longo do conteúdo, mas essa medida, isoladamente, não determina a intensidade percebida por quem assiste."
+    )
+  }
+
+  return descricao
+}
+
+// Converte os dados visuais em explicações compreensíveis.
+function descreverInformacoesVisuais(resultado) {
+  if (!resultado || typeof resultado !== "object") {
+    return null
+  }
+
+  const cenas = resultado.quantidadeDeCenas
+  const quadros =
+    resultado.conteudoExplicito?.quadrosAnalisados
+
+  const partes = []
+
+  if (
+    typeof cenas === "number" &&
+    Number.isFinite(cenas)
+  ) {
+    if (cenas === 0) {
+      partes.push(
+        "A análise não identificou divisões de cena no vídeo."
+      )
+    } else if (cenas === 1) {
+      partes.push(
+        "A análise identificou uma única cena no vídeo."
+      )
+    } else {
+      partes.push(
+        "A análise identificou diferentes cenas ao longo do vídeo, indicando mudanças na sequência visual."
+      )
+    }
+  }
+
+  if (
+    typeof quadros === "number" &&
+    Number.isFinite(quadros) &&
+    quadros > 0
+  ) {
+    partes.push(
+      "A inteligência artificial também examinou imagens do vídeo para complementar a avaliação visual."
+    )
+  }
+
+  if (partes.length === 0) {
+    return (
+      "O processamento visual foi realizado, mas não há detalhes suficientes para descrever a estrutura das cenas."
+    )
+  }
+
+  return partes.join(" ")
+}
 
 export default function FeedVideos() {
   const router = useRouter()
@@ -85,7 +202,9 @@ export default function FeedVideos() {
       setVideos(lista)
     } catch (erro) {
       console.error("Erro ao carregar vídeos do Xano:", erro)
-      setErroFeed(erro.message || "Erro ao carregar as publicações.")
+      setErroFeed(
+        erro.message || "Erro ao carregar as publicações."
+      )
     } finally {
       setCarregandoVideos(false)
     }
@@ -152,7 +271,9 @@ export default function FeedVideos() {
       const texto = await resposta.text()
 
       if (!resposta.ok) {
-        throw new Error(texto || "Erro ao atualizar interação.")
+        throw new Error(
+          texto || "Erro ao atualizar interação."
+        )
       }
 
       await carregarVideos()
@@ -282,7 +403,8 @@ export default function FeedVideos() {
         { method: "POST" }
       )
 
-      const dadosAssinatura = await respostaAssinatura.json()
+      const dadosAssinatura =
+        await respostaAssinatura.json()
 
       if (!respostaAssinatura.ok) {
         throw new Error(
@@ -300,7 +422,10 @@ export default function FeedVideos() {
         "timestamp",
         String(dadosAssinatura.timestamp)
       )
-      formulario.append("signature", dadosAssinatura.signature)
+      formulario.append(
+        "signature",
+        dadosAssinatura.signature
+      )
       formulario.append("folder", dadosAssinatura.folder)
 
       const respostaUpload = await fetch(
@@ -356,6 +481,7 @@ export default function FeedVideos() {
       if (uploadEmAndamentoRef.current === promessa) {
         uploadEmAndamentoRef.current = null
       }
+
       setEnviandoVideo(false)
     }
   }
@@ -471,7 +597,10 @@ export default function FeedVideos() {
         dados?.result ||
         dados
 
-      console.log("Resultado identificado:", resultado)
+      console.log(
+        "Resultado identificado:",
+        resultado
+      )
 
       if (resultado?.status === "concluido") {
         setResultadoAnalise(resultado)
@@ -496,7 +625,10 @@ export default function FeedVideos() {
         )
       }
     } catch (erro) {
-      console.error("Erro ao consultar análise:", erro)
+      console.error(
+        "Erro ao consultar análise:",
+        erro
+      )
       setErroAnalise(
         erro.message || "Erro ao consultar análise."
       )
@@ -585,9 +717,13 @@ export default function FeedVideos() {
           }
         )
 
-        const dadosStorage = await respostaStorage.json()
+        const dadosStorage =
+          await respostaStorage.json()
 
-        if (!respostaStorage.ok || dadosStorage.status !== "salvo") {
+        if (
+          !respostaStorage.ok ||
+          dadosStorage.status !== "salvo"
+        ) {
           throw new Error(
             dadosStorage.detalhes ||
             dadosStorage.erro ||
@@ -621,7 +757,9 @@ export default function FeedVideos() {
       )
     } catch (erro) {
       console.error("Erro ao publicar vídeo:", erro)
-      alert(erro.message || "Erro ao publicar vídeo.")
+      alert(
+        erro.message || "Erro ao publicar vídeo."
+      )
     } finally {
       setPublicando(false)
     }
@@ -840,9 +978,12 @@ export default function FeedVideos() {
                 </button>
               </div>
 
-              {/* RESULTADO DA ANÁLISE — exibido antes da publicação */}
+              {/* RESULTADO DA ANÁLISE */}
               {analisandoVideo && (
-                <div style={styles.painelAnalise} role="status">
+                <div
+                  style={styles.painelAnalise}
+                  role="status"
+                >
                   <h3 style={styles.tituloAnalise}>
                     Análise do vídeo
                   </h3>
@@ -853,7 +994,10 @@ export default function FeedVideos() {
               )}
 
               {erroAnalise && (
-                <div style={styles.erro} role="alert">
+                <div
+                  style={styles.erro}
+                  role="alert"
+                >
                   <strong>
                     Não foi possível concluir a análise.
                   </strong>
@@ -867,6 +1011,7 @@ export default function FeedVideos() {
                     Análise do vídeo concluída
                   </h3>
 
+                  {/* INTERPRETAÇÃO DO GEMINI */}
                   {(resultadoAnalise.geminiAnaliseFinal ||
                     resultadoAnalise.geminiAnaliseTextual) && (
                     <div style={styles.blocoAnalise}>
@@ -880,48 +1025,31 @@ export default function FeedVideos() {
                     </div>
                   )}
 
+                  {/* SENTIMENTO EM LINGUAGEM HUMANA */}
                   {resultadoAnalise.naturalLanguageSentimento && (
                     <div style={styles.blocoAnalise}>
                       <h4 style={styles.subtituloAnalise}>
                         Sentimento identificado
                       </h4>
                       <p style={styles.textoAnalise}>
-                        <strong>Classificação: </strong>
-                        {resultadoAnalise.naturalLanguageSentimento.classificacao ||
-                          "Não informada"}
+                        {descreverSentimento(
+                          resultadoAnalise.naturalLanguageSentimento
+                        )}
                       </p>
-                      {typeof resultadoAnalise.naturalLanguageSentimento.score === "number" && (
-                        <p style={styles.textoAnalise}>
-                          <strong>Pontuação: </strong>
-                          {resultadoAnalise.naturalLanguageSentimento.score}
-                        </p>
-                      )}
-                      {typeof resultadoAnalise.naturalLanguageSentimento.magnitude === "number" && (
-                        <p style={styles.textoAnalise}>
-                          <strong>Magnitude: </strong>
-                          {resultadoAnalise.naturalLanguageSentimento.magnitude}
-                        </p>
-                      )}
                     </div>
                   )}
 
+                  {/* INFORMAÇÕES VISUAIS EM LINGUAGEM HUMANA */}
                   {resultadoAnalise.resultado && (
                     <div style={styles.blocoAnalise}>
                       <h4 style={styles.subtituloAnalise}>
                         Informações visuais
                       </h4>
-                      {typeof resultadoAnalise.resultado.quantidadeDeCenas === "number" && (
-                        <p style={styles.textoAnalise}>
-                          <strong>Quantidade de cenas: </strong>
-                          {resultadoAnalise.resultado.quantidadeDeCenas}
-                        </p>
-                      )}
-                      {typeof resultadoAnalise.resultado.conteudoExplicito?.quadrosAnalisados === "number" && (
-                        <p style={styles.textoAnalise}>
-                          <strong>Quadros analisados: </strong>
-                          {resultadoAnalise.resultado.conteudoExplicito.quadrosAnalisados}
-                        </p>
-                      )}
+                      <p style={styles.textoAnalise}>
+                        {descreverInformacoesVisuais(
+                          resultadoAnalise.resultado
+                        )}
+                      </p>
                     </div>
                   )}
 
