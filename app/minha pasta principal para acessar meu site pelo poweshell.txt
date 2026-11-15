@@ -8,3 +8,31 @@ git commit -m "mensagem da atualização"
 
 git push origin main
 
+Nosso roteiro de desenvolvimento
+1. Finalizar a análise de vídeos — prioridade atual
+
+Corrigir o erro do Cloudflare KV, concluir a integração com as IAs e preservar o salvamento automático dos vídeos no Google Cloud Storage.
+
+
+
+2. Pesquisa global de usuários
+
+Fazer a barra de pesquisa funcionar em todas as páginas, permitindo encontrar outros usuários e acessar seus perfis.
+
+
+
+3. Solicitações de amizade
+
+Enviar, receber, aceitar e recusar solicitações, além de visualizar a lista de amigos.
+
+
+
+4. Mensageiro do Conrad AI
+
+Criar conversas privadas entre usuários, com envio e recebimento de mensagens.
+
+
+
+5. Política de Privacidade e Termos de Uso
+
+Preparar os documentos e integrá-los ao site, considerando a LGPD, os dados pessoais, o conteúdo publicado e as funcionalidades de IA. Também precisaremos verificar os mecanismos de consentimento e os direitos dos usuários.

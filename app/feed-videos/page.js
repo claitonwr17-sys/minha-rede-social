@@ -157,19 +157,14 @@ function extrairNomeOperacao(dados) {
   )
 }
 
-// Componente para mostrar a análise de forma compreensível.
+// Componente para mostrar somente a interpretação final do Conrad AI.
 function ResultadoAnaliseVideo({ resultado, publicado = false }) {
   if (!resultado) return null
 
+  // Obtém a interpretação final produzida pelo Gemini.
   const interpretacao =
     resultado.geminiAnaliseFinal ||
     resultado.geminiAnaliseTextual
-
-  const sentimento =
-    resultado.naturalLanguageSentimento
-
-  const informacoesVisuais =
-    resultado.resultado
 
   return (
     <div
@@ -185,61 +180,25 @@ function ResultadoAnaliseVideo({ resultado, publicado = false }) {
           : "Análise do vídeo concluída"}
       </h3>
 
-      {interpretacao && (
+      {interpretacao ? (
         <div style={styles.blocoAnalise}>
           <h4 style={styles.subtituloAnalise}>
-            Interpretação do Gemini
+            Interpretação do Conrad AI
           </h4>
 
           <p style={styles.textoAnalise}>
             {interpretacao}
           </p>
         </div>
-      )}
-
-      {sentimento && (
-        <div style={styles.blocoAnalise}>
-          <h4 style={styles.subtituloAnalise}>
-            Sentimento identificado
-          </h4>
-
-          <p style={styles.textoAnalise}>
-            {descreverSentimento(sentimento)}
-          </p>
-        </div>
-      )}
-
-      {informacoesVisuais && (
-        <div style={styles.blocoAnalise}>
-          <h4 style={styles.subtituloAnalise}>
-            Informações visuais
-          </h4>
-
-          <p style={styles.textoAnalise}>
-            {descreverInformacoesVisuais(informacoesVisuais)}
-          </p>
-        </div>
-      )}
-
-      {resultado.observacao && (
-        <p style={styles.observacaoAnalise}>
-          {resultado.observacao}
+      ) : (
+        <p style={styles.mensagem}>
+          A análise foi concluída, mas não foi
+          retornada uma interpretação para exibição.
         </p>
       )}
-
-      {!interpretacao &&
-        !sentimento &&
-        !informacoesVisuais &&
-        !resultado.observacao && (
-          <p style={styles.mensagem}>
-            A análise foi concluída, mas não foram
-            retornadas informações para exibição.
-          </p>
-        )}
     </div>
   )
 }
-
 export default function FeedVideos() {
   const router = useRouter()
 
