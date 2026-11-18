@@ -247,6 +247,19 @@ const resposta =
   Feed de vídeos
 </div>
 
+                {/* POLÍTICA DE PRIVACIDADE */}
+        <div
+          style={{
+            ...styles.sidebarItem,
+            ...(hoverItem === "privacidade" && styles.sidebarItemHover),
+          }}
+          onMouseEnter={() => setHoverItem("privacidade")}
+          onMouseLeave={() => setHoverItem("")}
+          onClick={() => router.push("/politica-de-privacidade")}
+        >
+          🔒 Política de Privacidade
+        </div>
+
         <button onClick={logout} style={styles.logout}>
           Sair
         </button>

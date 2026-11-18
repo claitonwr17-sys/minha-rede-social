@@ -1,9 +1,15 @@
+// ==================================================
+// CONRAD AI — ANÁLISE COMPLETA DE VÍDEOS
+// Cloudinary + GCS + Video Intelligence
+// Gemini + Natural Language + Cloudflare Queues
+// ==================================================
 
 const GOOGLE_API = "https://videointelligence.googleapis.com/v1";
 const TOKEN_URL = "https://oauth2.googleapis.com/token";
 const SCOPE = "https://www.googleapis.com/auth/cloud-platform";
 
 const GEMINI_MODEL = "gemini-3.8-flash";
+
 const GEMINI_URL =
   `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
@@ -16,9 +22,29 @@ const LANGUAGE_URL =
 const BUCKET = "videos-do-meu-app-2025";
 const MAX_VIDEO_SIZE = 50 * 1024 * 1024;
 
-// --------------------------------------------------
+const RESULT_TTL = 86400;
+const JOB_TTL = 86400;
+const PENDING_TTL = 3600;
+
+// ==================================================
+// RESPOSTAS JSON
+// ==================================================
+
+function json(data, status = 200) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: {
+      "Content-Type": "application/json; charset=utf-8",
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type"
+    }
+  });
+}
+
+// ==================================================
 // AUTENTICAÇÃO GOOGLE
-// --------------------------------------------------
+// ==================================================
 
 function base64UrlEncode(data) {
   const bytes =
@@ -27,6 +53,7 @@ function base64UrlEncode(data) {
       : new Uint8Array(data);
 
   let binary = "";
+
   for (const byte of bytes) {
     binary += String.fromCharCode(byte);
   }
@@ -75,8 +102,6 @@ async function getAccessToken(env) {
     throw new Error("Dados da conta de serviço inválidos.");
   }
 
-  const iat = now;
-
   const header = {
     alg: "RS256",
     typ: "JWT"
@@ -86,8 +111,8 @@ async function getAccessToken(env) {
     iss: sa.client_email,
     scope: SCOPE,
     aud: sa.token_uri || TOKEN_URL,
-    iat,
-    exp: iat + 3600
+    iat: now,
+    exp: now + 3600
   };
 
   const unsigned =
@@ -98,7 +123,10 @@ async function getAccessToken(env) {
   const key = await crypto.subtle.importKey(
     "pkcs8",
     pemToArrayBuffer(sa.private_key),
-    { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
+    {
+      name: "RSASSA-PKCS1-v1_5",
+      hash: "SHA-256"
+    },
     false,
     ["sign"]
   );
@@ -145,44 +173,28 @@ async function getAccessToken(env) {
       access_token: tokenData.access_token,
       expires_at: now + expiresIn
     }),
-    { expirationTtl: Math.max(60, expiresIn - 60) }
+    {
+      expirationTtl: Math.max(60, expiresIn - 60)
+    }
   );
 
   return tokenData.access_token;
 }
 
-// --------------------------------------------------
-// RESPOSTAS E CORS
-// --------------------------------------------------
-
-function json(data, status = 200) {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: {
-      "Content-Type": "application/json; charset=utf-8",
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type"
-    }
-  });
-}
-
-// --------------------------------------------------
+// ==================================================
 // IDENTIFICADOR DA OPERAÇÃO
-// --------------------------------------------------
+// ==================================================
 
 function obterIdentificadorOperacao(dados) {
   if (!dados || typeof dados !== "object") {
     return null;
   }
 
-  const identificadores = [
+  for (const valor of [
     dados.operationName,
     dados.codigoDaOperacao,
     dados.codigo_da_operacao
-  ];
-
-  for (const valor of identificadores) {
+  ]) {
     if (typeof valor === "string" && valor.trim()) {
       return valor.trim();
     }
@@ -191,9 +203,18 @@ function obterIdentificadorOperacao(dados) {
   return null;
 }
 
-// --------------------------------------------------
-// LEITURA DA ENTRADA DO XANO
-// --------------------------------------------------
+function validarOperationName(operationName) {
+  return (
+    typeof operationName === "string" &&
+    /^projects\/[^/]+\/locations\/[^/]+\/operations\/[^/]+$/.test(
+      operationName
+    )
+  );
+}
+
+// ==================================================
+// ENTRADA DO XANO
+// ==================================================
 
 async function parseVideoRequest(request) {
   const contentType = (
@@ -277,7 +298,15 @@ async function parseVideoRequest(request) {
   return body;
 }
 
+// ==================================================
+// UPLOAD DO VÍDEO PARA O GEMINI
+// ==================================================
+
 async function enviarVideoParaGemini(videoBuffer, env) {
+  if (!env.GEMINI_API_KEY) {
+    throw new Error("Secret GEMINI_API_KEY não configurado.");
+  }
+
   const inicio = await fetch(
     "https://generativelanguage.googleapis.com/upload/v1beta/files",
     {
@@ -286,7 +315,8 @@ async function enviarVideoParaGemini(videoBuffer, env) {
         "x-goog-api-key": env.GEMINI_API_KEY,
         "X-Goog-Upload-Protocol": "resumable",
         "X-Goog-Upload-Command": "start",
-        "X-Goog-Upload-Header-Content-Length": String(videoBuffer.byteLength),
+        "X-Goog-Upload-Header-Content-Length":
+          String(videoBuffer.byteLength),
         "X-Goog-Upload-Header-Content-Type": "video/mp4",
         "Content-Type": "application/json"
       },
@@ -299,15 +329,18 @@ async function enviarVideoParaGemini(videoBuffer, env) {
   );
 
   if (!inicio.ok) {
-    const erro = await inicio.text();
-    throw new Error("Erro ao iniciar upload no Gemini: " + erro);
+    throw new Error(
+      "Erro ao iniciar upload no Gemini: " +
+      await inicio.text()
+    );
   }
 
-  // O endereço de upload vem no cabeçalho, não precisamos ler JSON aqui.
   const uploadUrl = inicio.headers.get("x-goog-upload-url");
 
   if (!uploadUrl) {
-    throw new Error("O Gemini não retornou o endereço de upload.");
+    throw new Error(
+      "O Gemini não retornou o endereço de upload."
+    );
   }
 
   const envio = await fetch(uploadUrl, {
@@ -324,11 +357,15 @@ async function enviarVideoParaGemini(videoBuffer, env) {
   const resposta = await envio.text();
 
   if (!envio.ok) {
-    throw new Error("Erro ao enviar vídeo ao Gemini: " + resposta);
+    throw new Error(
+      "Erro ao enviar vídeo ao Gemini: " + resposta
+    );
   }
 
   if (!resposta.trim()) {
-    throw new Error("O Gemini recebeu o upload, mas retornou uma resposta vazia.");
+    throw new Error(
+      "O Gemini recebeu o upload, mas retornou uma resposta vazia."
+    );
   }
 
   let data;
@@ -336,22 +373,29 @@ async function enviarVideoParaGemini(videoBuffer, env) {
   try {
     data = JSON.parse(resposta);
   } catch {
-    throw new Error("Resposta inválida do Gemini: " + resposta);
+    throw new Error(
+      "Resposta inválida do Gemini: " + resposta
+    );
   }
 
-  if (!data.file || !data.file.name || !data.file.uri) {
-    throw new Error("O Gemini não retornou os dados esperados do arquivo.");
+  if (!data.file?.name || !data.file?.uri) {
+    throw new Error(
+      "O Gemini não retornou os dados esperados do arquivo."
+    );
   }
 
   return data.file;
 }
-// --------------------------------------------------
-// CONSULTA DO PROCESSAMENTO DO ARQUIVO NO GEMINI
-// --------------------------------------------------
+
+// ==================================================
+// CONSULTAR ARQUIVO DO GEMINI
+// ==================================================
 
 async function consultarArquivoGemini(geminiFile, env) {
   if (!geminiFile?.name) {
-    throw new Error("Referência do arquivo Gemini inválida.");
+    throw new Error(
+      "Referência do arquivo Gemini inválida."
+    );
   }
 
   const response = await fetch(
@@ -383,13 +427,16 @@ async function consultarArquivoGemini(geminiFile, env) {
   return data;
 }
 
-// --------------------------------------------------
-// TRANSFERÊNCIA CLOUDINARY → GOOGLE STORAGE + GEMINI
-// -
+// ==================================================
+// CLOUDINARY -> GOOGLE CLOUD STORAGE + GEMINI
+// ==================================================
 
-async function transferirCloudinaryParaGCS(videoUrl, token, env, somenteSalvar = false) {
-  const bucket = BUCKET;
-
+async function transferirCloudinaryParaGCS(
+  videoUrl,
+  token,
+  env,
+  somenteSalvar = false
+) {
   let url;
 
   try {
@@ -408,7 +455,6 @@ async function transferirCloudinaryParaGCS(videoUrl, token, env, somenteSalvar =
     );
   }
 
-  // Baixa o vídeo uma única vez.
   const respostaCloudinary = await fetch(videoUrl, {
     method: "GET",
     redirect: "manual"
@@ -425,25 +471,31 @@ async function transferirCloudinaryParaGCS(videoUrl, token, env, somenteSalvar =
   );
 
   if (contentLength > MAX_VIDEO_SIZE) {
-    throw new Error("O vídeo ultrapassa o limite de 50 MB.");
+    throw new Error(
+      "O vídeo ultrapassa o limite de 50 MB."
+    );
   }
 
-  const videoBuffer = await respostaCloudinary.arrayBuffer();
+  const videoBuffer =
+    await respostaCloudinary.arrayBuffer();
 
   if (videoBuffer.byteLength === 0) {
-    throw new Error("O Cloudinary retornou um vídeo vazio.");
+    throw new Error(
+      "O Cloudinary retornou um vídeo vazio."
+    );
   }
 
   if (videoBuffer.byteLength > MAX_VIDEO_SIZE) {
-    throw new Error("O vídeo ultrapassa o limite de 50 MB.");
+    throw new Error(
+      "O vídeo ultrapassa o limite de 50 MB."
+    );
   }
 
   const objectName =
     `conrad/${Date.now()}-${crypto.randomUUID()}.mp4`;
 
-  // Primeiro salva no Google Cloud Storage.
   const uploadUrl =
-    `https://storage.googleapis.com/upload/storage/v1/b/${bucket}/o` +
+    `https://storage.googleapis.com/upload/storage/v1/b/${BUCKET}/o` +
     `?uploadType=media&name=${encodeURIComponent(objectName)}`;
 
   const respostaGCS = await fetch(uploadUrl, {
@@ -457,7 +509,6 @@ async function transferirCloudinaryParaGCS(videoUrl, token, env, somenteSalvar =
 
   if (!respostaGCS.ok) {
     const erroTexto = await respostaGCS.text();
-
     let mensagem = erroTexto;
 
     try {
@@ -470,21 +521,20 @@ async function transferirCloudinaryParaGCS(videoUrl, token, env, somenteSalvar =
     );
   }
 
-  // Reutiliza o mesmo buffer para enviar ao Gemini.
   const geminiFile = await enviarVideoParaGemini(
     videoBuffer,
     env
   );
 
   return {
-    videoUri: `gs://${bucket}/${objectName}`,
+    videoUri: `gs://${BUCKET}/${objectName}`,
     geminiFile
   };
 }
 
-// --------------------------------------------------
+// ==================================================
 // GOOGLE VIDEO INTELLIGENCE
-// --------------------------------------------------
+// ==================================================
 
 async function iniciarAnaliseVideo(videoUri, token) {
   const response = await fetch(
@@ -524,29 +574,34 @@ async function iniciarAnaliseVideo(videoUri, token) {
   return data.name;
 }
 
-// --------------------------------------------------
-// RESUMO DOS RESULTADOS VISUAIS
-// --------------------------------------------------
+// ==================================================
+// RESUMO VISUAL
+// ==================================================
 
 function resumirResultadosVideo(result) {
-  const annotation = result?.annotationResults?.[0] || {};
+  const annotation =
+    result?.annotationResults?.[0] || {};
 
   const rotulos = (
     annotation.segmentLabelAnnotations || []
   )
     .map(item => ({
-      descricao: item.entity?.description || "Não identificado",
-      confianca: item.segments?.[0]?.confidence ?? 0
+      descricao:
+        item.entity?.description || "Não identificado",
+      confianca:
+        item.segments?.[0]?.confidence ?? 0
     }))
     .sort((a, b) => b.confianca - a.confianca)
     .slice(0, 8)
     .map(item => ({
       descricao: item.descricao,
-      confianca: Math.round(item.confianca * 1000) / 1000
+      confianca:
+        Math.round(item.confianca * 1000) / 1000
     }));
 
   const cenas = annotation.shotAnnotations || [];
-  const frames = annotation.explicitAnnotation?.frames || [];
+  const frames =
+    annotation.explicitAnnotation?.frames || [];
 
   const ordem = {
     UNKNOWN: 0,
@@ -558,7 +613,8 @@ function resumirResultadosVideo(result) {
   };
 
   const classificacoes = frames.map(
-    frame => frame.pornographyLikelihood || "UNKNOWN"
+    frame =>
+      frame.pornographyLikelihood || "UNKNOWN"
   );
 
   const maiorClassificacao = classificacoes.reduce(
@@ -579,13 +635,15 @@ function resumirResultadosVideo(result) {
   };
 }
 
-// --------------------------------------------------
-// GEMINI — ANÁLISE SOMENTE TEXTUAL (COMPATIBILIDADE)
-// --------------------------------------------------
+// ==================================================
+// GEMINI — TEXTO
+// ==================================================
 
 async function chamarGemini(prompt, env) {
   if (!env.GEMINI_API_KEY) {
-    throw new Error("Secret GEMINI_API_KEY não configurado.");
+    throw new Error(
+      "Secret GEMINI_API_KEY não configurado."
+    );
   }
 
   const response = await fetch(GEMINI_URL, {
@@ -628,17 +686,25 @@ async function chamarGemini(prompt, env) {
   return text;
 }
 
-// --------------------------------------------------
-// GEMINI — ANÁLISE DIRETA DO VÍDEO E DO ÁUDIO
-// --------------------------------------------------
+// ==================================================
+// GEMINI — VÍDEO E ÁUDIO
+// ==================================================
 
-async function chamarGeminiComVideo(prompt, geminiFile, env) {
+async function chamarGeminiComVideo(
+  prompt,
+  geminiFile,
+  env
+) {
   if (!env.GEMINI_API_KEY) {
-    throw new Error("Secret GEMINI_API_KEY não configurado.");
+    throw new Error(
+      "Secret GEMINI_API_KEY não configurado."
+    );
   }
 
   if (!geminiFile?.uri) {
-    throw new Error("Arquivo de vídeo do Gemini não encontrado.");
+    throw new Error(
+      "Arquivo de vídeo do Gemini não encontrado."
+    );
   }
 
   const response = await fetch(GEMINI_URL, {
@@ -653,7 +719,8 @@ async function chamarGeminiComVideo(prompt, geminiFile, env) {
         parts: [
           {
             file_data: {
-              mime_type: geminiFile.mimeType || "video/mp4",
+              mime_type:
+                geminiFile.mimeType || "video/mp4",
               file_uri: geminiFile.uri
             },
             media_processing: "AGENTIC"
@@ -679,7 +746,10 @@ async function chamarGeminiComVideo(prompt, geminiFile, env) {
 
   if (!response.ok) {
     throw new Error(
-      `Gemini: ${data.error?.message || "Falha na análise multimodal."}`
+      `Gemini: ${
+        data.error?.message ||
+        "Falha na análise multimodal."
+      }`
     );
   }
 
@@ -699,9 +769,9 @@ async function chamarGeminiComVideo(prompt, geminiFile, env) {
   return text;
 }
 
-// --------------------------------------------------
-// GOOGLE NATURAL LANGUAGE — SENTIMENTO
-// --------------------------------------------------
+// ==================================================
+// GOOGLE NATURAL LANGUAGE
+// ==================================================
 
 async function analisarSentimento(text, env) {
   if (!env.CHAVE_API_DE_SENTIMENTO) {
@@ -714,7 +784,8 @@ async function analisarSentimento(text, env) {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "x-goog-api-key": env.CHAVE_API_DE_SENTIMENTO
+      "x-goog-api-key":
+        env.CHAVE_API_DE_SENTIMENTO
     },
     body: JSON.stringify({
       document: {
@@ -738,9 +809,107 @@ async function analisarSentimento(text, env) {
   return data;
 }
 
-// --------------------------------------------------
-// PIPELINE COMPLEMENTAR — INTERPRETAÇÃO DO CONTEÚDO
-// --------------------------------------------------
+// ==================================================
+// NORMALIZAÇÃO DAS FRASES
+// ==================================================
+
+function normalizarFrasesDoVideo(frases) {
+  if (!Array.isArray(frases)) {
+    return [];
+  }
+
+  const frasesUnicas = new Set();
+
+  return frases
+    .filter(frase => typeof frase === "string")
+    .map(frase => frase.trim())
+    .filter(frase => {
+      if (!frase || frasesUnicas.has(frase)) {
+        return false;
+      }
+
+      frasesUnicas.add(frase);
+      return true;
+    });
+}
+
+// ==================================================
+// EXTRAÇÃO DE FRASES ESCRITAS NO VÍDEO
+// ==================================================
+
+async function extrairFrasesDoVideo(
+  geminiFile,
+  env
+) {
+  if (!geminiFile?.uri) {
+    return [];
+  }
+
+  const prompt = `
+Analise diretamente o vídeo fornecido.
+
+Identifique exclusivamente os textos e frases
+visíveis na tela do vídeo.
+
+REGRAS:
+
+- Preserve o idioma original.
+- Não invente palavras.
+- Não complete frases ilegíveis.
+- Não inclua falas que aparecem apenas no áudio.
+- Não repita textos idênticos.
+- Considere títulos, legendas e mensagens relevantes.
+- Ignore textos ilegíveis.
+- Não interprete emoções nesta etapa.
+
+Responda exclusivamente com um objeto JSON válido,
+sem Markdown, neste formato:
+
+{
+  "frases": [
+    "Primeira frase identificada",
+    "Segunda frase identificada"
+  ]
+}
+
+Se não houver textos legíveis, retorne:
+
+{"frases":[]}
+`;
+
+  const resposta = await chamarGeminiComVideo(
+    prompt,
+    geminiFile,
+    env
+  );
+
+  let dados;
+
+  try {
+    const textoLimpo = resposta
+      .replace(/^\s*```(?:json)?\s*/i, "")
+      .replace(/\s*```\s*$/, "")
+      .trim();
+
+    dados = JSON.parse(textoLimpo);
+
+  } catch {
+    console.error(
+      "CONRAD AI — Resposta inválida na extração:",
+      resposta.slice(0, 2000)
+    );
+
+    throw new Error(
+      "O Gemini não retornou uma lista válida de frases."
+    );
+  }
+
+  return normalizarFrasesDoVideo(dados.frases);
+}
+
+// ==================================================
+// PIPELINE COMPLEMENTAR
+// ==================================================
 
 async function executarAnaliseComplementar(
   videoIntelligence,
@@ -748,48 +917,63 @@ async function executarAnaliseComplementar(
   env,
   geminiFile
 ) {
-  const resumoVisual = resumirResultadosVideo(videoIntelligence);
+  const resumoVisual =
+    resumirResultadosVideo(videoIntelligence);
 
-  const prompt = `
+  let frasesIdentificadas = [];
+
+  if (geminiFile?.uri) {
+    try {
+      frasesIdentificadas =
+        await extrairFrasesDoVideo(
+          geminiFile,
+          env
+        );
+    } catch (erro) {
+      console.error(
+        "CONRAD AI — Falha ao extrair frases:",
+        erro.message
+      );
+    }
+  }
+
+ const prompt = `
 Você é o Conrad AI, a inteligência artificial de uma rede social.
 
-Assista ao vídeo fornecido e produza uma interpretação clara, humana e profissional, em português do Brasil.
+Sua única tarefa é compreender o vídeo e responder:
 
-Sua tarefa é compreender o conteúdo completo do vídeo, considerando tanto as imagens quanto o áudio disponível.
+QUAL MENSAGEM ESTE VÍDEO TRANSMITE AO PÚBLICO?
 
-IDENTIFIQUE, QUANDO HOUVER EVIDÊNCIAS:
+Analise o conteúdo visual e textual do vídeo para
+compreender sua mensagem principal.
 
-- Qual é o assunto principal do vídeo.
-- O que está acontecendo e o que é apresentado.
-- O que a pessoa está falando, explicando ou demonstrando.
-- Qual é a mensagem central transmitida.
-- Qual parece ser o objetivo do criador ao publicar esse conteúdo.
-- Que conhecimento, informação ou reflexão o vídeo pretende transmitir.
-- Qual é o contexto e para quem o conteúdo parece ser direcionado.
-- Como as imagens complementam ou reforçam a mensagem falada.
-- Se existe música, narração, diálogo ou outros sons relevantes.
+Utilize as informações visuais complementares
+apenas como apoio à interpretação.
 
-REGRAS IMPORTANTES:
+REGRAS OBRIGATÓRIAS:
 
-- Considere diretamente o conteúdo audiovisual do arquivo.
-- Não se limite aos rótulos visuais fornecidos abaixo.
-- Diferencie claramente o que foi observado daquilo que é uma interpretação.
-- Nunca invente falas ou transcrições.
-- Não confunda o objetivo aparente do vídeo com a intenção privada do criador.
-- Se não houver fala, não invente narração ou diálogos.
-- Se o áudio estiver ausente ou incompreensível, não invente conteúdo.
-- Se houver fala, considere o que está sendo dito para compreender a mensagem.
-- Não confunda música de fundo com fala.
-- Não invente acontecimentos, pessoas ou informações.
-- Quando houver incerteza, utilize expressões como "aparentemente" ou "o vídeo sugere".
-- Não mencione nomes de APIs ou ferramentas técnicas.
-- Escreva um único texto fluido, sem títulos ou listas.
-- Utilize linguagem natural, simples e profissional.
-- Evite descrições genéricas que não expliquem o conteúdo.
-- Não faça afirmações sobre a intenção privada do criador.
-- Procure explicar o que o vídeo comunica, não apenas descrever o que aparece nas imagens.
+- Explique exclusivamente a mensagem central do vídeo.
+- Interprete o significado geral do conteúdo.
+- Não descreva cenas, imagens, objetos ou pessoas.
+- Não enumere assuntos, frases ou acontecimentos.
+- Não transcreva textos exibidos no vídeo.
+- Não comente trilhas sonoras, músicas, idiomas ou narrações.
+- Não apresente análises separadas de cada parte do vídeo.
+- Não inclua introduções como "Olá, sou o Conrad AI".
+- Não utilize títulos, listas ou tópicos.
+- Não invente informações ou intenções do criador.
+- Não mencione APIs ou ferramentas técnicas.
+- Evite repetições e explicações desnecessárias.
 
-O resultado deve ter aproximadamente 100 a 160 palavras, quando houver informações suficientes.
+FORMATO DA RESPOSTA:
+
+Escreva somente um parágrafo em português do Brasil,
+com aproximadamente 40 a 70 palavras.
+
+A resposta deve ser simples, natural e objetiva.
+
+Explique o que o vídeo procura comunicar ao público,
+não o que aparece em cada cena.
 
 INFORMAÇÕES VISUAIS COMPLEMENTARES:
 
@@ -805,15 +989,124 @@ ${JSON.stringify(resumoVisual)}
       env
     );
   } else {
-    analiseFinal = await chamarGemini(prompt, env);
+    analiseFinal = await chamarGemini(
+      prompt,
+      env
+    );
   }
 
-  const sentimentoCompleto = await analisarSentimento(
-    analiseFinal,
-    env
-  );
+  const textoParaSentimento =
+    frasesIdentificadas.length > 0
+      ? frasesIdentificadas.join("\n")
+      : analiseFinal;
 
-  const sentimento = sentimentoCompleto.documentSentiment || {};
+  const sentimentoCompleto =
+    await analisarSentimento(
+      textoParaSentimento,
+      env
+    );
+
+  const sentimentosPorFrase =
+    await Promise.all(
+      frasesIdentificadas.map(async frase => {
+        try {
+          const resposta =
+            await analisarSentimento(frase, env);
+
+          const sentimentoFrase =
+            resposta.documentSentiment || {};
+
+          return {
+            frase,
+            score:
+              sentimentoFrase.score ?? null,
+            magnitude:
+              sentimentoFrase.magnitude ?? null
+          };
+
+        } catch (erro) {
+          console.error(
+            "CONRAD AI — Falha na análise de uma frase:",
+            erro.message
+          );
+
+          return {
+            frase,
+            score: null,
+            magnitude: null
+          };
+        }
+      })
+    );
+
+  const dadosEmocionais = {
+    frasesIdentificadas,
+    sentimentoGeralDoTexto: {
+      score:
+        sentimentoCompleto.documentSentiment?.score ?? null,
+      magnitude:
+        sentimentoCompleto.documentSentiment?.magnitude ?? null
+    },
+    sentimentosPorFrase
+  };
+
+  let analiseEmocionalIntegrada = null;
+
+  if (geminiFile?.uri) {
+    try {
+      const promptEmocional = `
+Você é o Conrad AI.
+
+Analise o vídeo fornecido e interprete seu
+conteúdo emocional considerando as imagens,
+os textos escritos, as falas, a música
+e o contexto geral.
+
+RESULTADOS DA ANÁLISE LINGUÍSTICA:
+
+${JSON.stringify(dadosEmocionais)}
+
+INSTRUÇÕES:
+
+- Explique as emoções sugeridas por cada frase.
+- Considere o contexto completo de cada frase.
+- Diferencie sentimentos expressos de emoções sugeridas.
+- Reconheça humor, ironia, sarcasmo e críticas.
+- Não trate pontuações linguísticas como prova
+  de emoções humanas.
+- Explique possíveis diferenças entre o sentimento
+  linguístico e a mensagem emocional do vídeo.
+- Identifique o tom emocional predominante.
+- Não invente frases, falas ou emoções.
+- Quando não houver frases escritas,
+  analise o contexto audiovisual.
+- Responda em português do Brasil.
+
+Organize a resposta em:
+
+1. Frases e emoções identificadas, quando houver.
+2. Sentimento geral do vídeo.
+3. Conclusão emocional.
+`;
+
+      analiseEmocionalIntegrada =
+        await chamarGeminiComVideo(
+          promptEmocional,
+          geminiFile,
+          env
+        );
+
+    } catch (erro) {
+      console.error(
+        "CONRAD AI — Falha na interpretação emocional integrada:",
+        erro.message
+      );
+    }
+  }
+
+  const sentimento =
+    sentimentoCompleto.documentSentiment || {};
+
   const score = sentimento.score ?? 0;
 
   let classificacao = "Neutro";
@@ -826,8 +1119,13 @@ ${JSON.stringify(resumoVisual)}
 
   return {
     resultado: resumoVisual,
+
     geminiAnaliseTextual: analiseFinal,
     geminiAnaliseFinal: analiseFinal,
+
+    frasesIdentificadas,
+    sentimentosPorFrase,
+    analiseEmocionalIntegrada,
 
     naturalLanguageSentimento: {
       classificacao,
@@ -836,23 +1134,24 @@ ${JSON.stringify(resumoVisual)}
     },
 
     observacao: geminiFile?.uri
-      ? "O vídeo foi analisado diretamente, considerando imagens e áudio disponível. A análise de sentimento foi aplicada ao texto produzido."
+      ? "O vídeo foi analisado diretamente, considerando imagens e áudio disponíveis. A análise linguística de sentimento foi aplicada às frases escritas identificadas no vídeo ou, na ausência delas, ao texto da interpretação geral."
       : "O Gemini recebeu apenas informações textuais disponíveis, sem análise direta do arquivo de vídeo."
   };
 }
 
-// --------------------------------------------------
-// CONSULTA DA OPERAÇÃO E RESPOSTA FINAL
-// --------------------------------------------------
+// ==================================================
+// CONSULTA DA OPERAÇÃO
+// ==================================================
 
-async function consultarOperacao(operationName, token, env) {
-  if (
-    typeof operationName !== "string" ||
-    !/^projects\/[^/]+\/locations\/[^/]+\/operations\/[^/]+$/.test(
-      operationName
-    )
-  ) {
+async function consultarOperacao(
+  operationName,
+  token,
+  env,
+  ctx
+) {
+  if (!validarOperationName(operationName)) {
     return json({
+      status: "erro",
       erro: "Identificador de operação inválido.",
       exemplo:
         "projects/PROJECT_ID/locations/LOCATION/operations/OPERATION_ID"
@@ -860,7 +1159,10 @@ async function consultarOperacao(operationName, token, env) {
   }
 
   const cacheKey = `pipeline:${operationName}`;
+  const pendingKey = `queue:${operationName}`;
+  const jobKey = `queue-data:${operationName}`;
 
+  // Primeiro verifica se a análise já terminou.
   const cached = await env.TOKEN_KV.get(
     cacheKey,
     { type: "json" }
@@ -870,7 +1172,23 @@ async function consultarOperacao(operationName, token, env) {
     return json(cached);
   }
 
-  // Consulta o Video Intelligence.
+  // Verifica se existe uma análise em andamento.
+  const pending = await env.TOKEN_KV.get(
+    pendingKey,
+    { type: "json" }
+  ).catch(() => null);
+
+  if (pending?.status === "processando") {
+    return json({
+      status: "processando",
+      operationName,
+      etapa: "analise_complementar",
+      mensagem:
+        "A interpretação do vídeo está em andamento."
+    }, 200);
+  }
+
+  // Consulta o Google Video Intelligence.
   const response = await fetch(
     `${GOOGLE_API}/${operationName}`,
     {
@@ -884,8 +1202,10 @@ async function consultarOperacao(operationName, token, env) {
 
   if (!response.ok) {
     return json({
+      status: "erro",
       erro: "Não foi possível consultar a análise.",
-      detalhes: data.error?.message || "Erro da API."
+      detalhes:
+        data.error?.message || "Erro da API."
     }, response.status);
   }
 
@@ -893,9 +1213,10 @@ async function consultarOperacao(operationName, token, env) {
     return json({
       status: "processando",
       etapa: "video_intelligence",
-      mensagem: "A análise visual ainda está em andamento.",
+      mensagem:
+        "A análise visual ainda está em andamento.",
       operationName
-    }, 202);
+    }, 200);
   }
 
   if (data.error) {
@@ -910,35 +1231,41 @@ async function consultarOperacao(operationName, token, env) {
 
   try {
     // Recupera a referência do vídeo no Gemini.
-const chaveGemini = `gemini:${operationName}`;
+    const chaveGemini = `gemini:${operationName}`;
 
-let geminiFile = null;
+    let geminiFile = null;
 
-try {
-  geminiFile = await env.TOKEN_KV.get(
-    chaveGemini,
-    { type: "json" }
-  );
+    try {
+      geminiFile = await env.TOKEN_KV.get(
+        chaveGemini,
+        { type: "json" }
+      );
 
-  console.log("DIAGNÓSTICO KV — LEITURA:", {
-    chave: chaveGemini,
-    encontrada: geminiFile !== null
-  });
+      console.log(
+        "DIAGNÓSTICO KV — LEITURA:",
+        {
+          chave: chaveGemini,
+          encontrada: geminiFile !== null
+        }
+      );
 
-} catch (erroKV) {
-  console.error(
-    "DIAGNÓSTICO KV — ERRO REAL NA LEITURA:",
-    erroKV.message
-  );
+    } catch (erroKV) {
+      console.error(
+        "DIAGNÓSTICO KV — ERRO REAL NA LEITURA:",
+        erroKV.message
+      );
 
-  throw erroKV;
-}
+      throw erroKV;
+    }
 
-console.log("DIAGNÓSTICO KV — REFERÊNCIA RECUPERADA:", {
-  chave: chaveGemini,
-  encontrada: !!geminiFile,
-  arquivo: geminiFile
-});
+    console.log(
+      "DIAGNÓSTICO KV — REFERÊNCIA RECUPERADA:",
+      {
+        chave: chaveGemini,
+        encontrada: !!geminiFile,
+        arquivo: geminiFile
+      }
+    );
 
     if (!geminiFile) {
       throw new Error(
@@ -946,77 +1273,146 @@ console.log("DIAGNÓSTICO KV — REFERÊNCIA RECUPERADA:", {
       );
     }
 
-    // Verifica o estado real do arquivo.
-    const arquivoAtual = await consultarArquivoGemini(
-      geminiFile,
-      env
-    );
+    const arquivoAtual =
+      await consultarArquivoGemini(
+        geminiFile,
+        env
+      );
 
     if (arquivoAtual.state !== "ACTIVE") {
       return json({
         status: "processando",
         etapa: "gemini",
-        estadoArquivo: arquivoAtual.state || "PROCESSING",
+        estadoArquivo:
+          arquivoAtual.state || "PROCESSING",
         mensagem:
           "A análise visual terminou. O Gemini ainda está preparando o vídeo para interpretação.",
         operationName
-      }, 202);
+      }, 200);
     }
 
-    // Atualiza a referência com os dados mais recentes.
     const arquivoPronto = {
       ...geminiFile,
       ...arquivoAtual
     };
 
-    // Executa a interpretação multimodal.
-    const complementares = await executarAnaliseComplementar(
-      resultadoVideo,
-      operationName,
-      env,
-      arquivoPronto
+    // Confirma se a tarefa já está na fila.
+    const pendingAtual = await env.TOKEN_KV.get(
+      pendingKey,
+      { type: "json" }
     );
 
-    const respostaFinal = {
-      status: "concluido",
-      operationName,
-      ...complementares
-    };
+    if (pendingAtual?.status === "processando") {
+      return json({
+        status: "processando",
+        operationName,
+        etapa: "analise_complementar",
+        mensagem:
+          "A interpretação do vídeo está em andamento."
+      }, 200);
+    }
 
+    if (!env.VIDEO_ANALYSIS_QUEUE) {
+      throw new Error(
+        "Binding VIDEO_ANALYSIS_QUEUE não configurado."
+      );
+    }
+
+    // Salva os dados necessários para o consumidor.
+    // A mensagem da fila contém apenas o identificador.
     await env.TOKEN_KV.put(
-      cacheKey,
-      JSON.stringify(respostaFinal),
-      { expirationTtl: 86400 }
+      jobKey,
+      JSON.stringify({
+        resultadoVideo,
+        arquivoPronto
+      }),
+      {
+        expirationTtl: JOB_TTL
+      }
     );
 
-    return json(respostaFinal);
+    // Registra que existe processamento pendente.
+    await env.TOKEN_KV.put(
+      pendingKey,
+      JSON.stringify({
+        status: "processando",
+        operationName,
+        etapa: "analise_complementar",
+        criadoEm: new Date().toISOString()
+      }),
+      {
+        expirationTtl: PENDING_TTL
+      }
+    );
+
+    // Envia a análise complementar para a fila.
+    try {
+      await env.VIDEO_ANALYSIS_QUEUE.send({
+        operationName
+      });
+
+    } catch (sendError) {
+      await env.TOKEN_KV.delete(
+        pendingKey
+      ).catch(() => {});
+
+      throw sendError;
+    }
+
+    console.log(
+      "CONRAD AI — Análise enviada para a fila:",
+      operationName
+    );
+
+    // Responde ao Xano sem esperar o Gemini.
+    return json({
+      status: "processando",
+      operationName,
+      etapa: "analise_complementar",
+      mensagem:
+        "A análise visual terminou. O Gemini está processando o vídeo em segundo plano."
+    }, 200);
 
   } catch (error) {
+    console.error(
+      "CONRAD AI — Falha ao preparar análise:",
+      operationName,
+      error
+    );
+
     return json({
       status: "parcial",
       operationName,
-      resultado: resumirResultadosVideo(resultadoVideo),
+      resultado:
+        resumirResultadosVideo(resultadoVideo),
       etapaComplementar: "erro",
       detalhes: error.message,
       mensagem:
-        "A análise visual terminou, mas a interpretação complementar falhou. Consulte novamente para tentar outra vez."
+        "A análise visual terminou, mas não foi possível iniciar a interpretação complementar."
     }, 502);
   }
 }
 
-// --------------------------------------------------
+// ==================================================
 // ENTRADA PRINCIPAL DO WORKER
-// --------------------------------------------------
+// ==================================================
 
 export default {
-  async fetch(request, env) {
+
+  // ==================================================
+  // REQUISIÇÕES HTTP — XANO E SITE
+  // ==================================================
+
+  async fetch(request, env, ctx) {
     if (request.method === "OPTIONS") {
       return new Response(null, {
         status: 204,
         headers: {
           "Access-Control-Allow-Origin": "*",
-          "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-          "Access-Control-Allow-Headers": "Content-Type"
+          "Access-Control-Allow-Methods":
+            "GET, POST, OPTIONS",
+          "Access-Control-Allow-Headers":
+            "Content-Type"
         }
       });
     }
@@ -1024,7 +1420,7 @@ export default {
     const url = new URL(request.url);
 
     // ----------------------------------------------
-    // GET — CONSULTAR OPERAÇÃO EXISTENTE
+    // GET — CONSULTAR ANÁLISE EXISTENTE
     // ----------------------------------------------
 
     if (request.method === "GET") {
@@ -1049,11 +1445,20 @@ export default {
         return await consultarOperacao(
           operationName,
           token,
-          env
+          env,
+          ctx
         );
+
       } catch (error) {
+        console.error(
+          "CONRAD AI — Falha na consulta:",
+          error
+        );
+
         return json({
-          erro: "Falha ao consultar a operação.",
+          status: "erro",
+          erro:
+            "Falha ao consultar a operação.",
           detalhes: error.message
         }, 500);
       }
@@ -1065,15 +1470,20 @@ export default {
 
     if (request.method !== "POST") {
       return json({
+        status: "erro",
         erro: "Método não permitido."
       }, 405);
     }
 
     try {
-      const body = await parseVideoRequest(request);
-      const token = await getAccessToken(env);
+      const body =
+        await parseVideoRequest(request);
 
-      // POST com identificador consulta operação existente.
+      const token =
+        await getAccessToken(env);
+
+      // POST com identificador consulta
+      // uma operação existente.
       const operationNameRecebida =
         obterIdentificadorOperacao(body);
 
@@ -1081,7 +1491,8 @@ export default {
         return await consultarOperacao(
           operationNameRecebida,
           token,
-          env
+          env,
+          ctx
         );
       }
 
@@ -1097,24 +1508,32 @@ export default {
         !videoUri.trim()
       ) {
         return json({
-          erro: "Informe videoUri com a URL do vídeo."
+          status: "erro",
+          erro:
+            "Informe videoUri com a URL do vídeo."
         }, 400);
       }
 
       videoUri = videoUri.trim();
 
+      // --------------------------------------------
+      // CLOUDINARY -> GCS + GEMINI
+      // --------------------------------------------
+
       if (videoUri.startsWith("https://")) {
-        const transferencia = await transferirCloudinaryParaGCS(
-          videoUri,
-          token,
-          env
-        );
+        const transferencia =
+          await transferirCloudinaryParaGCS(
+            videoUri,
+            token,
+            env
+          );
 
         videoUri = transferencia.videoUri;
         geminiFile = transferencia.geminiFile;
 
       } else if (!videoUri.startsWith("gs://")) {
         return json({
+          status: "erro",
           erro:
             "Envie uma URL HTTPS do Cloudinary ou um endereço gs:// válido."
         }, 400);
@@ -1124,40 +1543,211 @@ export default {
       // INICIAR VIDEO INTELLIGENCE
       // --------------------------------------------
 
-      const operationName = await iniciarAnaliseVideo(
-        videoUri,
-        token
-      );
+      const operationName =
+        await iniciarAnaliseVideo(
+          videoUri,
+          token
+        );
 
-      // Guarda referência do Gemini antes da consulta.
-if (geminiFile) {
-  await env.TOKEN_KV.put(
-    `gemini:${operationName}`,
-    JSON.stringify(geminiFile),
-    { expirationTtl: 86400 }
-  );
+      // --------------------------------------------
+      // SALVAR REFERÊNCIA DO GEMINI NO KV
+      // --------------------------------------------
 
-  console.log("DIAGNÓSTICO KV — REFERÊNCIA SALVA:", {
-    chave: `gemini:${operationName}`,
-    arquivo: geminiFile
-  });
+      if (geminiFile) {
+        await env.TOKEN_KV.put(
+          `gemini:${operationName}`,
+          JSON.stringify(geminiFile),
+          {
+            expirationTtl: RESULT_TTL
+          }
+        );
 
-} else {
-  console.log(
-    "DIAGNÓSTICO KV — GEMINI FILE ESTÁ VAZIO."
-  );
-}
+        console.log(
+          "DIAGNÓSTICO KV — REFERÊNCIA SALVA:",
+          {
+            chave: `gemini:${operationName}`,
+            arquivo: geminiFile
+          }
+        );
+
+      } else {
+        console.log(
+          "DIAGNÓSTICO KV — GEMINI FILE ESTÁ VAZIO."
+        );
+      }
+
+      // --------------------------------------------
+      // CONSULTAR ESTADO INICIAL DA ANÁLISE
+      // --------------------------------------------
+
       return await consultarOperacao(
         operationName,
         token,
-        env
+        env,
+        ctx
       );
 
     } catch (error) {
+      console.error(
+        "CONRAD AI — Falha ao processar solicitação:",
+        error
+      );
+
       return json({
-        erro: "Falha ao processar a solicitação.",
+        status: "erro",
+        erro:
+          "Falha ao processar a solicitação.",
         detalhes: error.message
       }, 500);
+    }
+  },
+
+  // ==================================================
+  // CONSUMIDOR DA FILA
+  // conrad-ai-video-analysis
+  // ==================================================
+
+  async queue(batch, env, ctx) {
+    for (const message of batch.messages) {
+      const operationName =
+        message.body?.operationName;
+
+      try {
+        if (!validarOperationName(operationName)) {
+          throw new Error(
+            "Mensagem da fila com operação inválida."
+          );
+        }
+
+        const cacheKey =
+          `pipeline:${operationName}`;
+
+        const pendingKey =
+          `queue:${operationName}`;
+
+        const jobKey =
+          `queue-data:${operationName}`;
+
+        // ------------------------------------------
+        // VERIFICAR SE JÁ FOI CONCLUÍDA
+        // ------------------------------------------
+
+        const cached = await env.TOKEN_KV.get(
+          cacheKey,
+          { type: "json" }
+        );
+
+        if (cached?.status === "concluido") {
+          console.log(
+            "CONRAD AI — Análise já concluída:",
+            operationName
+          );
+
+          message.ack();
+          continue;
+        }
+
+        // ------------------------------------------
+        // RECUPERAR DADOS TEMPORÁRIOS
+        // ------------------------------------------
+
+        const job = await env.TOKEN_KV.get(
+          jobKey,
+          { type: "json" }
+        );
+
+        if (
+          !job?.resultadoVideo ||
+          !job?.arquivoPronto
+        ) {
+          throw new Error(
+            "Dados da análise não disponíveis no KV. A tarefa será tentada novamente."
+          );
+        }
+
+        console.log(
+          "CONRAD AI — Iniciando análise complementar:",
+          operationName
+        );
+
+        // ------------------------------------------
+        // EXECUTAR GEMINI + NATURAL LANGUAGE
+        // ------------------------------------------
+
+        const complementares =
+          await executarAnaliseComplementar(
+            job.resultadoVideo,
+            operationName,
+            env,
+            job.arquivoPronto
+          );
+
+        // ------------------------------------------
+        // MONTAR RESULTADO FINAL
+        // ------------------------------------------
+
+        const respostaFinal = {
+          status: "concluido",
+          operationName,
+          ...complementares
+        };
+
+        // ------------------------------------------
+        // SALVAR RESULTADO NO KV
+        // ------------------------------------------
+
+        await env.TOKEN_KV.put(
+          cacheKey,
+          JSON.stringify(respostaFinal),
+          {
+            expirationTtl: RESULT_TTL
+          }
+        );
+
+        console.log(
+          "CONRAD AI — Análise concluída e salva:",
+          operationName
+        );
+
+        // ------------------------------------------
+        // LIMPAR MARCADORES TEMPORÁRIOS
+        // ------------------------------------------
+
+        try {
+          await env.TOKEN_KV.delete(
+            pendingKey
+          );
+        } catch (erro) {
+          console.error(
+            "CONRAD AI — Falha ao limpar marcador:",
+            erro.message
+          );
+        }
+
+        try {
+          await env.TOKEN_KV.delete(
+            jobKey
+          );
+        } catch (erro) {
+          console.error(
+            "CONRAD AI — Falha ao limpar dados temporários:",
+            erro.message
+          );
+        }
+
+        // Confirma o processamento da mensagem.
+        message.ack();
+
+      } catch (error) {
+        console.error(
+          "CONRAD AI — Erro no processamento da fila:",
+          operationName,
+          error
+        );
+
+        // Solicita nova tentativa.
+        message.retry();
+      }
     }
   }
 };

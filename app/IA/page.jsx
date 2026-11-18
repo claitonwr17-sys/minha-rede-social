@@ -1,3 +1,4 @@
+
 "use client";
 
 import "@fontsource/inter";
@@ -100,15 +101,43 @@ export default function IA() {
           </div>
 
           <div
-  style={menuItem}
-  onClick={() => router.push("/feed-videos")}
->
-  Feed de vídeos
-</div> 
+            style={menuItem}
+            onClick={() => router.push("/feed-videos")}
+          >
+            Feed de vídeos
+          </div>
+
+          {/* POLÍTICA DE PRIVACIDADE */}
+          <div
+            style={menuItem}
+            onClick={() =>
+              router.push("/politica-de-privacidade")
+            }
+          >
+            🔒 Política de Privacidade
+          </div>
+
+          {/* BOTÃO SAIR */}
+          <button
+            type="button"
+            onClick={() => router.push("/")}
+            style={{
+              backgroundColor: "#000",
+              color: "#fff",
+              border: "none",
+              padding: "12px 16px",
+              borderRadius: 10,
+              cursor: "pointer",
+              fontSize: 16,
+              fontWeight: "bold",
+              alignSelf: "flex-start",
+              marginTop: 2,
+            }}
+          >
+            Sair
+          </button>
         </div>
       </div>
-
-      {/* CONTEÚDO */}
 
       {/* CONTEÚDO */}
       <div
@@ -143,15 +172,15 @@ export default function IA() {
                 src="/logo/logo-simbolo.png"
                 alt="Conrad"
                 style={{
-                 width: 50,
-height: 50,
+                  width: 50,
+                  height: 50,
                   objectFit: "contain",
                 }}
               />
 
               <h1
                 style={{
-                 fontSize: 32,
+                  fontSize: 32,
                   margin: 0,
                   color: "#111",
                 }}

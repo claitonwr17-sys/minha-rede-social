@@ -1287,6 +1287,16 @@ export default function FeedVideos() {
             </div>
           </div>
         </div>
+        {/* POLÍTICA DE PRIVACIDADE */}
+        <div
+          style={{
+            ...styles.logout,
+            cursor: "pointer",
+          }}
+          onClick={() => router.push("/politica-de-privacidade")}
+        >
+          🔒 Política de Privacidade
+        </div>
 
         {/* SAIR */}
         <div

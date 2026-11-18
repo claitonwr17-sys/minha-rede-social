@@ -201,6 +201,21 @@ export default function Perfil() {
           </div>
         </div>
 
+                {/* POLÍTICA DE PRIVACIDADE */}
+        <div
+          style={{
+            ...styles.menuItem,
+            ...(hoverItem === "privacidade" && styles.menuHover),
+            cursor: "pointer"
+          }}
+          onMouseEnter={() => setHoverItem("privacidade")}
+          onMouseLeave={() => setHoverItem("")}
+          onClick={() => router.push("/politica-de-privacidade")}
+        >
+          🔒 Política de Privacidade
+        </div>
+
+        {/* SAIR */}
         <div
           style={{
             ...styles.logout,
