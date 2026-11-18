@@ -108,13 +108,21 @@ export default function PoliticaDePrivacidade() {
     },
   ];
 
-  return (
-    <main style={styles.pagina}>
-      <header style={styles.cabecalho}>
-        <div style={styles.marca}>
-          <div style={styles.simbolo}>C</div>
-          <span>Conrad AI</span>
-        </div>
+ return (
+  <main style={styles.pagina}>
+    <header style={styles.cabecalho}>
+      <div style={styles.marca}>
+        <img
+          src="/logo/logo-simbolo.png"
+          alt="Logo Conrad AI"
+          style={{
+            width: 38,
+            height: 38,
+            objectFit: "contain",
+          }}
+        />
+        <span>Conrad AI</span>
+      </div>
 
         <button
           type="button"
