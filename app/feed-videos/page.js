@@ -1170,153 +1170,139 @@ export default function FeedVideos() {
     }
   }
 
-  return (
-    <div style={styles.page}>
-      {/* SIDEBAR */}
-      <div style={styles.sidebar}>
-        <div>
-          <div style={styles.logo}>
+ 
+return (
+  <div style={styles.page}>
+    {/* SIDEBAR */}
+    <div style={styles.sidebar}>
+      <div>
+        <div style={styles.logo}>
+          <img
+            src="/logo/logo-simbolo.png"
+            alt="Conrad"
+            style={styles.logoImagem}
+          />
+          <span>Conrad</span>
+        </div>
+
+        {/* MENU */}
+        <div style={styles.menu}>
+          <Link
+            href="/feed"
+            style={{
+              textDecoration: "none",
+            }}
+          >
+            <div
+              style={{
+                ...styles.menuItem,
+                ...(hoverItem === "home"
+                  ? styles.menuHover
+                  : {}),
+              }}
+              onMouseEnter={() => setHoverItem("home")}
+              onMouseLeave={() => setHoverItem("")}
+            >
+              🏠 Home
+            </div>
+          </Link>
+
+          <div
+            style={{
+              ...styles.menuItem,
+              ...(hoverItem === "ia"
+                ? styles.menuHover
+                : {}),
+              display: "flex",
+              alignItems: "center",
+              gap: 12,
+            }}
+            onMouseEnter={() => setHoverItem("ia")}
+            onMouseLeave={() => setHoverItem("")}
+            onClick={() => router.push("/IA")}
+          >
             <img
               src="/logo/logo-simbolo.png"
-              alt="Conrad"
-              style={styles.logoImagem}
+              alt="IA"
+              style={{
+                width: 32,
+                height: 32,
+                objectFit: "contain",
+              }}
             />
-            <span>Conrad</span>
+            <span>IA</span>
           </div>
 
-          {/* MENU */}
-          <div style={styles.menu}>
-            <Link
-              href="/feed"
-              style={{
-                textDecoration: "none",
-              }}
-            >
-              <div
-                style={{
-                  ...styles.menuItem,
-                  ...(hoverItem === "home"
-                    ? styles.menuHover
-                    : {}),
-                }}
-                onMouseEnter={() =>
-                  setHoverItem("home")
-                }
-                onMouseLeave={() =>
-                  setHoverItem("")
-                }
-              >
-                🏠 Home
-              </div>
-            </Link>
-
-            <div
-              style={{
-                ...styles.menuItem,
-                ...(hoverItem === "ia"
-                  ? styles.menuHover
-                  : {}),
-                display: "flex",
-                alignItems: "center",
-                gap: 12,
-              }}
-              onMouseEnter={() =>
-                setHoverItem("ia")
-              }
-              onMouseLeave={() =>
-                setHoverItem("")
-              }
-              onClick={() =>
-                router.push("/IA")
-              }
-            >
-              <img
-                src="/logo/logo-simbolo.png"
-                alt="IA"
-                style={{
-                  width: 32,
-                  height: 32,
-                  objectFit: "contain",
-                }}
-              />
-              <span>IA</span>
-            </div>
-
-            <div
-              style={{
-                ...styles.menuItem,
-                ...(hoverItem === "feed"
-                  ? styles.menuHover
-                  : {}),
-              }}
-              onMouseEnter={() =>
-                setHoverItem("feed")
-              }
-              onMouseLeave={() =>
-                setHoverItem("")
-              }
-              onClick={() =>
-                router.push("/imagens")
-              }
-            >
-              📰 Feed
-            </div>
-
-            <div
-              style={{
-                ...styles.menuItem,
-                ...(hoverItem === "perfil"
-                  ? styles.menuHover
-                  : {}),
-              }}
-              onMouseEnter={() =>
-                setHoverItem("perfil")
-              }
-              onMouseLeave={() =>
-                setHoverItem("")
-              }
-              onClick={() =>
-                router.push("/perfil")
-              }
-            >
-              👤 Perfil
-            </div>
-
-            <div style={styles.menuAtivo}>
-              🎬 Feed de vídeos
-            </div>
+          <div
+            style={{
+              ...styles.menuItem,
+              ...(hoverItem === "feed"
+                ? styles.menuHover
+                : {}),
+            }}
+            onMouseEnter={() => setHoverItem("feed")}
+            onMouseLeave={() => setHoverItem("")}
+            onClick={() => router.push("/imagens")}
+          >
+            📰 Feed
           </div>
-        </div>
-        {/* POLÍTICA DE PRIVACIDADE */}
-        <div
-          style={{
-            ...styles.logout,
-            cursor: "pointer",
-          }}
-          onClick={() => router.push("/politica-de-privacidade")}
-        >
-          🔒 Política de Privacidade
-        </div>
 
-        {/* SAIR */}
-        <div
-          style={{
-            ...styles.logout,
-            ...(hoverItem === "logout"
-              ? styles.logoutHover
-              : {}),
-          }}
-          onMouseEnter={() =>
-            setHoverItem("logout")
-          }
-          onMouseLeave={() =>
-            setHoverItem("")
-          }
-          onClick={logout}
-        >
-          Sair
+          <div
+            style={{
+              ...styles.menuItem,
+              ...(hoverItem === "perfil"
+                ? styles.menuHover
+                : {}),
+            }}
+            onMouseEnter={() => setHoverItem("perfil")}
+            onMouseLeave={() => setHoverItem("")}
+            onClick={() => router.push("/perfil")}
+          >
+            👤 Perfil
+          </div>
+
+          <div style={styles.menuAtivo}>
+            🎬 Feed de vídeos
+          </div>
+
+          {/* POLÍTICA DE PRIVACIDADE */}
+          <div
+            style={{
+              ...styles.menuItem,
+              ...(hoverItem === "privacidade"
+                ? styles.menuHover
+                : {}),
+            }}
+            onMouseEnter={() => setHoverItem("privacidade")}
+            onMouseLeave={() => setHoverItem("")}
+            onClick={() =>
+              router.push("/politica-de-privacidade")
+            }
+          >
+            🔒 Política de Privacidade
+          </div>
+
+          {/* SAIR */}
+          <div
+            style={{
+              ...styles.logout,
+              ...(hoverItem === "logout"
+                ? styles.logoutHover
+                : {}),
+              marginTop: 12,
+            }}
+            onMouseEnter={() => setHoverItem("logout")}
+            onMouseLeave={() => setHoverItem("")}
+            onClick={logout}
+          >
+            Sair
+          </div>
         </div>
       </div>
+    </div>
+
+    {/* CONTEÚDO */}
+
 
       {/* CONTEÚDO */}
       <div style={styles.content}>
@@ -1919,16 +1905,18 @@ const styles = {
     fontFamily: "Inter, sans-serif",
   },
 
-  sidebar: {
-    width: 240,
-    flexShrink: 0,
-    backgroundColor: "white",
-    padding: 25,
-    display: "flex",
-    flexDirection: "column",
-    justifyContent: "space-between",
-    borderRight: "1px solid #ddd",
-  },
+  
+   sidebar: {
+  width: 240,
+  flexShrink: 0,
+  backgroundColor: "white",
+  padding: 25,
+  display: "flex",
+  flexDirection: "column",
+  justifyContent: "flex-start",
+  gap: 12,
+  borderRight: "1px solid #ddd",
+},
 
   logo: {
     display: "flex",
