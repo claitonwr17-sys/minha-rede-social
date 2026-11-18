@@ -352,12 +352,21 @@ if (!res.ok) {
   🎬 Feed de vídeos
 </div>
 
+
 {/* POLÍTICA DE PRIVACIDADE */}
 <div
   style={styles.menu}
   onClick={() => router.push("/politica-de-privacidade")}
 >
   🔒 Política de Privacidade
+</div>
+
+{/* TERMOS DE USO */}
+<div
+  style={styles.menu}
+  onClick={() => router.push("/termos-de-uso")}
+>
+  📜 Termos de Uso
 </div>
 
 <button

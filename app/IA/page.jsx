@@ -107,37 +107,47 @@ export default function IA() {
             Feed de vídeos
           </div>
 
-          {/* POLÍTICA DE PRIVACIDADE */}
-          <div
-            style={menuItem}
-            onClick={() =>
-              router.push("/politica-de-privacidade")
-            }
-          >
-            🔒 Política de Privacidade
-          </div>
+{/* POLÍTICA DE PRIVACIDADE */}
+<div
+  style={menuItem}
+  onClick={() =>
+    router.push("/politica-de-privacidade")
+  }
+>
+  🔒 Política de Privacidade
+</div>
 
-          {/* BOTÃO SAIR */}
-          <button
-            type="button"
-            onClick={() => router.push("/")}
-            style={{
-              backgroundColor: "#000",
-              color: "#fff",
-              border: "none",
-              padding: "12px 16px",
-              borderRadius: 10,
-              cursor: "pointer",
-              fontSize: 16,
-              fontWeight: "bold",
-              alignSelf: "flex-start",
-              marginTop: 2,
-            }}
-          >
-            Sair
-          </button>
-        </div>
-      </div>
+{/* TERMOS DE USO */}
+<div
+  style={menuItem}
+  onClick={() =>
+    router.push("/termos-de-uso")
+  }
+>
+  📜 Termos de Uso
+</div>
+
+{/* BOTÃO SAIR */}
+<button
+  type="button"
+  onClick={() => router.push("/")}
+  style={{
+    backgroundColor: "#000",
+    color: "#fff",
+    border: "none",
+    padding: "12px 16px",
+    borderRadius: 10,
+    cursor: "pointer",
+    fontSize: 16,
+    fontWeight: "bold",
+    alignSelf: "flex-start",
+    marginTop: 2,
+  }}
+>
+  Sair
+</button>
+</div>
+</div>
 
       {/* CONTEÚDO */}
       <div

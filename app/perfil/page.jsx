@@ -201,34 +201,50 @@ export default function Perfil() {
           </div>
         </div>
 
-                {/* POLÍTICA DE PRIVACIDADE */}
-        <div
-          style={{
-            ...styles.menuItem,
-            ...(hoverItem === "privacidade" && styles.menuHover),
-            cursor: "pointer"
-          }}
-          onMouseEnter={() => setHoverItem("privacidade")}
-          onMouseLeave={() => setHoverItem("")}
-          onClick={() => router.push("/politica-de-privacidade")}
-        >
-          🔒 Política de Privacidade
-        </div>
+               
+{/* POLÍTICA DE PRIVACIDADE */}
+<div
+  style={{
+    ...styles.menuItem,
+    ...(hoverItem === "privacidade" && styles.menuHover),
+    cursor: "pointer"
+  }}
+  onMouseEnter={() => setHoverItem("privacidade")}
+  onMouseLeave={() => setHoverItem("")}
+  onClick={() => router.push("/politica-de-privacidade")}
+>
+  🔒 Política de Privacidade
+</div>
 
-        {/* SAIR */}
-        <div
-          style={{
-            ...styles.logout,
-            ...(hoverItem === "logout" && styles.logoutHover)
-          }}
-          onMouseEnter={() => setHoverItem("logout")}
-          onMouseLeave={() => setHoverItem("")}
-          onClick={logout}
-        >
-          Sair
-        </div>
+{/* TERMOS DE USO */}
+<div
+  style={{
+    ...styles.menuItem,
+    ...(hoverItem === "termos" && styles.menuHover),
+    cursor: "pointer"
+  }}
+  onMouseEnter={() => setHoverItem("termos")}
+  onMouseLeave={() => setHoverItem("")}
+  onClick={() => router.push("/termos-de-uso")}
+>
+  📜 Termos de Uso
+</div>
 
-      </div>
+{/* SAIR */}
+<div
+  style={{
+    ...styles.logout,
+    ...(hoverItem === "logout" && styles.logoutHover)
+  }}
+  onMouseEnter={() => setHoverItem("logout")}
+  onMouseLeave={() => setHoverItem("")}
+  onClick={logout}
+>
+  Sair
+</div>
+
+</div>
+
 
       {/* CONTEÚDO */}
       <div style={styles.content}>

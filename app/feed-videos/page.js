@@ -1265,41 +1265,58 @@ return (
             🎬 Feed de vídeos
           </div>
 
-          {/* POLÍTICA DE PRIVACIDADE */}
-          <div
-            style={{
-              ...styles.menuItem,
-              ...(hoverItem === "privacidade"
-                ? styles.menuHover
-                : {}),
-            }}
-            onMouseEnter={() => setHoverItem("privacidade")}
-            onMouseLeave={() => setHoverItem("")}
-            onClick={() =>
-              router.push("/politica-de-privacidade")
-            }
-          >
-            🔒 Política de Privacidade
-          </div>
+          
+{/* POLÍTICA DE PRIVACIDADE */}
+<div
+  style={{
+    ...styles.menuItem,
+    ...(hoverItem === "privacidade"
+      ? styles.menuHover
+      : {}),
+  }}
+  onMouseEnter={() => setHoverItem("privacidade")}
+  onMouseLeave={() => setHoverItem("")}
+  onClick={() =>
+    router.push("/politica-de-privacidade")
+  }
+>
+  🔒 Política de Privacidade
+</div>
 
-          {/* SAIR */}
-          <div
-            style={{
-              ...styles.logout,
-              ...(hoverItem === "logout"
-                ? styles.logoutHover
-                : {}),
-              marginTop: 12,
-            }}
-            onMouseEnter={() => setHoverItem("logout")}
-            onMouseLeave={() => setHoverItem("")}
-            onClick={logout}
-          >
-            Sair
-          </div>
-        </div>
-      </div>
-    </div>
+{/* TERMOS DE USO */}
+<div
+  style={{
+    ...styles.menuItem,
+    ...(hoverItem === "termos"
+      ? styles.menuHover
+      : {}),
+  }}
+  onMouseEnter={() => setHoverItem("termos")}
+  onMouseLeave={() => setHoverItem("")}
+  onClick={() => router.push("/termos-de-uso")}
+>
+  📜 Termos de Uso
+</div>
+
+{/* SAIR */}
+<div
+  style={{
+    ...styles.logout,
+    ...(hoverItem === "logout"
+      ? styles.logoutHover
+      : {}),
+    marginTop: 12,
+  }}
+  onMouseEnter={() => setHoverItem("logout")}
+  onMouseLeave={() => setHoverItem("")}
+  onClick={logout}
+>
+  Sair
+</div>
+</div>
+</div>
+</div>
+
 
     {/* CONTEÚDO */}
 
