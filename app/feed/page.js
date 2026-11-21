@@ -308,7 +308,26 @@ export default function Pag2() {
           .filter((post) => post.texto && post.texto.trim() !== "")
           .map((post) => (
             <div key={post.id} style={styles.postCard}>
-              <div style={styles.aiHeader}>👤 Usuário</div>
+              <div style={styles.aiHeader}>
+  {post._perfis?.[0]?.foto_perfil ? (
+    <img
+      src={post._perfis[0].foto_perfil}
+      alt="Foto do autor"
+      style={{
+        width: 36,
+        height: 36,
+        borderRadius: "50%",
+        objectFit: "cover",
+        marginRight: 10,
+        verticalAlign: "middle",
+      }}
+    />
+  ) : (
+    <span style={{ marginRight: 10 }}>👤</span>
+  )}
+
+  {post._perfis?.[0]?.nome || "Usuário"}
+</div>
 
               <div style={styles.postText}>
                 {typeof post.texto === "string"
