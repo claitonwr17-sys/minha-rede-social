@@ -6,37 +6,145 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useState, useEffect } from "react"
 
+const XANO_BASE = "https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3"
+
 export default function Perfil() {
   const router = useRouter()
 
   const [hoverItem, setHoverItem] = useState("")
+  const [perfil, setPerfil] = useState(null)
+  const [carregandoPerfil, setCarregandoPerfil] = useState(true)
+  const [erroPerfil, setErroPerfil] = useState("")
+
   const [totalPosts, setTotalPosts] = useState(0)
   const [postsPerfil, setPostsPerfil] = useState([])
   const [carregandoPosts, setCarregandoPosts] = useState(true)
+
   const [fotoPerfil, setFotoPerfil] = useState("/insta.png")
   const [fotoCapa, setFotoCapa] = useState("/insta.png")
 
   function logout() {
-    router.push("/feed")
+    localStorage.removeItem("token")
+    router.push("/")
   }
 
-  async function buscarTotalPosts() {
+  function obterUrlImagem(valor, fallback) {
+    if (!valor) return fallback
+
+    if (typeof valor === "string") {
+      return valor
+    }
+
+    if (typeof valor === "object") {
+      return (
+        valor.url ||
+        valor.path ||
+        valor.image_url ||
+        fallback
+      )
+    }
+
+    return fallback
+  }
+
+  async function buscarPerfil() {
+    try {
+      setCarregandoPerfil(true)
+      setErroPerfil("")
+
+      const token = localStorage.getItem("token")
+
+      if (!token) {
+        router.replace("/")
+        return
+      }
+
+      const resposta = await fetch(`${XANO_BASE}/meu_perfil`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/json"
+        },
+        cache: "no-store"
+      })
+
+      if (!resposta.ok) {
+        if (resposta.status === 401) {
+          localStorage.removeItem("token")
+          router.replace("/")
+          return
+        }
+
+        throw new Error(
+          `Não foi possível carregar o perfil. Código: ${resposta.status}`
+        )
+      }
+
+      const dados = await resposta.json()
+
+      if (
+        !dados ||
+        typeof dados !== "object" ||
+        !dados.users_id
+      ) {
+        throw new Error("O Xano não retornou um perfil válido.")
+      }
+
+      setPerfil(dados)
+
+      setFotoPerfil(
+        obterUrlImagem(dados.foto_perfil, "/insta.png")
+      )
+
+      setFotoCapa(
+        obterUrlImagem(dados.foto_capa, "/insta.png")
+      )
+
+      await buscarTotalPosts(dados.users_id)
+
+    } catch (erro) {
+      console.error("Erro ao buscar perfil:", erro)
+      setErroPerfil(erro.message || "Erro ao carregar perfil.")
+      setCarregandoPosts(false)
+
+    } finally {
+      setCarregandoPerfil(false)
+    }
+  }
+
+  async function buscarTotalPosts(usuarioId) {
     try {
       setCarregandoPosts(true)
 
       const [resTexto, resImagens, resVideos] = await Promise.all([
-        fetch("https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/posts"),
-        fetch("https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/get_imagens"),
-        fetch("https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/listar-publicacoes-videos"),
+        fetch(`${XANO_BASE}/posts`),
+        fetch(`${XANO_BASE}/get_imagens`),
+        fetch(`${XANO_BASE}/listar-publicacoes-videos`)
       ])
 
       if (!resTexto.ok || !resImagens.ok || !resVideos.ok) {
         throw new Error("Erro ao buscar publicações do Xano")
       }
 
-      const postsTexto = await resTexto.json()
-      const postsImagens = await resImagens.json()
+      const respostaTexto = await resTexto.json()
+      const respostaImagens = await resImagens.json()
       const respostaVideos = await resVideos.json()
+
+      const postsTexto = Array.isArray(respostaTexto)
+        ? respostaTexto
+        : Array.isArray(respostaTexto?.items)
+          ? respostaTexto.items
+          : Array.isArray(respostaTexto?.result)
+            ? respostaTexto.result
+            : []
+
+      const postsImagens = Array.isArray(respostaImagens)
+        ? respostaImagens
+        : Array.isArray(respostaImagens?.items)
+          ? respostaImagens.items
+          : Array.isArray(respostaImagens?.result)
+            ? respostaImagens.result
+            : []
 
       const postsVideos = Array.isArray(respostaVideos)
         ? respostaVideos
@@ -46,21 +154,17 @@ export default function Perfil() {
             ? respostaVideos.result
             : []
 
-      console.log("Vídeos retornados pelo Xano:", respostaVideos)
-
-      const textosDoUsuario = (postsTexto || []).filter(
-        (post) => Number(post._usuario_id) === 10
+      const textosDoUsuario = postsTexto.filter(
+        (post) => Number(post._usuario_id) === Number(usuarioId)
       )
 
-      const imagensDoUsuario = (postsImagens || []).filter(
-        (post) => Number(post.usuario_id) === 10
+      const imagensDoUsuario = postsImagens.filter(
+        (post) => Number(post.usuario_id) === Number(usuarioId)
       )
 
       const videosDoUsuario = postsVideos.filter(
-        (post) => Number(post.usuario_id) === 10
+        (post) => Number(post.usuario_id) === Number(usuarioId)
       )
-
-      console.log("Vídeos do usuário:", videosDoUsuario)
 
       const total =
         textosDoUsuario.length +
@@ -99,22 +203,47 @@ export default function Perfil() {
 
       setPostsPerfil(todasPublicacoes)
 
-      console.log("Posts de texto:", textosDoUsuario)
-      console.log("Posts de imagem:", imagensDoUsuario)
-      console.log("Posts de vídeo:", videosDoUsuario)
-      console.log("Publicações do perfil:", todasPublicacoes)
-      console.log("TOTAL:", total)
+    } catch (erro) {
+      console.error("Erro ao buscar posts do perfil:", erro)
+      setPostsPerfil([])
+      setTotalPosts(0)
 
-    } catch (error) {
-      console.error("Erro ao buscar posts do perfil:", error)
     } finally {
       setCarregandoPosts(false)
     }
   }
 
   useEffect(() => {
-    buscarTotalPosts()
+    buscarPerfil()
   }, [])
+
+  function alterarFotoPerfil(evento) {
+    const arquivo = evento.target.files?.[0]
+
+    if (!arquivo) return
+
+    if (!arquivo.type.startsWith("image/")) {
+      alert("Selecione um arquivo de imagem.")
+      return
+    }
+
+    const imagemUrl = URL.createObjectURL(arquivo)
+    setFotoPerfil(imagemUrl)
+  }
+
+  function alterarFotoCapa(evento) {
+    const arquivo = evento.target.files?.[0]
+
+    if (!arquivo) return
+
+    if (!arquivo.type.startsWith("image/")) {
+      alert("Selecione um arquivo de imagem.")
+      return
+    }
+
+    const imagemUrl = URL.createObjectURL(arquivo)
+    setFotoCapa(imagemUrl)
+  }
 
   return (
     <div style={styles.page}>
@@ -127,6 +256,7 @@ export default function Perfil() {
             Conrad
           </div>
 
+          {/* TODOS OS ITENS NO MESMO MENU */}
           <div style={styles.menu}>
 
             <Link
@@ -166,7 +296,6 @@ export default function Perfil() {
                   objectFit: "contain"
                 }}
               />
-
               <span>IA</span>
             </div>
 
@@ -189,62 +318,56 @@ export default function Perfil() {
             <div
               style={{
                 ...styles.menuItem,
-                ...(hoverItem === "config" && styles.menuHover)
+                ...(hoverItem === "videos" && styles.menuHover)
               }}
-              onMouseEnter={() => setHoverItem("config")}
+              onMouseEnter={() => setHoverItem("videos")}
               onMouseLeave={() => setHoverItem("")}
               onClick={() => router.push("/feed-videos")}
             >
-              Feed de vídeos
+              🎬 Feed de vídeos
+            </div>
+
+            <div
+              style={{
+                ...styles.menuItem,
+                ...(hoverItem === "privacidade" && styles.menuHover)
+              }}
+              onMouseEnter={() => setHoverItem("privacidade")}
+              onMouseLeave={() => setHoverItem("")}
+              onClick={() => router.push("/politica-de-privacidade")}
+            >
+              🔒 Política de Privacidade
+            </div>
+
+            <div
+              style={{
+                ...styles.menuItem,
+                ...(hoverItem === "termos" && styles.menuHover)
+              }}
+              onMouseEnter={() => setHoverItem("termos")}
+              onMouseLeave={() => setHoverItem("")}
+              onClick={() => router.push("/termos-de-uso")}
+            >
+              📜 Termos de Uso
             </div>
 
           </div>
         </div>
 
-               
-{/* POLÍTICA DE PRIVACIDADE */}
-<div
-  style={{
-    ...styles.menuItem,
-    ...(hoverItem === "privacidade" && styles.menuHover),
-    cursor: "pointer"
-  }}
-  onMouseEnter={() => setHoverItem("privacidade")}
-  onMouseLeave={() => setHoverItem("")}
-  onClick={() => router.push("/politica-de-privacidade")}
->
-  🔒 Política de Privacidade
-</div>
+        {/* SAIR */}
+        <div
+          style={{
+            ...styles.logout,
+            ...(hoverItem === "logout" && styles.logoutHover)
+          }}
+          onMouseEnter={() => setHoverItem("logout")}
+          onMouseLeave={() => setHoverItem("")}
+          onClick={logout}
+        >
+          Sair
+        </div>
 
-{/* TERMOS DE USO */}
-<div
-  style={{
-    ...styles.menuItem,
-    ...(hoverItem === "termos" && styles.menuHover),
-    cursor: "pointer"
-  }}
-  onMouseEnter={() => setHoverItem("termos")}
-  onMouseLeave={() => setHoverItem("")}
-  onClick={() => router.push("/termos-de-uso")}
->
-  📜 Termos de Uso
-</div>
-
-{/* SAIR */}
-<div
-  style={{
-    ...styles.logout,
-    ...(hoverItem === "logout" && styles.logoutHover)
-  }}
-  onMouseEnter={() => setHoverItem("logout")}
-  onMouseLeave={() => setHoverItem("")}
-  onClick={logout}
->
-  Sair
-</div>
-
-</div>
-
+      </div>
 
       {/* CONTEÚDO */}
       <div style={styles.content}>
@@ -257,167 +380,190 @@ export default function Perfil() {
           />
         </div>
 
-        {/* CARD PERFIL */}
-        <div style={styles.card}>
+        {carregandoPerfil ? (
 
-          {/* BANNER */}
-          <div style={styles.bannerContainer}>
+          <div style={styles.estadoPerfil}>
+            Carregando seu perfil...
+          </div>
 
-            <img
-              src={fotoCapa}
-              alt="Banner"
-              style={styles.banner}
-            />
+        ) : erroPerfil ? (
 
-            <label style={styles.changeCoverButton}>
-              Alterar capa
+          <div style={styles.estadoPerfil}>
+            <p>{erroPerfil}</p>
+            <button
+              onClick={buscarPerfil}
+              style={styles.botao}
+            >
+              Tentar novamente
+            </button>
+          </div>
 
-              <input
-                type="file"
-                hidden
-                onChange={(e) => {
-                  const file = e.target.files?.[0]
-                  if (!file) return
+        ) : perfil ? (
 
-                  const imageUrl = URL.createObjectURL(file)
-                  setFotoCapa(imageUrl)
-                }}
+          <div style={styles.card}>
+
+            {/* BANNER */}
+            <div style={styles.bannerContainer}>
+
+              <img
+                src={fotoCapa}
+                alt="Banner"
+                style={styles.banner}
               />
-            </label>
 
-          </div>
+              <label style={styles.changeCoverButton}>
+                Alterar capa
 
-          {/* FOTO */}
-          <div style={styles.avatarArea}>
-            <img
-              src={fotoPerfil}
-              alt="Usuário"
-              style={styles.avatar}
-            />
-          </div>
+                <input
+                  type="file"
+                  accept="image/*"
+                  hidden
+                  onChange={alterarFotoCapa}
+                />
+              </label>
 
-          {/* INFO */}
-          <div style={styles.info}>
-
-            <div>
-              <div style={styles.nome}>
-                Claiton Wroblewski
-              </div>
-
-              <div style={styles.usuario}>
-                @claitonwr17
-              </div>
             </div>
 
-            <label style={styles.botao}>
-              Editar perfil
-
-              <input
-                type="file"
-                hidden
-                onChange={(e) => {
-                  const file = e.target.files?.[0]
-                  if (!file) return
-
-                  const imageUrl = URL.createObjectURL(file)
-                  setFotoPerfil(imageUrl)
-                }}
+            {/* FOTO */}
+            <div style={styles.avatarArea}>
+              <img
+                src={fotoPerfil}
+                alt="Usuário"
+                style={styles.avatar}
               />
-            </label>
-
-          </div>
-
-          <div style={styles.bio}>
-            Construindo uma rede social com IA
-          </div>
-
-          {/* ESTATÍSTICAS */}
-          <div style={styles.stats}>
-
-            <div style={styles.statBox}>
-              <div style={styles.statNumero}>
-                {totalPosts}
-              </div>
-              <div style={styles.statTexto}>
-                Posts
-              </div>
             </div>
 
-            <div style={styles.statBox}>
-              <div style={styles.statNumero}>0</div>
-              <div style={styles.statTexto}>Seguidores</div>
-            </div>
+            {/* INFORMAÇÕES */}
+            <div style={styles.info}>
 
-            <div style={styles.statBox}>
-              <div style={styles.statNumero}>0</div>
-              <div style={styles.statTexto}>Seguindo</div>
-            </div>
-
-          </div>
-
-          {/* PUBLICAÇÕES DO PERFIL */}
-          <div style={styles.publicacoes}>
-
-            <div style={styles.tituloPublicacoes}>
-              Publicações
-            </div>
-
-            {carregandoPosts ? (
-              <div style={styles.mensagemPosts}>
-                Carregando publicações...
-              </div>
-            ) : postsPerfil.length === 0 ? (
-              <div style={styles.mensagemPosts}>
-                Nenhuma publicação ainda.
-              </div>
-            ) : (
-              postsPerfil.map((post) => (
-
-                <div
-                  key={`${post.tipo}-${post.id}`}
-                  style={styles.postCard}
-                >
-
-                  {post.tipo === "texto" && (
-                    <div style={styles.postTexto}>
-                      {post.texto}
-                    </div>
-                  )}
-
-                  {post.tipo === "imagem" && (
-                    <img
-                      src={post.imagem}
-                      alt="Publicação"
-                      style={styles.postImagem}
-                    />
-                  )}
-
-                  {post.tipo === "video" && (
-                    <div>
-                      <video
-                        src={post.video}
-                        controls
-                        playsInline
-                        preload="metadata"
-                        style={styles.postVideo}
-                      />
-
-                      {post.legenda && (
-                        <p style={styles.postTexto}>
-                          {post.legenda}
-                        </p>
-                      )}
-                    </div>
-                  )}
-
+              <div>
+                <div style={styles.nome}>
+                  {perfil.nome?.trim() || "Novo usuário"}
                 </div>
 
-              ))
-            )}
+                <div style={styles.usuario}>
+                  {perfil.username?.trim()
+                    ? `@${perfil.username.trim()}`
+                    : "@usuario"}
+                </div>
+              </div>
+
+              <label style={styles.botao}>
+                Editar perfil
+
+                <input
+                  type="file"
+                  accept="image/*"
+                  hidden
+                  onChange={alterarFotoPerfil}
+                />
+              </label>
+
+            </div>
+
+            <div style={styles.bio}>
+              {perfil.bio?.trim() || "Nenhuma biografia adicionada."}
+            </div>
+
+            {/* ESTATÍSTICAS */}
+            <div style={styles.stats}>
+
+              <div style={styles.statBox}>
+                <div style={styles.statNumero}>
+                  {totalPosts}
+                </div>
+                <div style={styles.statTexto}>
+                  Posts
+                </div>
+              </div>
+
+              <div style={styles.statBox}>
+                <div style={styles.statNumero}>0</div>
+                <div style={styles.statTexto}>
+                  Seguidores
+                </div>
+              </div>
+
+              <div style={styles.statBox}>
+                <div style={styles.statNumero}>0</div>
+                <div style={styles.statTexto}>
+                  Seguindo
+                </div>
+              </div>
+
+            </div>
+
+            {/* PUBLICAÇÕES DO PERFIL */}
+            <div style={styles.publicacoes}>
+
+              <div style={styles.tituloPublicacoes}>
+                Publicações
+              </div>
+
+              {carregandoPosts ? (
+
+                <div style={styles.mensagemPosts}>
+                  Carregando publicações...
+                </div>
+
+              ) : postsPerfil.length === 0 ? (
+
+                <div style={styles.mensagemPosts}>
+                  Nenhuma publicação ainda.
+                </div>
+
+              ) : (
+
+                postsPerfil.map((post) => (
+
+                  <div
+                    key={`${post.tipo}-${post.id}`}
+                    style={styles.postCard}
+                  >
+
+                    {post.tipo === "texto" && (
+                      <div style={styles.postTexto}>
+                        {post.texto}
+                      </div>
+                    )}
+
+                    {post.tipo === "imagem" && (
+                      <img
+                        src={post.imagem}
+                        alt="Publicação"
+                        style={styles.postImagem}
+                      />
+                    )}
+
+                    {post.tipo === "video" && (
+                      <div>
+                        <video
+                          src={post.video}
+                          controls
+                          playsInline
+                          preload="metadata"
+                          style={styles.postVideo}
+                        />
+
+                        {post.legenda && (
+                          <p style={styles.postTexto}>
+                            {post.legenda}
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+                  </div>
+
+                ))
+
+              )}
+
+            </div>
 
           </div>
 
-        </div>
+        ) : null}
 
       </div>
 
@@ -498,7 +644,8 @@ const styles = {
 
   content: {
     flex: 1,
-    padding: 10
+    padding: 10,
+    minWidth: 0
   },
 
   navbar: {
@@ -510,10 +657,21 @@ const styles = {
 
   search: {
     width: 300,
+    maxWidth: "100%",
     padding: 12,
     borderRadius: 30,
     border: "1px solid #ddd",
     outline: "none"
+  },
+
+  estadoPerfil: {
+    backgroundColor: "white",
+    borderRadius: 16,
+    padding: 40,
+    textAlign: "center",
+    color: "#444",
+    maxWidth: 900,
+    margin: "0 auto"
   },
 
   card: {
@@ -568,13 +726,16 @@ const styles = {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: "20px 30px 0px 30px"
+    padding: "20px 30px 0px 30px",
+    gap: 16,
+    flexWrap: "wrap"
   },
 
   nome: {
     fontSize: 42,
     fontWeight: "bold",
-    color: "#222"
+    color: "#222",
+    overflowWrap: "anywhere"
   },
 
   usuario: {
@@ -598,7 +759,8 @@ const styles = {
   bio: {
     fontSize: 24,
     color: "#333",
-    padding: "20px 30px"
+    padding: "20px 30px",
+    overflowWrap: "anywhere"
   },
 
   stats: {
