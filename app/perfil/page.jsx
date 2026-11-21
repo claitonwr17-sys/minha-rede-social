@@ -20,8 +20,9 @@ export default function Perfil() {
   const [postsPerfil, setPostsPerfil] = useState([])
   const [carregandoPosts, setCarregandoPosts] = useState(true)
 
-  const [fotoPerfil, setFotoPerfil] = useState("/insta.png")
-  const [fotoCapa, setFotoCapa] = useState("/insta.png")
+  // NOVO: nenhum usuário recebe uma foto padrão pessoal.
+  const [fotoPerfil, setFotoPerfil] = useState("")
+  const [fotoCapa, setFotoCapa] = useState("")
 
   const [salvandoFoto, setSalvandoFoto] = useState(false)
   const [salvandoCapa, setSalvandoCapa] = useState(false)
@@ -40,9 +41,12 @@ export default function Perfil() {
     router.push("/")
   }
 
-  function obterUrlImagem(valor, fallback) {
+  function obterUrlImagem(valor, fallback = "") {
     if (!valor) return fallback
-    if (typeof valor === "string") return valor
+
+    if (typeof valor === "string") {
+      return valor.trim() || fallback
+    }
 
     if (typeof valor === "object") {
       return (
@@ -55,6 +59,10 @@ export default function Perfil() {
 
     return fallback
   }
+
+  // =====================================================
+  // CARREGAR PERFIL DO USUÁRIO AUTENTICADO
+  // =====================================================
 
   async function buscarPerfil() {
     try {
@@ -91,42 +99,67 @@ export default function Perfil() {
 
       const dados = await resposta.json()
 
-      if (!dados || typeof dados !== "object" || !dados.users_id) {
-        throw new Error("O Xano não retornou um perfil válido.")
+      if (
+        !dados ||
+        typeof dados !== "object" ||
+        !dados.users_id
+      ) {
+        throw new Error(
+          "O Xano não retornou um perfil válido."
+        )
       }
 
       setPerfil(dados)
 
+      // NOVO: se não existir fotografia, mantém vazio.
       setFotoPerfil(
-        obterUrlImagem(dados.foto_perfil, "/insta.png")
+        obterUrlImagem(dados.foto_perfil, "")
       )
 
       setFotoCapa(
-        obterUrlImagem(dados.foto_capa, "/insta.png")
+        obterUrlImagem(dados.foto_capa, "")
       )
 
       await buscarTotalPosts(dados.users_id)
     } catch (erro) {
       console.error("Erro ao buscar perfil:", erro)
-      setErroPerfil(erro.message || "Erro ao carregar perfil.")
+
+      setErroPerfil(
+        erro.message || "Erro ao carregar perfil."
+      )
+
       setCarregandoPosts(false)
     } finally {
       setCarregandoPerfil(false)
     }
   }
 
+  // =====================================================
+  // BUSCAR PUBLICAÇÕES DO USUÁRIO
+  // =====================================================
+
   async function buscarTotalPosts(usuarioId) {
     try {
       setCarregandoPosts(true)
 
-      const [resTexto, resImagens, resVideos] = await Promise.all([
+      const [
+        resTexto,
+        resImagens,
+        resVideos
+      ] = await Promise.all([
         fetch(`${XANO_BASE}/posts`),
         fetch(`${XANO_BASE}/get_imagens`),
         fetch(`${XANO_BASE}/listar-publicacoes-videos`)
       ])
 
-      if (!resTexto.ok || !resImagens.ok || !resVideos.ok) {
-        throw new Error("Erro ao buscar publicações do Xano")
+      if (
+        !resTexto.ok ||
+        !resImagens.ok ||
+        !resVideos.ok
+      ) {
+        throw new Error(
+          "Erro ao buscar publicações do Xano"
+        )
       }
 
       const respostaTexto = await resTexto.json()
@@ -145,15 +178,18 @@ export default function Perfil() {
       const postsVideos = extrairLista(respostaVideos)
 
       const textosDoUsuario = postsTexto.filter(
-        post => Number(post._usuario_id) === Number(usuarioId)
+        post =>
+          Number(post._usuario_id) === Number(usuarioId)
       )
 
       const imagensDoUsuario = postsImagens.filter(
-        post => Number(post.usuario_id) === Number(usuarioId)
+        post =>
+          Number(post.usuario_id) === Number(usuarioId)
       )
 
       const videosDoUsuario = postsVideos.filter(
-        post => Number(post.usuario_id) === Number(usuarioId)
+        post =>
+          Number(post.usuario_id) === Number(usuarioId)
       )
 
       setTotalPosts(
@@ -162,37 +198,49 @@ export default function Perfil() {
         videosDoUsuario.length
       )
 
-      const publicacoesTexto = textosDoUsuario.map(post => ({
-        tipo: "texto",
-        id: post.id,
-        texto: post.texto,
-        data: post.id
-      }))
+      const publicacoesTexto = textosDoUsuario.map(
+        post => ({
+          tipo: "texto",
+          id: post.id,
+          texto: post.texto,
+          data: post.id
+        })
+      )
 
-      const publicacoesImagem = imagensDoUsuario.map(post => ({
-        tipo: "imagem",
-        id: post.id,
-        imagem: post.image_url,
-        data: post.id
-      }))
+      const publicacoesImagem = imagensDoUsuario.map(
+        post => ({
+          tipo: "imagem",
+          id: post.id,
+          imagem: post.image_url,
+          data: post.id
+        })
+      )
 
-      const publicacoesVideo = videosDoUsuario.map(post => ({
-        tipo: "video",
-        id: post.id,
-        video: post.url_do_video,
-        legenda: post.legenda || "",
-        data: post.id
-      }))
+      const publicacoesVideo = videosDoUsuario.map(
+        post => ({
+          tipo: "video",
+          id: post.id,
+          video: post.url_do_video,
+          legenda: post.legenda || "",
+          data: post.id
+        })
+      )
 
       const todasPublicacoes = [
         ...publicacoesTexto,
         ...publicacoesImagem,
         ...publicacoesVideo
-      ].sort((a, b) => Number(b.data) - Number(a.data))
+      ].sort(
+        (a, b) => Number(b.data) - Number(a.data)
+      )
 
       setPostsPerfil(todasPublicacoes)
     } catch (erro) {
-      console.error("Erro ao buscar posts do perfil:", erro)
+      console.error(
+        "Erro ao buscar posts do perfil:",
+        erro
+      )
+
       setPostsPerfil([])
       setTotalPosts(0)
     } finally {
@@ -203,6 +251,10 @@ export default function Perfil() {
   useEffect(() => {
     buscarPerfil()
   }, [])
+
+  // =====================================================
+  // EDIÇÃO DO PERFIL
+  // =====================================================
 
   function abrirEdicaoPerfil() {
     if (!perfil || operacaoEmAndamento) return
@@ -221,27 +273,37 @@ export default function Perfil() {
     const token = localStorage.getItem("token")
 
     if (!token) {
-      throw new Error("Sua sessão expirou. Entre novamente.")
+      throw new Error(
+        "Sua sessão expirou. Entre novamente."
+      )
     }
 
-    const resposta = await fetch(`${XANO_BASE}/meu_perfil`, {
-      method: "PATCH",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-        Accept: "application/json"
-      },
-      body: JSON.stringify(campos)
-    })
+    const resposta = await fetch(
+      `${XANO_BASE}/meu_perfil`,
+      {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+          Accept: "application/json"
+        },
+        body: JSON.stringify(campos)
+      }
+    )
 
     if (resposta.status === 401) {
       localStorage.removeItem("token")
       router.replace("/")
-      throw new Error("Sua sessão expirou.")
+
+      throw new Error(
+        "Sua sessão expirou."
+      )
     }
 
     if (!resposta.ok) {
-      const detalhes = await resposta.text().catch(() => "")
+      const detalhes = await resposta
+        .text()
+        .catch(() => "")
 
       throw new Error(
         `Não foi possível atualizar o perfil. Código: ${resposta.status}. ${detalhes}`
@@ -252,7 +314,8 @@ export default function Perfil() {
 
     if (
       !atualizado ||
-      Number(atualizado.users_id) !== Number(perfil.users_id)
+      Number(atualizado.users_id) !==
+        Number(perfil.users_id)
     ) {
       throw new Error(
         "O Xano não retornou o perfil atualizado corretamente."
@@ -262,8 +325,7 @@ export default function Perfil() {
     return atualizado
   }
 
-  // Preserva todos os dados existentes ao atualizar
-  // apenas um campo do perfil.
+  // Preserva os dados já existentes.
   function montarDadosPerfil(alteracoes = {}) {
     return {
       nome: perfil.nome || "",
@@ -278,12 +340,13 @@ export default function Perfil() {
   function aplicarPerfilAtualizado(atualizado) {
     setPerfil(atualizado)
 
+    // NOVO: não utiliza mais /insta.png.
     setFotoPerfil(
-      obterUrlImagem(atualizado.foto_perfil, "/insta.png")
+      obterUrlImagem(atualizado.foto_perfil, "")
     )
 
     setFotoCapa(
-      obterUrlImagem(atualizado.foto_capa, "/insta.png")
+      obterUrlImagem(atualizado.foto_capa, "")
     )
   }
 
@@ -300,7 +363,9 @@ export default function Perfil() {
     const bio = bioEditada.trim()
 
     if (!nome) {
-      setErroEdicao("Informe um nome para o perfil.")
+      setErroEdicao(
+        "Informe um nome para o perfil."
+      )
       return
     }
 
@@ -318,10 +383,14 @@ export default function Perfil() {
       aplicarPerfilAtualizado(atualizado)
       setEditandoPerfil(false)
     } catch (erro) {
-      console.error("Erro ao salvar perfil:", erro)
+      console.error(
+        "Erro ao salvar perfil:",
+        erro
+      )
 
       setErroEdicao(
-        erro.message || "Não foi possível salvar as alterações."
+        erro.message ||
+        "Não foi possível salvar as alterações."
       )
     } finally {
       setSalvandoPerfil(false)
@@ -335,16 +404,21 @@ export default function Perfil() {
 
   async function enviarImagem(arquivo) {
     if (!arquivo.type.startsWith("image/")) {
-      throw new Error("Selecione um arquivo de imagem.")
+      throw new Error(
+        "Selecione um arquivo de imagem."
+      )
     }
 
     const formData = new FormData()
     formData.append("file", arquivo)
 
-    const respostaUpload = await fetch("/api/upload", {
-      method: "POST",
-      body: formData
-    })
+    const respostaUpload = await fetch(
+      "/api/upload",
+      {
+        method: "POST",
+        body: formData
+      }
+    )
 
     if (!respostaUpload.ok) {
       throw new Error(
@@ -374,7 +448,13 @@ export default function Perfil() {
   async function alterarFotoPerfil(evento) {
     const arquivo = evento.target.files?.[0]
 
-    if (!arquivo || !perfil || operacaoEmAndamento) return
+    if (
+      !arquivo ||
+      !perfil ||
+      operacaoEmAndamento
+    ) {
+      return
+    }
 
     try {
       setSalvandoFoto(true)
@@ -400,12 +480,18 @@ export default function Perfil() {
 
       aplicarPerfilAtualizado(atualizado)
 
-      alert("Foto de perfil salva com sucesso!")
+      alert(
+        "Foto de perfil salva com sucesso!"
+      )
     } catch (erro) {
-      console.error("Erro ao salvar foto de perfil:", erro)
+      console.error(
+        "Erro ao salvar foto de perfil:",
+        erro
+      )
 
       alert(
-        erro.message || "Não foi possível salvar a foto de perfil."
+        erro.message ||
+        "Não foi possível salvar a foto de perfil."
       )
     } finally {
       setSalvandoFoto(false)
@@ -414,29 +500,31 @@ export default function Perfil() {
   }
 
   // =====================================================
-  // NOVO: ALTERAR E SALVAR FOTO DE CAPA
+  // ALTERAR E SALVAR FOTO DE CAPA
   // =====================================================
 
   async function alterarFotoCapa(evento) {
     const arquivo = evento.target.files?.[0]
 
-    if (!arquivo || !perfil || operacaoEmAndamento) return
+    if (
+      !arquivo ||
+      !perfil ||
+      operacaoEmAndamento
+    ) {
+      return
+    }
 
     try {
       setSalvandoCapa(true)
 
-      // Envia a imagem para o armazenamento.
       const urlCapa = await enviarImagem(arquivo)
 
-      // Salva a capa no perfil autenticado.
-      // Mantém a fotografia de perfil existente.
       const atualizado = await atualizarPerfilXano(
         montarDadosPerfil({
           foto_capa: urlCapa
         })
       )
 
-      // Confirma que o Xano devolveu a URL da capa.
       const urlSalva = obterUrlImagem(
         atualizado.foto_capa,
         ""
@@ -448,15 +536,20 @@ export default function Perfil() {
         )
       }
 
-      // Atualiza a capa na tela.
       aplicarPerfilAtualizado(atualizado)
 
-      alert("Foto de capa salva com sucesso!")
+      alert(
+        "Foto de capa salva com sucesso!"
+      )
     } catch (erro) {
-      console.error("Erro ao salvar foto de capa:", erro)
+      console.error(
+        "Erro ao salvar foto de capa:",
+        erro
+      )
 
       alert(
-        erro.message || "Não foi possível salvar a foto de capa."
+        erro.message ||
+        "Não foi possível salvar a foto de capa."
       )
     } finally {
       setSalvandoCapa(false)
@@ -464,10 +557,26 @@ export default function Perfil() {
     }
   }
 
+  // =====================================================
+  // MENU LATERAL
+  // =====================================================
+
   const itensMenu = [
-    { id: "home", texto: "🏠 Home", rota: "/feed" },
-    { id: "explorar", texto: "📰 Feed", rota: "/imagens" },
-    { id: "videos", texto: "🎬 Feed de vídeos", rota: "/feed-videos" },
+    {
+      id: "home",
+      texto: "🏠 Home",
+      rota: "/feed"
+    },
+    {
+      id: "explorar",
+      texto: "📰 Feed",
+      rota: "/imagens"
+    },
+    {
+      id: "videos",
+      texto: "🎬 Feed de vídeos",
+      rota: "/feed-videos"
+    },
     {
       id: "privacidade",
       texto: "🔒 Política de Privacidade",
@@ -480,6 +589,10 @@ export default function Perfil() {
     }
   ]
 
+  // =====================================================
+  // PUBLICAÇÕES
+  // =====================================================
+
   function renderizarPublicacao(post) {
     return (
       <div
@@ -487,7 +600,9 @@ export default function Perfil() {
         style={styles.postCard}
       >
         {post.tipo === "texto" && (
-          <div style={styles.postTexto}>{post.texto}</div>
+          <div style={styles.postTexto}>
+            {post.texto}
+          </div>
         )}
 
         {post.tipo === "imagem" && (
@@ -509,7 +624,9 @@ export default function Perfil() {
             />
 
             {post.legenda && (
-              <p style={styles.postTexto}>{post.legenda}</p>
+              <p style={styles.postTexto}>
+                {post.legenda}
+              </p>
             )}
           </div>
         )}
@@ -517,22 +634,36 @@ export default function Perfil() {
     )
   }
 
+  // =====================================================
+  // INTERFACE DA PÁGINA
+  // =====================================================
+
   return (
     <div style={styles.page}>
       {/* MENU LATERAL */}
       <div style={styles.sidebar}>
         <div>
-          <div style={styles.logo}>Conrad</div>
+          <div style={styles.logo}>
+            Conrad
+          </div>
 
           <div style={styles.menu}>
-            <Link href="/feed" style={{ textDecoration: "none" }}>
+            <Link
+              href="/feed"
+              style={{ textDecoration: "none" }}
+            >
               <div
                 style={{
                   ...styles.menuItem,
-                  ...(hoverItem === "home" && styles.menuHover)
+                  ...(hoverItem === "home" &&
+                    styles.menuHover)
                 }}
-                onMouseEnter={() => setHoverItem("home")}
-                onMouseLeave={() => setHoverItem("")}
+                onMouseEnter={() =>
+                  setHoverItem("home")
+                }
+                onMouseLeave={() =>
+                  setHoverItem("")
+                }
               >
                 🏠 Home
               </div>
@@ -541,14 +672,21 @@ export default function Perfil() {
             <div
               style={{
                 ...styles.menuItem,
-                ...(hoverItem === "ia" && styles.menuHover),
+                ...(hoverItem === "ia" &&
+                  styles.menuHover),
                 display: "flex",
                 alignItems: "center",
                 gap: 12
               }}
-              onMouseEnter={() => setHoverItem("ia")}
-              onMouseLeave={() => setHoverItem("")}
-              onClick={() => router.push("/IA")}
+              onMouseEnter={() =>
+                setHoverItem("ia")
+              }
+              onMouseLeave={() =>
+                setHoverItem("")
+              }
+              onClick={() =>
+                router.push("/IA")
+              }
             >
               <img
                 src="/logo/logo-simbolo.png"
@@ -559,35 +697,56 @@ export default function Perfil() {
                   objectFit: "contain"
                 }}
               />
+
               <span>IA</span>
             </div>
 
             <div
               style={{
                 ...styles.menuItem,
-                ...(hoverItem === "explorar" && styles.menuHover)
+                ...(hoverItem === "explorar" &&
+                  styles.menuHover)
               }}
-              onMouseEnter={() => setHoverItem("explorar")}
-              onMouseLeave={() => setHoverItem("")}
-              onClick={() => router.push("/imagens")}
+              onMouseEnter={() =>
+                setHoverItem("explorar")
+              }
+              onMouseLeave={() =>
+                setHoverItem("")
+              }
+              onClick={() =>
+                router.push("/imagens")
+              }
             >
               📰 Feed
             </div>
 
-            <div style={styles.menuAtivo}>👤 Perfil</div>
+            <div style={styles.menuAtivo}>
+              👤 Perfil
+            </div>
 
             {itensMenu
-              .filter(item => item.id !== "home" && item.id !== "explorar")
+              .filter(
+                item =>
+                  item.id !== "home" &&
+                  item.id !== "explorar"
+              )
               .map(item => (
                 <div
                   key={item.id}
                   style={{
                     ...styles.menuItem,
-                    ...(hoverItem === item.id && styles.menuHover)
+                    ...(hoverItem === item.id &&
+                      styles.menuHover)
                   }}
-                  onMouseEnter={() => setHoverItem(item.id)}
-                  onMouseLeave={() => setHoverItem("")}
-                  onClick={() => router.push(item.rota)}
+                  onMouseEnter={() =>
+                    setHoverItem(item.id)
+                  }
+                  onMouseLeave={() =>
+                    setHoverItem("")
+                  }
+                  onClick={() =>
+                    router.push(item.rota)
+                  }
                 >
                   {item.texto}
                 </div>
@@ -598,10 +757,15 @@ export default function Perfil() {
         <div
           style={{
             ...styles.logout,
-            ...(hoverItem === "logout" && styles.logoutHover)
+            ...(hoverItem === "logout" &&
+              styles.logoutHover)
           }}
-          onMouseEnter={() => setHoverItem("logout")}
-          onMouseLeave={() => setHoverItem("")}
+          onMouseEnter={() =>
+            setHoverItem("logout")
+          }
+          onMouseLeave={() =>
+            setHoverItem("")
+          }
           onClick={logout}
         >
           Sair
@@ -636,16 +800,32 @@ export default function Perfil() {
           <div style={styles.card}>
             {/* FOTO DE CAPA */}
             <div style={styles.bannerContainer}>
-              <img
-                src={fotoCapa}
-                alt="Capa do perfil"
-                style={styles.banner}
-              />
+              {fotoCapa ? (
+                <img
+                  src={fotoCapa}
+                  alt="Capa do perfil"
+                  style={styles.banner}
+                />
+              ) : (
+                <div
+                  style={styles.bannerVazio}
+                >
+                  <span style={styles.iconeCapa}>
+                    🖼️
+                  </span>
+
+                  <span>
+                    Adicione uma foto de capa
+                  </span>
+                </div>
+              )}
 
               <label
                 style={{
                   ...styles.changeCoverButton,
-                  opacity: operacaoEmAndamento ? 0.65 : 1,
+                  opacity: operacaoEmAndamento
+                    ? 0.65
+                    : 1,
                   cursor: operacaoEmAndamento
                     ? "wait"
                     : "pointer"
@@ -670,18 +850,28 @@ export default function Perfil() {
               <label
                 style={{
                   ...styles.avatarLabel,
-                  opacity: operacaoEmAndamento ? 0.65 : 1,
+                  opacity: operacaoEmAndamento
+                    ? 0.65
+                    : 1,
                   cursor: operacaoEmAndamento
                     ? "wait"
                     : "pointer"
                 }}
                 title="Alterar foto de perfil"
               >
-                <img
-                  src={fotoPerfil}
-                  alt="Foto de perfil"
-                  style={styles.avatar}
-                />
+                {fotoPerfil ? (
+                  <img
+                    src={fotoPerfil}
+                    alt="Foto de perfil"
+                    style={styles.avatar}
+                  />
+                ) : (
+                  <div
+                    style={styles.avatarVazio}
+                  >
+                    👤
+                  </div>
+                )}
 
                 <span style={styles.avatarHint}>
                   {salvandoFoto
@@ -703,7 +893,8 @@ export default function Perfil() {
             <div style={styles.info}>
               <div>
                 <div style={styles.nome}>
-                  {perfil.nome?.trim() || "Novo usuário"}
+                  {perfil.nome?.trim() ||
+                    "Novo usuário"}
                 </div>
 
                 <div style={styles.usuario}>
@@ -734,17 +925,30 @@ export default function Perfil() {
                 <div style={styles.statNumero}>
                   {totalPosts}
                 </div>
-                <div style={styles.statTexto}>Posts</div>
+
+                <div style={styles.statTexto}>
+                  Posts
+                </div>
               </div>
 
               <div style={styles.statBox}>
-                <div style={styles.statNumero}>0</div>
-                <div style={styles.statTexto}>Seguidores</div>
+                <div style={styles.statNumero}>
+                  0
+                </div>
+
+                <div style={styles.statTexto}>
+                  Seguidores
+                </div>
               </div>
 
               <div style={styles.statBox}>
-                <div style={styles.statNumero}>0</div>
-                <div style={styles.statTexto}>Seguindo</div>
+                <div style={styles.statNumero}>
+                  0
+                </div>
+
+                <div style={styles.statTexto}>
+                  Seguindo
+                </div>
               </div>
             </div>
 
@@ -763,7 +967,9 @@ export default function Perfil() {
                   Nenhuma publicação ainda.
                 </div>
               ) : (
-                postsPerfil.map(renderizarPublicacao)
+                postsPerfil.map(
+                  renderizarPublicacao
+                )
               )}
             </div>
           </div>
@@ -774,12 +980,16 @@ export default function Perfil() {
           <div
             style={styles.modalOverlay}
             onClick={() => {
-              if (!salvandoPerfil) setEditandoPerfil(false)
+              if (!salvandoPerfil) {
+                setEditandoPerfil(false)
+              }
             }}
           >
             <form
               style={styles.modal}
-              onClick={evento => evento.stopPropagation()}
+              onClick={evento =>
+                evento.stopPropagation()
+              }
               onSubmit={salvarEdicaoPerfil}
             >
               <h2 style={styles.modalTitulo}>
@@ -799,7 +1009,9 @@ export default function Perfil() {
                 maxLength={100}
                 value={nomeEditado}
                 onChange={evento =>
-                  setNomeEditado(evento.target.value)
+                  setNomeEditado(
+                    evento.target.value
+                  )
                 }
                 style={styles.campoInput}
                 disabled={salvandoPerfil}
@@ -819,14 +1031,19 @@ export default function Perfil() {
                 rows={5}
                 value={bioEditada}
                 onChange={evento =>
-                  setBioEditada(evento.target.value)
+                  setBioEditada(
+                    evento.target.value
+                  )
                 }
                 style={styles.campoInput}
                 disabled={salvandoPerfil}
               />
 
               {erroEdicao && (
-                <p style={styles.erroEdicao} role="alert">
+                <p
+                  style={styles.erroEdicao}
+                  role="alert"
+                >
                   {erroEdicao}
                 </p>
               )}
@@ -836,7 +1053,9 @@ export default function Perfil() {
                   type="button"
                   style={styles.botaoCancelar}
                   disabled={salvandoPerfil}
-                  onClick={() => setEditandoPerfil(false)}
+                  onClick={() =>
+                    setEditandoPerfil(false)
+                  }
                 >
                   Cancelar
                 </button>
@@ -858,6 +1077,10 @@ export default function Perfil() {
     </div>
   )
 }
+
+// =====================================================
+// ESTILOS
+// =====================================================
 
 const styles = {
   page: {
@@ -982,6 +1205,25 @@ const styles = {
     display: "block"
   },
 
+  // NOVO: capa neutra para perfis sem fotografia.
+  bannerVazio: {
+    width: "100%",
+    height: 260,
+    backgroundColor: "#e5e7eb",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 12,
+    color: "#6b7280",
+    fontSize: 18,
+    textAlign: "center"
+  },
+
+  iconeCapa: {
+    fontSize: 42
+  },
+
   changeCoverButton: {
     position: "absolute",
     right: 20,
@@ -1014,6 +1256,21 @@ const styles = {
     backgroundColor: "white",
     padding: 6,
     objectFit: "cover",
+    boxShadow: "0 2px 8px rgba(0,0,0,0.2)"
+  },
+
+  // NOVO: avatar neutro para novos usuários.
+  avatarVazio: {
+    width: 140,
+    height: 140,
+    borderRadius: "50%",
+    backgroundColor: "#e5e7eb",
+    padding: 6,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: 65,
+    color: "#6b7280",
     boxShadow: "0 2px 8px rgba(0,0,0,0.2)"
   },
 
