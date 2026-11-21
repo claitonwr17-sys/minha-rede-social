@@ -22,6 +22,7 @@ export default function Perfil() {
 
   const [fotoPerfil, setFotoPerfil] = useState("/insta.png")
   const [fotoCapa, setFotoCapa] = useState("/insta.png")
+  const [salvandoFoto, setSalvandoFoto] = useState(false)
 
   const [editandoPerfil, setEditandoPerfil] = useState(false)
   const [nomeEditado, setNomeEditado] = useState("")
@@ -196,10 +197,57 @@ export default function Perfil() {
     setEditandoPerfil(true)
   }
 
+  // Atualiza os dados do perfil no Xano.
+  // Envia também a foto atual para não apagá-la
+  // quando o usuário editar somente nome ou biografia.
+  async function atualizarPerfilXano(campos) {
+    const token = localStorage.getItem("token")
+
+    if (!token) {
+      throw new Error("Sua sessão expirou. Entre novamente.")
+    }
+
+    const resposta = await fetch(`${XANO_BASE}/meu_perfil`, {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+        Accept: "application/json"
+      },
+      body: JSON.stringify(campos)
+    })
+
+    if (resposta.status === 401) {
+      localStorage.removeItem("token")
+      router.replace("/")
+      throw new Error("Sua sessão expirou.")
+    }
+
+    if (!resposta.ok) {
+      const detalhes = await resposta.text().catch(() => "")
+      throw new Error(
+        `Não foi possível atualizar o perfil. Código: ${resposta.status}. ${detalhes}`
+      )
+    }
+
+    const atualizado = await resposta.json()
+
+    if (
+      !atualizado ||
+      Number(atualizado.users_id) !== Number(perfil.users_id)
+    ) {
+      throw new Error(
+        "O Xano não retornou o perfil atualizado corretamente."
+      )
+    }
+
+    return atualizado
+  }
+
   async function salvarEdicaoPerfil(evento) {
     evento.preventDefault()
 
-    if (!perfil || salvandoPerfil) return
+    if (!perfil || salvandoPerfil || salvandoFoto) return
 
     const nome = nomeEditado.trim()
     const bio = bioEditada.trim()
@@ -209,55 +257,21 @@ export default function Perfil() {
       return
     }
 
-    const token = localStorage.getItem("token")
-
-    if (!token) {
-      router.replace("/")
-      return
-    }
-
     try {
       setSalvandoPerfil(true)
       setErroEdicao("")
 
-      const resposta = await fetch(`${XANO_BASE}/meu_perfil`, {
-        method: "PATCH",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-          Accept: "application/json"
-        },
-        body: JSON.stringify({
-          nome,
-          username: perfil.username || "",
-          bio
-        })
+      const atualizado = await atualizarPerfilXano({
+        nome,
+        username: perfil.username || "",
+        bio,
+        foto_perfil: perfil.foto_perfil || ""
       })
 
-      if (resposta.status === 401) {
-        localStorage.removeItem("token")
-        router.replace("/")
-        return
-      }
-
-      if (!resposta.ok) {
-        throw new Error(
-          `Não foi possível salvar o perfil. Código: ${resposta.status}`
-        )
-      }
-
-      const atualizado = await resposta.json()
-
-      if (
-        !atualizado ||
-        Number(atualizado.users_id) !== Number(perfil.users_id)
-      ) {
-        throw new Error(
-          "O Xano não retornou o perfil atualizado corretamente."
-        )
-      }
-
       setPerfil(atualizado)
+      setFotoPerfil(
+        obterUrlImagem(atualizado.foto_perfil, "/insta.png")
+      )
       setEditandoPerfil(false)
     } catch (erro) {
       console.error("Erro ao salvar perfil:", erro)
@@ -269,16 +283,82 @@ export default function Perfil() {
     }
   }
 
-  function alterarFotoPerfil(evento) {
+  // =====================================================
+  // NOVO: UPLOAD E SALVAMENTO DA FOTO DE PERFIL
+  // =====================================================
+  async function alterarFotoPerfil(evento) {
     const arquivo = evento.target.files?.[0]
-    if (!arquivo) return
+    if (!arquivo || !perfil || salvandoFoto) return
 
     if (!arquivo.type.startsWith("image/")) {
       alert("Selecione um arquivo de imagem.")
       return
     }
 
-    setFotoPerfil(URL.createObjectURL(arquivo))
+    const fotoAnterior = fotoPerfil
+
+    try {
+      setSalvandoFoto(true)
+
+      // 1. Envia a imagem para a rota de upload existente.
+      const formData = new FormData()
+      formData.append("file", arquivo)
+
+      const respostaUpload = await fetch("/api/upload", {
+        method: "POST",
+        body: formData
+      })
+
+      if (!respostaUpload.ok) {
+        throw new Error(
+          `Falha no envio da imagem. Código: ${respostaUpload.status}`
+        )
+      }
+
+      const dadosUpload = await respostaUpload.json()
+      const urlFoto = dadosUpload?.url
+
+      if (
+        typeof urlFoto !== "string" ||
+        !/^https?:\/\//i.test(urlFoto)
+      ) {
+        throw new Error(
+          "O upload não retornou um endereço válido para a fotografia."
+        )
+      }
+
+      // 2. Salva a URL no perfil do usuário autenticado.
+      const atualizado = await atualizarPerfilXano({
+        nome: perfil.nome || "",
+        username: perfil.username || "",
+        bio: perfil.bio || "",
+        foto_perfil: urlFoto
+      })
+
+      // 3. Confirma que o Xano devolveu a fotografia salva.
+      const urlSalva = obterUrlImagem(atualizado.foto_perfil, "")
+
+      if (urlSalva !== urlFoto) {
+        throw new Error(
+          "O Xano não confirmou o salvamento da fotografia. Verifique o campo foto_perfil."
+        )
+      }
+
+      // 4. Atualiza a imagem mostrada na página.
+      setPerfil(atualizado)
+      setFotoPerfil(urlSalva)
+
+      alert("Foto de perfil salva com sucesso!")
+    } catch (erro) {
+      console.error("Erro ao salvar foto de perfil:", erro)
+      setFotoPerfil(fotoAnterior)
+      alert(
+        erro.message || "Não foi possível salvar a foto de perfil."
+      )
+    } finally {
+      setSalvandoFoto(false)
+      evento.target.value = ""
+    }
   }
 
   function alterarFotoCapa(evento) {
@@ -483,7 +563,11 @@ export default function Perfil() {
             {/* FOTO DE PERFIL */}
             <div style={styles.avatarArea}>
               <label
-                style={styles.avatarLabel}
+                style={{
+                  ...styles.avatarLabel,
+                  cursor: salvandoFoto ? "wait" : "pointer",
+                  opacity: salvandoFoto ? 0.65 : 1
+                }}
                 title="Alterar foto de perfil"
               >
                 <img
@@ -492,12 +576,15 @@ export default function Perfil() {
                   style={styles.avatar}
                 />
                 <span style={styles.avatarHint}>
-                  Alterar foto
+                  {salvandoFoto
+                    ? "Enviando e salvando foto..."
+                    : "Alterar foto"}
                 </span>
                 <input
                   type="file"
                   accept="image/*"
                   hidden
+                  disabled={salvandoFoto || salvandoPerfil}
                   onChange={alterarFotoPerfil}
                 />
               </label>
@@ -521,6 +608,7 @@ export default function Perfil() {
                 type="button"
                 style={styles.botao}
                 onClick={abrirEdicaoPerfil}
+                disabled={salvandoFoto}
               >
                 Editar perfil
               </button>
@@ -669,7 +757,6 @@ const styles = {
     minHeight: "100vh",
     fontFamily: "Inter, sans-serif"
   },
-
   sidebar: {
     width: 240,
     backgroundColor: "white",
@@ -679,19 +766,16 @@ const styles = {
     justifyContent: "space-between",
     borderRight: "1px solid #ddd"
   },
-
   logo: {
     fontSize: 32,
     fontWeight: "bold",
     marginBottom: 40
   },
-
   menu: {
     display: "flex",
     flexDirection: "column",
     gap: 15
   },
-
   menuItem: {
     padding: "14px 18px",
     borderRadius: 12,
@@ -700,13 +784,11 @@ const styles = {
     fontSize: 18,
     transition: "0.2s"
   },
-
   menuHover: {
     backgroundColor: "#edf3ff",
     color: "#1877f2",
     transform: "translateX(5px)"
   },
-
   menuAtivo: {
     padding: "14px 18px",
     borderRadius: 12,
@@ -715,7 +797,6 @@ const styles = {
     fontSize: 18,
     fontWeight: "bold"
   },
-
   logout: {
     backgroundColor: "#000",
     color: "white",
@@ -727,34 +808,29 @@ const styles = {
     transition: "0.2s",
     textAlign: "center"
   },
-
   logoutHover: {
     transform: "translateY(5px)",
     opacity: 0.8
   },
-
   content: {
     flex: 1,
     padding: 10,
     minWidth: 0
   },
-
   navbar: {
     backgroundColor: "white",
     padding: 10,
     borderRadius: 16,
     marginBottom: 10
   },
-
   search: {
     width: 300,
     maxWidth: "100%",
     padding: 12,
     borderRadius: 30,
-    border: "1px solid #ddd",
+    border: "1px solid #ccc",
     outline: "none"
   },
-
   estadoPerfil: {
     backgroundColor: "white",
     borderRadius: 16,
@@ -764,7 +840,6 @@ const styles = {
     maxWidth: 900,
     margin: "0 auto"
   },
-
   card: {
     backgroundColor: "white",
     borderRadius: 24,
@@ -773,18 +848,15 @@ const styles = {
     maxWidth: 900,
     margin: "0 auto"
   },
-
   bannerContainer: {
     position: "relative"
   },
-
   banner: {
     width: "100%",
     height: 260,
     objectFit: "cover",
     display: "block"
   },
-
   changeCoverButton: {
     position: "absolute",
     right: 20,
@@ -796,20 +868,17 @@ const styles = {
     cursor: "pointer",
     fontWeight: "bold"
   },
-
   avatarArea: {
     marginTop: -40,
     marginLeft: 30,
     position: "relative",
     zIndex: 10
   },
-
   avatarLabel: {
     display: "inline-block",
     position: "relative",
     cursor: "pointer"
   },
-
   avatar: {
     width: 140,
     height: 140,
@@ -819,14 +888,12 @@ const styles = {
     objectFit: "cover",
     boxShadow: "0 2px 8px rgba(0,0,0,0.2)"
   },
-
   avatarHint: {
     display: "block",
     textAlign: "center",
     color: "#555",
     fontSize: 13
   },
-
   info: {
     display: "flex",
     justifyContent: "space-between",
@@ -835,20 +902,17 @@ const styles = {
     gap: 16,
     flexWrap: "wrap"
   },
-
   nome: {
     fontSize: 42,
     fontWeight: "bold",
     color: "#222",
     overflowWrap: "anywhere"
   },
-
   usuario: {
     fontSize: 22,
     color: "#666",
     marginTop: 5
   },
-
   botao: {
     backgroundColor: "#000",
     color: "white",
@@ -860,14 +924,12 @@ const styles = {
     cursor: "pointer",
     transition: "0.2s"
   },
-
   bio: {
     fontSize: 24,
     color: "#333",
     padding: "20px 30px",
     overflowWrap: "anywhere"
   },
-
   stats: {
     display: "flex",
     justifyContent: "space-around",
@@ -875,42 +937,35 @@ const styles = {
     marginTop: 10,
     padding: 30
   },
-
   statBox: {
     textAlign: "center"
   },
-
   statNumero: {
     fontSize: 32,
     fontWeight: "bold",
     color: "#222"
   },
-
   statTexto: {
     marginTop: 5,
     color: "#666",
     fontSize: 18
   },
-
   publicacoes: {
     borderTop: "1px solid #eee",
     padding: 30
   },
-
   tituloPublicacoes: {
     fontSize: 28,
     fontWeight: "bold",
     color: "#222",
     marginBottom: 20
   },
-
   mensagemPosts: {
     textAlign: "center",
     color: "#666",
     fontSize: 18,
     padding: 30
   },
-
   postCard: {
     backgroundColor: "#f8f9fa",
     borderRadius: 16,
@@ -918,14 +973,12 @@ const styles = {
     marginBottom: 20,
     border: "1px solid #eee"
   },
-
   postTexto: {
     fontSize: 20,
     color: "#222",
     lineHeight: 1.5,
     whiteSpace: "pre-wrap"
   },
-
   postImagem: {
     width: "100%",
     maxHeight: 600,
@@ -933,7 +986,6 @@ const styles = {
     borderRadius: 12,
     display: "block"
   },
-
   postVideo: {
     width: "100%",
     maxHeight: 600,
@@ -942,7 +994,6 @@ const styles = {
     display: "block",
     backgroundColor: "#000"
   },
-
   modalOverlay: {
     position: "fixed",
     inset: 0,
@@ -953,7 +1004,6 @@ const styles = {
     zIndex: 1000,
     padding: 16
   },
-
   modal: {
     width: "100%",
     maxWidth: 480,
@@ -965,17 +1015,14 @@ const styles = {
     gap: 12,
     boxShadow: "0 10px 35px rgba(0,0,0,0.2)"
   },
-
   modalTitulo: {
     margin: "0 0 10px",
     fontSize: 26
   },
-
   campoLabel: {
     fontWeight: "bold",
     fontSize: 16
   },
-
   campoInput: {
     width: "100%",
     boxSizing: "border-box",
@@ -984,12 +1031,10 @@ const styles = {
     borderRadius: 10,
     font: "inherit"
   },
-
   erroEdicao: {
     color: "#b42318",
     margin: 0
   },
-
   modalBotoes: {
     display: "flex",
     justifyContent: "flex-end",
@@ -997,7 +1042,6 @@ const styles = {
     flexWrap: "wrap",
     marginTop: 12
   },
-
   botaoCancelar: {
     backgroundColor: "#eee",
     color: "#222",
@@ -1008,3 +1052,4 @@ const styles = {
     cursor: "pointer"
   }
 }
+
