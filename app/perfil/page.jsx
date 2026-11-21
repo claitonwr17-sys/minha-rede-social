@@ -22,13 +22,18 @@ export default function Perfil() {
 
   const [fotoPerfil, setFotoPerfil] = useState("/insta.png")
   const [fotoCapa, setFotoCapa] = useState("/insta.png")
+
   const [salvandoFoto, setSalvandoFoto] = useState(false)
+  const [salvandoCapa, setSalvandoCapa] = useState(false)
 
   const [editandoPerfil, setEditandoPerfil] = useState(false)
   const [nomeEditado, setNomeEditado] = useState("")
   const [bioEditada, setBioEditada] = useState("")
   const [salvandoPerfil, setSalvandoPerfil] = useState(false)
   const [erroEdicao, setErroEdicao] = useState("")
+
+  const operacaoEmAndamento =
+    salvandoFoto || salvandoCapa || salvandoPerfil
 
   function logout() {
     localStorage.removeItem("token")
@@ -40,7 +45,12 @@ export default function Perfil() {
     if (typeof valor === "string") return valor
 
     if (typeof valor === "object") {
-      return valor.url || valor.path || valor.image_url || fallback
+      return (
+        valor.url ||
+        valor.path ||
+        valor.image_url ||
+        fallback
+      )
     }
 
     return fallback
@@ -86,8 +96,14 @@ export default function Perfil() {
       }
 
       setPerfil(dados)
-      setFotoPerfil(obterUrlImagem(dados.foto_perfil, "/insta.png"))
-      setFotoCapa(obterUrlImagem(dados.foto_capa, "/insta.png"))
+
+      setFotoPerfil(
+        obterUrlImagem(dados.foto_perfil, "/insta.png")
+      )
+
+      setFotoCapa(
+        obterUrlImagem(dados.foto_capa, "/insta.png")
+      )
 
       await buscarTotalPosts(dados.users_id)
     } catch (erro) {
@@ -189,7 +205,7 @@ export default function Perfil() {
   }, [])
 
   function abrirEdicaoPerfil() {
-    if (!perfil) return
+    if (!perfil || operacaoEmAndamento) return
 
     setNomeEditado(perfil.nome || "")
     setBioEditada(perfil.bio || "")
@@ -197,9 +213,10 @@ export default function Perfil() {
     setEditandoPerfil(true)
   }
 
-  // Atualiza os dados do perfil no Xano.
-  // Envia também a foto atual para não apagá-la
-  // quando o usuário editar somente nome ou biografia.
+  // =====================================================
+  // ATUALIZAR PERFIL NO XANO
+  // =====================================================
+
   async function atualizarPerfilXano(campos) {
     const token = localStorage.getItem("token")
 
@@ -225,6 +242,7 @@ export default function Perfil() {
 
     if (!resposta.ok) {
       const detalhes = await resposta.text().catch(() => "")
+
       throw new Error(
         `Não foi possível atualizar o perfil. Código: ${resposta.status}. ${detalhes}`
       )
@@ -244,10 +262,39 @@ export default function Perfil() {
     return atualizado
   }
 
+  // Preserva todos os dados existentes ao atualizar
+  // apenas um campo do perfil.
+  function montarDadosPerfil(alteracoes = {}) {
+    return {
+      nome: perfil.nome || "",
+      username: perfil.username || "",
+      bio: perfil.bio || "",
+      foto_perfil: perfil.foto_perfil || "",
+      foto_capa: perfil.foto_capa || "",
+      ...alteracoes
+    }
+  }
+
+  function aplicarPerfilAtualizado(atualizado) {
+    setPerfil(atualizado)
+
+    setFotoPerfil(
+      obterUrlImagem(atualizado.foto_perfil, "/insta.png")
+    )
+
+    setFotoCapa(
+      obterUrlImagem(atualizado.foto_capa, "/insta.png")
+    )
+  }
+
+  // =====================================================
+  // SALVAR NOME E BIOGRAFIA
+  // =====================================================
+
   async function salvarEdicaoPerfil(evento) {
     evento.preventDefault()
 
-    if (!perfil || salvandoPerfil || salvandoFoto) return
+    if (!perfil || operacaoEmAndamento) return
 
     const nome = nomeEditado.trim()
     const bio = bioEditada.trim()
@@ -261,20 +308,18 @@ export default function Perfil() {
       setSalvandoPerfil(true)
       setErroEdicao("")
 
-      const atualizado = await atualizarPerfilXano({
-        nome,
-        username: perfil.username || "",
-        bio,
-        foto_perfil: perfil.foto_perfil || ""
-      })
-
-      setPerfil(atualizado)
-      setFotoPerfil(
-        obterUrlImagem(atualizado.foto_perfil, "/insta.png")
+      const atualizado = await atualizarPerfilXano(
+        montarDadosPerfil({
+          nome,
+          bio
+        })
       )
+
+      aplicarPerfilAtualizado(atualizado)
       setEditandoPerfil(false)
     } catch (erro) {
       console.error("Erro ao salvar perfil:", erro)
+
       setErroEdicao(
         erro.message || "Não foi possível salvar as alterações."
       )
@@ -284,74 +329,81 @@ export default function Perfil() {
   }
 
   // =====================================================
-  // NOVO: UPLOAD E SALVAMENTO DA FOTO DE PERFIL
+  // UPLOAD DE IMAGEM
+  // UTILIZA A ROTA EXISTENTE DO CONRAD AI
   // =====================================================
-  async function alterarFotoPerfil(evento) {
-    const arquivo = evento.target.files?.[0]
-    if (!arquivo || !perfil || salvandoFoto) return
 
+  async function enviarImagem(arquivo) {
     if (!arquivo.type.startsWith("image/")) {
-      alert("Selecione um arquivo de imagem.")
-      return
+      throw new Error("Selecione um arquivo de imagem.")
     }
 
-    const fotoAnterior = fotoPerfil
+    const formData = new FormData()
+    formData.append("file", arquivo)
+
+    const respostaUpload = await fetch("/api/upload", {
+      method: "POST",
+      body: formData
+    })
+
+    if (!respostaUpload.ok) {
+      throw new Error(
+        `Falha no envio da imagem. Código: ${respostaUpload.status}`
+      )
+    }
+
+    const dadosUpload = await respostaUpload.json()
+    const urlImagem = dadosUpload?.url
+
+    if (
+      typeof urlImagem !== "string" ||
+      !/^https?:\/\//i.test(urlImagem)
+    ) {
+      throw new Error(
+        "O upload não retornou um endereço válido para a imagem."
+      )
+    }
+
+    return urlImagem
+  }
+
+  // =====================================================
+  // ALTERAR FOTO DE PERFIL
+  // =====================================================
+
+  async function alterarFotoPerfil(evento) {
+    const arquivo = evento.target.files?.[0]
+
+    if (!arquivo || !perfil || operacaoEmAndamento) return
 
     try {
       setSalvandoFoto(true)
 
-      // 1. Envia a imagem para a rota de upload existente.
-      const formData = new FormData()
-      formData.append("file", arquivo)
+      const urlFoto = await enviarImagem(arquivo)
 
-      const respostaUpload = await fetch("/api/upload", {
-        method: "POST",
-        body: formData
-      })
+      const atualizado = await atualizarPerfilXano(
+        montarDadosPerfil({
+          foto_perfil: urlFoto
+        })
+      )
 
-      if (!respostaUpload.ok) {
-        throw new Error(
-          `Falha no envio da imagem. Código: ${respostaUpload.status}`
-        )
-      }
-
-      const dadosUpload = await respostaUpload.json()
-      const urlFoto = dadosUpload?.url
-
-      if (
-        typeof urlFoto !== "string" ||
-        !/^https?:\/\//i.test(urlFoto)
-      ) {
-        throw new Error(
-          "O upload não retornou um endereço válido para a fotografia."
-        )
-      }
-
-      // 2. Salva a URL no perfil do usuário autenticado.
-      const atualizado = await atualizarPerfilXano({
-        nome: perfil.nome || "",
-        username: perfil.username || "",
-        bio: perfil.bio || "",
-        foto_perfil: urlFoto
-      })
-
-      // 3. Confirma que o Xano devolveu a fotografia salva.
-      const urlSalva = obterUrlImagem(atualizado.foto_perfil, "")
+      const urlSalva = obterUrlImagem(
+        atualizado.foto_perfil,
+        ""
+      )
 
       if (urlSalva !== urlFoto) {
         throw new Error(
-          "O Xano não confirmou o salvamento da fotografia. Verifique o campo foto_perfil."
+          "O Xano não confirmou o salvamento da fotografia."
         )
       }
 
-      // 4. Atualiza a imagem mostrada na página.
-      setPerfil(atualizado)
-      setFotoPerfil(urlSalva)
+      aplicarPerfilAtualizado(atualizado)
 
       alert("Foto de perfil salva com sucesso!")
     } catch (erro) {
       console.error("Erro ao salvar foto de perfil:", erro)
-      setFotoPerfil(fotoAnterior)
+
       alert(
         erro.message || "Não foi possível salvar a foto de perfil."
       )
@@ -361,16 +413,55 @@ export default function Perfil() {
     }
   }
 
-  function alterarFotoCapa(evento) {
+  // =====================================================
+  // NOVO: ALTERAR E SALVAR FOTO DE CAPA
+  // =====================================================
+
+  async function alterarFotoCapa(evento) {
     const arquivo = evento.target.files?.[0]
-    if (!arquivo) return
 
-    if (!arquivo.type.startsWith("image/")) {
-      alert("Selecione um arquivo de imagem.")
-      return
+    if (!arquivo || !perfil || operacaoEmAndamento) return
+
+    try {
+      setSalvandoCapa(true)
+
+      // Envia a imagem para o armazenamento.
+      const urlCapa = await enviarImagem(arquivo)
+
+      // Salva a capa no perfil autenticado.
+      // Mantém a fotografia de perfil existente.
+      const atualizado = await atualizarPerfilXano(
+        montarDadosPerfil({
+          foto_capa: urlCapa
+        })
+      )
+
+      // Confirma que o Xano devolveu a URL da capa.
+      const urlSalva = obterUrlImagem(
+        atualizado.foto_capa,
+        ""
+      )
+
+      if (urlSalva !== urlCapa) {
+        throw new Error(
+          "O Xano não confirmou o salvamento da foto de capa. Verifique o campo foto_capa."
+        )
+      }
+
+      // Atualiza a capa na tela.
+      aplicarPerfilAtualizado(atualizado)
+
+      alert("Foto de capa salva com sucesso!")
+    } catch (erro) {
+      console.error("Erro ao salvar foto de capa:", erro)
+
+      alert(
+        erro.message || "Não foi possível salvar a foto de capa."
+      )
+    } finally {
+      setSalvandoCapa(false)
+      evento.target.value = ""
     }
-
-    setFotoCapa(URL.createObjectURL(arquivo))
   }
 
   const itensMenu = [
@@ -416,6 +507,7 @@ export default function Perfil() {
               preload="metadata"
               style={styles.postVideo}
             />
+
             {post.legenda && (
               <p style={styles.postTexto}>{post.legenda}</p>
             )}
@@ -532,6 +624,7 @@ export default function Perfil() {
         ) : erroPerfil ? (
           <div style={styles.estadoPerfil}>
             <p>{erroPerfil}</p>
+
             <button
               onClick={buscarPerfil}
               style={styles.botao}
@@ -541,7 +634,7 @@ export default function Perfil() {
           </div>
         ) : perfil ? (
           <div style={styles.card}>
-            {/* CAPA */}
+            {/* FOTO DE CAPA */}
             <div style={styles.bannerContainer}>
               <img
                 src={fotoCapa}
@@ -549,12 +642,24 @@ export default function Perfil() {
                 style={styles.banner}
               />
 
-              <label style={styles.changeCoverButton}>
-                Alterar capa
+              <label
+                style={{
+                  ...styles.changeCoverButton,
+                  opacity: operacaoEmAndamento ? 0.65 : 1,
+                  cursor: operacaoEmAndamento
+                    ? "wait"
+                    : "pointer"
+                }}
+              >
+                {salvandoCapa
+                  ? "Salvando capa..."
+                  : "Alterar capa"}
+
                 <input
                   type="file"
                   accept="image/*"
                   hidden
+                  disabled={operacaoEmAndamento}
                   onChange={alterarFotoCapa}
                 />
               </label>
@@ -565,8 +670,10 @@ export default function Perfil() {
               <label
                 style={{
                   ...styles.avatarLabel,
-                  cursor: salvandoFoto ? "wait" : "pointer",
-                  opacity: salvandoFoto ? 0.65 : 1
+                  opacity: operacaoEmAndamento ? 0.65 : 1,
+                  cursor: operacaoEmAndamento
+                    ? "wait"
+                    : "pointer"
                 }}
                 title="Alterar foto de perfil"
               >
@@ -575,16 +682,18 @@ export default function Perfil() {
                   alt="Foto de perfil"
                   style={styles.avatar}
                 />
+
                 <span style={styles.avatarHint}>
                   {salvandoFoto
-                    ? "Enviando e salvando foto..."
+                    ? "Salvando foto..."
                     : "Alterar foto"}
                 </span>
+
                 <input
                   type="file"
                   accept="image/*"
                   hidden
-                  disabled={salvandoFoto || salvandoPerfil}
+                  disabled={operacaoEmAndamento}
                   onChange={alterarFotoPerfil}
                 />
               </label>
@@ -608,7 +717,7 @@ export default function Perfil() {
                 type="button"
                 style={styles.botao}
                 onClick={abrirEdicaoPerfil}
-                disabled={salvandoFoto}
+                disabled={operacaoEmAndamento}
               >
                 Editar perfil
               </button>
@@ -757,6 +866,7 @@ const styles = {
     minHeight: "100vh",
     fontFamily: "Inter, sans-serif"
   },
+
   sidebar: {
     width: 240,
     backgroundColor: "white",
@@ -766,16 +876,19 @@ const styles = {
     justifyContent: "space-between",
     borderRight: "1px solid #ddd"
   },
+
   logo: {
     fontSize: 32,
     fontWeight: "bold",
     marginBottom: 40
   },
+
   menu: {
     display: "flex",
     flexDirection: "column",
     gap: 15
   },
+
   menuItem: {
     padding: "14px 18px",
     borderRadius: 12,
@@ -784,11 +897,13 @@ const styles = {
     fontSize: 18,
     transition: "0.2s"
   },
+
   menuHover: {
     backgroundColor: "#edf3ff",
     color: "#1877f2",
     transform: "translateX(5px)"
   },
+
   menuAtivo: {
     padding: "14px 18px",
     borderRadius: 12,
@@ -797,6 +912,7 @@ const styles = {
     fontSize: 18,
     fontWeight: "bold"
   },
+
   logout: {
     backgroundColor: "#000",
     color: "white",
@@ -808,29 +924,34 @@ const styles = {
     transition: "0.2s",
     textAlign: "center"
   },
+
   logoutHover: {
     transform: "translateY(5px)",
     opacity: 0.8
   },
+
   content: {
     flex: 1,
     padding: 10,
     minWidth: 0
   },
+
   navbar: {
     backgroundColor: "white",
     padding: 10,
     borderRadius: 16,
     marginBottom: 10
   },
+
   search: {
     width: 300,
     maxWidth: "100%",
     padding: 12,
     borderRadius: 30,
-    border: "1px solid #ccc",
+    border: "1px solid #ddd",
     outline: "none"
   },
+
   estadoPerfil: {
     backgroundColor: "white",
     borderRadius: 16,
@@ -840,6 +961,7 @@ const styles = {
     maxWidth: 900,
     margin: "0 auto"
   },
+
   card: {
     backgroundColor: "white",
     borderRadius: 24,
@@ -848,15 +970,18 @@ const styles = {
     maxWidth: 900,
     margin: "0 auto"
   },
+
   bannerContainer: {
     position: "relative"
   },
+
   banner: {
     width: "100%",
     height: 260,
     objectFit: "cover",
     display: "block"
   },
+
   changeCoverButton: {
     position: "absolute",
     right: 20,
@@ -868,17 +993,20 @@ const styles = {
     cursor: "pointer",
     fontWeight: "bold"
   },
+
   avatarArea: {
     marginTop: -40,
     marginLeft: 30,
     position: "relative",
     zIndex: 10
   },
+
   avatarLabel: {
     display: "inline-block",
     position: "relative",
     cursor: "pointer"
   },
+
   avatar: {
     width: 140,
     height: 140,
@@ -888,12 +1016,14 @@ const styles = {
     objectFit: "cover",
     boxShadow: "0 2px 8px rgba(0,0,0,0.2)"
   },
+
   avatarHint: {
     display: "block",
     textAlign: "center",
     color: "#555",
     fontSize: 13
   },
+
   info: {
     display: "flex",
     justifyContent: "space-between",
@@ -902,17 +1032,20 @@ const styles = {
     gap: 16,
     flexWrap: "wrap"
   },
+
   nome: {
     fontSize: 42,
     fontWeight: "bold",
     color: "#222",
     overflowWrap: "anywhere"
   },
+
   usuario: {
     fontSize: 22,
     color: "#666",
     marginTop: 5
   },
+
   botao: {
     backgroundColor: "#000",
     color: "white",
@@ -924,12 +1057,14 @@ const styles = {
     cursor: "pointer",
     transition: "0.2s"
   },
+
   bio: {
     fontSize: 24,
     color: "#333",
     padding: "20px 30px",
     overflowWrap: "anywhere"
   },
+
   stats: {
     display: "flex",
     justifyContent: "space-around",
@@ -937,35 +1072,42 @@ const styles = {
     marginTop: 10,
     padding: 30
   },
+
   statBox: {
     textAlign: "center"
   },
+
   statNumero: {
     fontSize: 32,
     fontWeight: "bold",
     color: "#222"
   },
+
   statTexto: {
     marginTop: 5,
     color: "#666",
     fontSize: 18
   },
+
   publicacoes: {
     borderTop: "1px solid #eee",
     padding: 30
   },
+
   tituloPublicacoes: {
     fontSize: 28,
     fontWeight: "bold",
     color: "#222",
     marginBottom: 20
   },
+
   mensagemPosts: {
     textAlign: "center",
     color: "#666",
     fontSize: 18,
     padding: 30
   },
+
   postCard: {
     backgroundColor: "#f8f9fa",
     borderRadius: 16,
@@ -973,12 +1115,14 @@ const styles = {
     marginBottom: 20,
     border: "1px solid #eee"
   },
+
   postTexto: {
     fontSize: 20,
     color: "#222",
     lineHeight: 1.5,
     whiteSpace: "pre-wrap"
   },
+
   postImagem: {
     width: "100%",
     maxHeight: 600,
@@ -986,6 +1130,7 @@ const styles = {
     borderRadius: 12,
     display: "block"
   },
+
   postVideo: {
     width: "100%",
     maxHeight: 600,
@@ -994,6 +1139,7 @@ const styles = {
     display: "block",
     backgroundColor: "#000"
   },
+
   modalOverlay: {
     position: "fixed",
     inset: 0,
@@ -1004,6 +1150,7 @@ const styles = {
     zIndex: 1000,
     padding: 16
   },
+
   modal: {
     width: "100%",
     maxWidth: 480,
@@ -1015,14 +1162,17 @@ const styles = {
     gap: 12,
     boxShadow: "0 10px 35px rgba(0,0,0,0.2)"
   },
+
   modalTitulo: {
     margin: "0 0 10px",
     fontSize: 26
   },
+
   campoLabel: {
     fontWeight: "bold",
     fontSize: 16
   },
+
   campoInput: {
     width: "100%",
     boxSizing: "border-box",
@@ -1031,10 +1181,12 @@ const styles = {
     borderRadius: 10,
     font: "inherit"
   },
+
   erroEdicao: {
     color: "#b42318",
     margin: 0
   },
+
   modalBotoes: {
     display: "flex",
     justifyContent: "flex-end",
@@ -1042,6 +1194,7 @@ const styles = {
     flexWrap: "wrap",
     marginTop: 12
   },
+
   botaoCancelar: {
     backgroundColor: "#eee",
     color: "#222",
