@@ -1,3 +1,4 @@
+
 "use client";
 
 import "@fontsource/inter";
@@ -64,56 +65,65 @@ export default function Pag2() {
         }
       );
 
-     const data = await response.json();
+      const data = await response.json();
 
-console.log("RESPOSTA COMPLETA DO XANO:", data);
+      console.log("RESPOSTA COMPLETA DO XANO:", data);
 
-const resposta =
-  data?.response?.result?.interpretacao || "Sem resposta da IA";
+      const resposta =
+        data?.response?.result?.interpretacao || "Sem resposta da IA";
 
       setRespostaIA(resposta);
-
       setTextoPendente(texto);
-
       setMostrarModal(true);
     } catch (error) {
       console.error(error);
-
       alert("Erro na requisição");
     }
 
     setLoading(false);
   }
 
- async function confirmarPostagem() {
-  try {
-    await fetch(
-      "https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/POST_/salvar-post-texto",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          texto: textoPendente,
-          resposta_da_api: respostaIA,
-          usuario_id: 10,
-        }),
+  async function confirmarPostagem() {
+    try {
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+        alert("Sua sessão expirou. Faça login novamente.");
+        return;
       }
-    );
 
-    buscarPosts();
+      const resposta = await fetch(
+        "https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/POST_/salvar-post-texto",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            texto: textoPendente,
+            resposta_da_api: respostaIA,
+          }),
+        }
+      );
 
-    setTexto("");
-    setTextoPendente("");
-    setMostrarModal(false);
-    setRespostaIA("");
-  } catch (error) {
-    console.error(error);
+      if (!resposta.ok) {
+        throw new Error(
+          `Erro ao salvar publicação: ${resposta.status}`
+        );
+      }
 
-    alert("Erro ao salvar post");
+      await buscarPosts();
+
+      setTexto("");
+      setTextoPendente("");
+      setMostrarModal(false);
+      setRespostaIA("");
+    } catch (error) {
+      console.error("Erro ao salvar post:", error);
+      alert("Erro ao salvar post");
+    }
   }
-}
 
   async function reagirPost(id, tipo) {
     const postAtual = posts.find((p) => p.id === id);
@@ -182,46 +192,46 @@ const resposta =
         </div>
 
         <div
-  style={{
-    ...styles.sidebarItem,
-    ...(hoverItem === "ia" && styles.sidebarItemHover),
-  }}
-  onMouseEnter={() => setHoverItem("ia")}
-  onMouseLeave={() => setHoverItem("")}
-  onClick={() => router.push("/IA")}
->
-  <div
-    style={{
-      display: "flex",
-      alignItems: "center",
-      gap: 10,
-    }}
-  >
-    <img
-      src="/logo/logo-simbolo.png"
-      alt="IA"
-      style={{
-        width: 24,
-        height: 24,
-        objectFit: "contain",
-      }}
-    />
+          style={{
+            ...styles.sidebarItem,
+            ...(hoverItem === "ia" && styles.sidebarItemHover),
+          }}
+          onMouseEnter={() => setHoverItem("ia")}
+          onMouseLeave={() => setHoverItem("")}
+          onClick={() => router.push("/IA")}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+            }}
+          >
+            <img
+              src="/logo/logo-simbolo.png"
+              alt="IA"
+              style={{
+                width: 24,
+                height: 24,
+                objectFit: "contain",
+              }}
+            />
 
-    <span>IA</span>
-  </div>
-</div>
+            <span>IA</span>
+          </div>
+        </div>
 
-<div
-  style={{
-    ...styles.sidebarItem,
-    ...(hoverItem === "explorar" && styles.sidebarItemHover),
-  }}
-  onMouseEnter={() => setHoverItem("explorar")}
-  onMouseLeave={() => setHoverItem("")}
-  onClick={() => router.push("/imagens")}
->
-  Feed
-</div>
+        <div
+          style={{
+            ...styles.sidebarItem,
+            ...(hoverItem === "explorar" && styles.sidebarItemHover),
+          }}
+          onMouseEnter={() => setHoverItem("explorar")}
+          onMouseLeave={() => setHoverItem("")}
+          onClick={() => router.push("/imagens")}
+        >
+          Feed
+        </div>
 
         <div
           style={{
@@ -236,49 +246,47 @@ const resposta =
         </div>
 
         <div
-  style={{
-    ...styles.sidebarItem,
-    ...(hoverItem === "config" && styles.sidebarItemHover),
-  }}
-  onMouseEnter={() => setHoverItem("config")}
-  onMouseLeave={() => setHoverItem("")}
-  onClick={() => router.push("/feed-videos")}
->
-  Feed de vídeos
-</div>
+          style={{
+            ...styles.sidebarItem,
+            ...(hoverItem === "config" && styles.sidebarItemHover),
+          }}
+          onMouseEnter={() => setHoverItem("config")}
+          onMouseLeave={() => setHoverItem("")}
+          onClick={() => router.push("/feed-videos")}
+        >
+          Feed de vídeos
+        </div>
 
-               
-{/* POLÍTICA DE PRIVACIDADE */}
-<div
-  style={{
-    ...styles.sidebarItem,
-    ...(hoverItem === "privacidade" && styles.sidebarItemHover),
-  }}
-  onMouseEnter={() => setHoverItem("privacidade")}
-  onMouseLeave={() => setHoverItem("")}
-  onClick={() => router.push("/politica-de-privacidade")}
->
-  🔒 Política de Privacidade
-</div>
+        {/* POLÍTICA DE PRIVACIDADE */}
+        <div
+          style={{
+            ...styles.sidebarItem,
+            ...(hoverItem === "privacidade" && styles.sidebarItemHover),
+          }}
+          onMouseEnter={() => setHoverItem("privacidade")}
+          onMouseLeave={() => setHoverItem("")}
+          onClick={() => router.push("/politica-de-privacidade")}
+        >
+          🔒 Política de Privacidade
+        </div>
 
-{/* TERMOS DE USO */}
-<div
-  style={{
-    ...styles.sidebarItem,
-    ...(hoverItem === "termos" && styles.sidebarItemHover),
-  }}
-  onMouseEnter={() => setHoverItem("termos")}
-  onMouseLeave={() => setHoverItem("")}
-  onClick={() => router.push("/termos-de-uso")}
->
-  📜 Termos de Uso
-</div>
+        {/* TERMOS DE USO */}
+        <div
+          style={{
+            ...styles.sidebarItem,
+            ...(hoverItem === "termos" && styles.sidebarItemHover),
+          }}
+          onMouseEnter={() => setHoverItem("termos")}
+          onMouseLeave={() => setHoverItem("")}
+          onClick={() => router.push("/termos-de-uso")}
+        >
+          📜 Termos de Uso
+        </div>
 
-<button onClick={logout} style={styles.logout}>
-  Sair
-</button>
-</div>
-
+        <button onClick={logout} style={styles.logout}>
+          Sair
+        </button>
+      </div>
 
       {/* FEED */}
       <div style={styles.feed}>
@@ -438,7 +446,10 @@ const resposta =
                 Cancelar
               </button>
 
-              <button onClick={confirmarPostagem} style={styles.confirmButton}>
+              <button
+                onClick={confirmarPostagem}
+                style={styles.confirmButton}
+              >
                 Postar
               </button>
             </div>
