@@ -234,12 +234,15 @@ export default function Imagens() {
     }
   }
 
+  
   // =====================================================
-  // AMEI - MANTIDO
+  // AMEI - CORRIGIDO
   // =====================================================
 
   async function darAmei(post) {
     try {
+      const novoTotalAmei = (post.amei || 0) + 1;
+
       const res = await fetch(
         `${XANO_BASE}/Reagir_a_iamgens`,
         {
@@ -250,7 +253,7 @@ export default function Imagens() {
           body: JSON.stringify({
             post_id: post.id,
             curtir: post.curtir || 0,
-            amei: (post.amei || 0) + 1,
+            amei: novoTotalAmei,
             comentarios: post.comentarios || [],
           }),
         }
@@ -260,12 +263,24 @@ export default function Imagens() {
         throw new Error("Erro ao reagir à imagem.");
       }
 
-      await carregarFeed();
+      // Atualiza apenas a publicação selecionada.
+      // Não recarrega o Feed inteiro.
+      setImagens((listaAnterior) =>
+        listaAnterior.map((imagem) =>
+          imagem.id === post.id
+            ? {
+                ...imagem,
+                amei: novoTotalAmei,
+              }
+            : imagem
+        )
+      );
     } catch (erro) {
       console.error(erro);
       alert("Não foi possível reagir à imagem.");
     }
   }
+
 
   // =====================================================
   // COMENTAR - MANTIDO
