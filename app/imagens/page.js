@@ -12,17 +12,13 @@ export default function Imagens() {
 
   const [imagens, setImagens] = useState([]);
   const [novoComentario, setNovoComentario] = useState("");
-
   const [postSelecionado, setPostSelecionado] = useState(null);
   const [comentariosAberto, setComentariosAberto] = useState(false);
-
   const [imagemSelecionada, setImagemSelecionada] = useState(null);
   const [enviandoImagem, setEnviandoImagem] = useState(false);
   const [publicandoImagem, setPublicandoImagem] = useState(false);
-
   const [respostaConradAI, setRespostaConradAI] = useState("");
   const [analisandoImagem, setAnalisandoImagem] = useState(false);
-
   const [perfilAtual, setPerfilAtual] = useState(null);
   const [carregandoPerfil, setCarregandoPerfil] = useState(true);
   const [erroFeed, setErroFeed] = useState("");
@@ -72,17 +68,13 @@ export default function Imagens() {
       const dados = await res.json();
 
       if (!dados || !dados.users_id) {
-        throw new Error(
-          "O Xano não retornou um perfil válido."
-        );
+        throw new Error("O Xano não retornou um perfil válido.");
       }
 
       setPerfilAtual(dados);
     } catch (erro) {
       console.error("Erro ao carregar perfil:", erro);
-      setErroFeed(
-        erro.message || "Erro ao carregar perfil."
-      );
+      setErroFeed(erro.message || "Erro ao carregar perfil.");
     } finally {
       setCarregandoPerfil(false);
     }
@@ -156,13 +148,10 @@ export default function Imagens() {
       };
     }
 
-    // Caso seja uma publicação do usuário conectado,
-    // podemos utilizar seu perfil já autenticado.
     if (
       perfilAtual &&
       obterIdAutor(img) != null &&
-      Number(obterIdAutor(img)) ===
-        Number(perfilAtual.users_id)
+      Number(obterIdAutor(img)) === Number(perfilAtual.users_id)
     ) {
       return {
         nome: perfilAtual.nome || "Usuário",
@@ -199,11 +188,14 @@ export default function Imagens() {
   }
 
   // =====================================================
-  // CURTIR
+  // CURTIR - CORRIGIDO
+  // ATUALIZA SOMENTE A PUBLICAÇÃO CURTIDA
   // =====================================================
 
   async function curtir(post) {
     try {
+      const novoTotalCurtidas = (post.curtir || 0) + 1;
+
       const res = await fetch(
         `${XANO_BASE}/Reagir_a_iamgens`,
         {
@@ -213,7 +205,7 @@ export default function Imagens() {
           },
           body: JSON.stringify({
             post_id: post.id,
-            curtir: (post.curtir || 0) + 1,
+            curtir: novoTotalCurtidas,
             amei: post.amei || 0,
             comentarios: post.comentarios || [],
           }),
@@ -224,7 +216,18 @@ export default function Imagens() {
         throw new Error("Erro ao curtir imagem.");
       }
 
-      await carregarFeed();
+      // Atualiza a curtida sem recarregar o Feed inteiro.
+      // Mantém a ordem e a posição das imagens na tela.
+      setImagens((listaAnterior) =>
+        listaAnterior.map((imagem) =>
+          imagem.id === post.id
+            ? {
+                ...imagem,
+                curtir: novoTotalCurtidas,
+              }
+            : imagem
+        )
+      );
     } catch (erro) {
       console.error(erro);
       alert("Não foi possível curtir a imagem.");
@@ -232,7 +235,7 @@ export default function Imagens() {
   }
 
   // =====================================================
-  // AMEI
+  // AMEI - MANTIDO
   // =====================================================
 
   async function darAmei(post) {
@@ -265,7 +268,7 @@ export default function Imagens() {
   }
 
   // =====================================================
-  // COMENTAR
+  // COMENTAR - MANTIDO
   // =====================================================
 
   async function comentar(post) {
@@ -411,13 +414,10 @@ export default function Imagens() {
 
       if (data.url) {
         setImagemSelecionada(data.url);
-
         setAnalisandoImagem(true);
 
         try {
-          const resultadoIA = await analisarComVision(
-            data.url
-          );
+          const resultadoIA = await analisarComVision(data.url);
 
           const textoIA =
             resultadoIA?.gemini?.candidates?.[0]
@@ -619,9 +619,7 @@ export default function Imagens() {
 
   return (
     <div style={styles.page}>
-      {/* =================================================
-          SIDEBAR
-      ================================================== */}
+      {/* SIDEBAR */}
       <div style={styles.sidebar}>
         <div
           style={{
@@ -722,13 +720,9 @@ export default function Imagens() {
         </button>
       </div>
 
-      {/* =================================================
-          ÁREA PRINCIPAL
-      ================================================== */}
+      {/* ÁREA PRINCIPAL */}
       <div style={styles.feedArea}>
-        {/* =================================================
-            ÁREA DE PUBLICAÇÃO
-        ================================================== */}
+        {/* ÁREA DE PUBLICAÇÃO */}
         <div style={styles.composer}>
           <div style={styles.userInfo}>
             <Avatar foto={autorAtual.foto} />
@@ -872,9 +866,7 @@ export default function Imagens() {
           )}
         </div>
 
-        {/* =================================================
-            FEED DE IMAGENS PUBLICADAS
-        ================================================== */}
+        {/* FEED DE IMAGENS PUBLICADAS */}
         {imagens.map((img, index) => {
           const autor = obterAutorImagem(img);
 
@@ -952,9 +944,7 @@ export default function Imagens() {
         })}
       </div>
 
-      {/* =================================================
-          MODAL DE COMENTÁRIOS
-      ================================================== */}
+      {/* MODAL DE COMENTÁRIOS */}
       {comentariosAberto && postSelecionado && (
         <div style={styles.modalOverlay}>
           <div style={styles.modal}>
