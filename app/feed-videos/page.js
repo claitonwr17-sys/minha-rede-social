@@ -1,140 +1,141 @@
 
-'use client'
+"use client";
 
-import "@fontsource/inter"
-import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { useEffect, useRef, useState } from "react"
+import "@fontsource/inter";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useRef, useState } from "react";
 
-const XANO_POST_URL =
-  "https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/publicacoes_videos"
+const XANO_BASE =
+  "https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3";
 
-const XANO_GET_URL =
-  "https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/listar-publicacoes-videos"
+const XANO_POST_URL = `${XANO_BASE}/publicacoes_videos`;
+const XANO_GET_URL = `${XANO_BASE}/listar-publicacoes-videos`;
+const XANO_INICIAR_ANALISE_URL = `${XANO_BASE}/iniciar_analise_video`;
+const XANO_CONSULTAR_ANALISE_URL = `${XANO_BASE}/consultar_analise_video`;
 
-const XANO_INICIAR_ANALISE_URL =
-  "https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/iniciar_analise_video"
+const WORKER_STORAGE =
+  "https://sentiment-gemini-vision-video.claitonwr17.workers.dev/";
 
-const XANO_CONSULTAR_ANALISE_URL =
-  "https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/consultar_analise_video"
+// =====================================================
+// AUTENTICAÇÃO E PERFIS
+// =====================================================
 
-// Converte o resultado técnico do sentimento em linguagem humana.
-function descreverSentimento(sentimento) {
-  if (!sentimento || typeof sentimento !== "object") {
-    return null
-  }
-
-  const classificacao = String(
-    sentimento.classificacao || ""
-  ).trim().toLowerCase()
-
-  const score = sentimento.score
-  const magnitude = sentimento.magnitude
-
-  let descricao =
-    "A análise não apresentou uma classificação emocional definida."
-
-  if (classificacao.includes("neutr")) {
-    descricao =
-      "O texto analisado apresenta um tom predominantemente neutro, sem uma tendência claramente positiva ou negativa."
-  } else if (classificacao.includes("positiv")) {
-    descricao =
-      "O texto analisado apresenta uma tendência positiva."
-  } else if (classificacao.includes("negativ")) {
-    descricao =
-      "O texto analisado apresenta uma tendência negativa."
-  } else if (
-    classificacao.includes("mist") ||
-    classificacao.includes("mixed")
-  ) {
-    descricao =
-      "O texto analisado reúne sinais de sentimentos positivos e negativos."
-  } else if (classificacao) {
-    descricao =
-      `O sentimento do texto foi classificado como ${sentimento.classificacao}.`
-  } else if (
-    typeof score === "number" &&
-    Number.isFinite(score)
-  ) {
-    if (score > 0.25) {
-      descricao =
-        "O texto analisado apresenta uma tendência positiva."
-    } else if (score < -0.25) {
-      descricao =
-        "O texto analisado apresenta uma tendência negativa."
-    } else {
-      descricao =
-        "O texto analisado não apresenta uma tendência emocional claramente positiva ou negativa."
-    }
-  }
-
-  // A magnitude depende também da quantidade de texto analisado.
-  // Por isso não atribuímos uma intensidade emocional sem contexto.
-  if (
-    typeof magnitude === "number" &&
-    Number.isFinite(magnitude) &&
-    magnitude > 0
-  ) {
-    return (
-      descricao +
-      " A ferramenta também identificou sinais de emoção ao longo do conteúdo, mas essa medida, isoladamente, não determina a intensidade percebida por quem assiste."
-    )
-  }
-
-  return descricao
+function obterToken() {
+  if (typeof window === "undefined") return "";
+  return localStorage.getItem("token") || "";
 }
 
-// Converte os dados visuais em explicações compreensíveis.
-function descreverInformacoesVisuais(resultado) {
-  if (!resultado || typeof resultado !== "object") {
-    return null
-  }
+function headersAutenticados() {
+  const token = obterToken();
 
-  const cenas = resultado.quantidadeDeCenas
-  const quadros =
-    resultado.conteudoExplicito?.quadrosAnalisados
-
-  const partes = []
-
-  if (
-    typeof cenas === "number" &&
-    Number.isFinite(cenas)
-  ) {
-    if (cenas === 0) {
-      partes.push(
-        "A análise não identificou divisões de cena no vídeo."
-      )
-    } else if (cenas === 1) {
-      partes.push(
-        "A análise identificou uma única cena no vídeo."
-      )
-    } else {
-      partes.push(
-        "A análise identificou diferentes cenas ao longo do vídeo, indicando mudanças na sequência visual."
-      )
-    }
-  }
-
-  if (
-    typeof quadros === "number" &&
-    Number.isFinite(quadros) &&
-    quadros > 0
-  ) {
-    partes.push(
-      "A inteligência artificial também examinou imagens do vídeo para complementar a avaliação visual."
-    )
-  }
-
-  if (partes.length === 0) {
-    return (
-      "O processamento visual foi realizado, mas não há detalhes suficientes para descrever a estrutura das cenas."
-    )
-  }
-
-  return partes.join(" ")
+  return {
+    "Content-Type": "application/json",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
 }
 
-// Identifica o resultado devolvido pelas diferentes estruturas do Xano.
+function obterUrlFoto(valor) {
+  if (!valor) return "";
+
+  if (typeof valor === "string") {
+    return valor.trim();
+  }
+
+  if (typeof valor === "object") {
+    return (
+      valor.url ||
+      valor.path ||
+      valor.image_url ||
+      ""
+    );
+  }
+
+  return "";
+}
+
+function obterPerfilDoVideo(item) {
+  if (!item) return null;
+
+  if (Array.isArray(item._perfis)) {
+    return item._perfis[0] || null;
+  }
+
+  if (item._perfis && typeof item._perfis === "object") {
+    return item._perfis;
+  }
+
+  if (Array.isArray(item.perfis)) {
+    return item.perfis[0] || null;
+  }
+
+  if (item.perfil && typeof item.perfil === "object") {
+    return item.perfil;
+  }
+
+  return null;
+}
+
+function obterIdAutor(item) {
+  return (
+    item?.id_do_usuário ??
+    item?.usuario_id ??
+    item?._usuario_id ??
+    null
+  );
+}
+
+function obterAutorVideo(item, perfilAtual) {
+  const perfil = obterPerfilDoVideo(item);
+
+  if (perfil) {
+    return {
+      nome: perfil.nome || "Usuário",
+      foto: obterUrlFoto(perfil.foto_perfil),
+    };
+  }
+
+  const idAutor = obterIdAutor(item);
+
+  if (
+    perfilAtual &&
+    idAutor != null &&
+    Number(idAutor) === Number(perfilAtual.users_id)
+  ) {
+    return {
+      nome: perfilAtual.nome || "Usuário",
+      foto: obterUrlFoto(perfilAtual.foto_perfil),
+    };
+  }
+
+  return {
+    nome: "Usuário",
+    foto: "",
+  };
+}
+
+function Avatar({ foto }) {
+  if (foto) {
+    return (
+      <img
+        src={foto}
+        alt="Foto de perfil"
+        style={styles.avatarImage}
+      />
+    );
+  }
+
+  return (
+    <div style={styles.avatarVazio}>
+      👤
+    </div>
+  );
+}
+
+// =====================================================
+// RESULTADOS DA INTELIGÊNCIA ARTIFICIAL
+// =====================================================
+
 function extrairResultadoAnalise(dados) {
   return (
     dados?.api1?.response?.result ||
@@ -142,10 +143,9 @@ function extrairResultadoAnalise(dados) {
     dados?.response?.result ||
     dados?.result ||
     dados
-  )
+  );
 }
 
-// Identifica a operação retornada pelo Xano.
 function extrairNomeOperacao(dados) {
   return (
     dados?.operationName ||
@@ -154,17 +154,18 @@ function extrairNomeOperacao(dados) {
     dados?.response?.result?.operationName ||
     dados?.api1?.response?.result?.operationName ||
     ""
-  )
+  );
 }
 
-// Componente para mostrar somente a interpretação final do Conrad AI.
-function ResultadoAnaliseVideo({ resultado, publicado = false }) {
-  if (!resultado) return null
+function ResultadoAnaliseVideo({
+  resultado,
+  publicado = false,
+}) {
+  if (!resultado) return null;
 
-  // Obtém a interpretação final produzida pelo Gemini.
   const interpretacao =
     resultado.geminiAnaliseFinal ||
-    resultado.geminiAnaliseTextual
+    resultado.geminiAnaliseTextual;
 
   return (
     <div
@@ -187,7 +188,9 @@ function ResultadoAnaliseVideo({ resultado, publicado = false }) {
           </h4>
 
           <p style={styles.textoAnalise}>
-            {interpretacao}
+            {typeof interpretacao === "string"
+              ? interpretacao
+              : JSON.stringify(interpretacao, null, 2)}
           </p>
         </div>
       ) : (
@@ -197,146 +200,840 @@ function ResultadoAnaliseVideo({ resultado, publicado = false }) {
         </p>
       )}
     </div>
-  )
+  );
 }
+
+// =====================================================
+// PÁGINA PRINCIPAL
+// =====================================================
+
 export default function FeedVideos() {
-  const router = useRouter()
+  const router = useRouter();
 
-  const [hoverItem, setHoverItem] = useState("")
-  const [videoSelecionado, setVideoSelecionado] = useState(null)
-  const [arquivoVideo, setArquivoVideo] = useState(null)
+  const [hoverItem, setHoverItem] = useState("");
+  const [perfilAtual, setPerfilAtual] = useState(null);
+  const [carregandoPerfil, setCarregandoPerfil] =
+    useState(true);
 
-  const [publicando, setPublicando] = useState(false)
-  const [enviandoVideo, setEnviandoVideo] = useState(false)
-  const [analisandoVideo, setAnalisandoVideo] = useState(false)
-  const [analiseConcluida, setAnaliseConcluida] = useState(false)
-  const [resultadoAnalise, setResultadoAnalise] = useState(null)
-  const [erroAnalise, setErroAnalise] = useState("")
-  const [operationName, setOperationName] = useState("")
-  const [urlVideoCloudinary, setUrlVideoCloudinary] = useState("")
-  const [idCloudinary, setIdCloudinary] = useState("")
+  const [videoSelecionado, setVideoSelecionado] =
+    useState(null);
+  const [arquivoVideo, setArquivoVideo] = useState(null);
 
-  const [videos, setVideos] = useState([])
-  const [carregandoVideos, setCarregandoVideos] = useState(true)
-  const [erroFeed, setErroFeed] = useState("")
+  const [publicando, setPublicando] = useState(false);
+  const [enviandoVideo, setEnviandoVideo] =
+    useState(false);
+  const [analisandoVideo, setAnalisandoVideo] =
+    useState(false);
 
-  const [comentariosAbertos, setComentariosAbertos] = useState({})
-  const [novoComentario, setNovoComentario] = useState({})
-  const [atualizandoInteracao, setAtualizandoInteracao] = useState({})
+  const [analiseConcluida, setAnaliseConcluida] =
+    useState(false);
+  const [resultadoAnalise, setResultadoAnalise] =
+    useState(null);
+  const [erroAnalise, setErroAnalise] = useState("");
+  const [operationName, setOperationName] = useState("");
 
-  // NOVO: análises independentes para vídeos publicados.
-  const [analisesPublicadas, setAnalisesPublicadas] = useState({})
+  const [videos, setVideos] = useState([]);
+  const [carregandoVideos, setCarregandoVideos] =
+    useState(true);
+  const [erroFeed, setErroFeed] = useState("");
 
-  // Guarda o upload para evitar enviar o mesmo vídeo duas vezes.
-  const uploadEmAndamentoRef = useRef(null)
-  const arquivoAtualRef = useRef(null)
-  const dadosUploadRef = useRef(null)
+  const [comentariosAbertos, setComentariosAbertos] =
+    useState({});
+  const [novoComentario, setNovoComentario] =
+    useState({});
+  const [atualizandoInteracao, setAtualizandoInteracao] =
+    useState({});
 
-  // Impede que a análise antiga seja aplicada a outro vídeo.
-  const versaoVideoRef = useRef(0)
+  const [analisesPublicadas, setAnalisesPublicadas] =
+    useState({});
 
-  // NOVO: impede consultas simultâneas duplicadas.
-  const consultasPublicadasRef = useRef(new Set())
+  const uploadEmAndamentoRef = useRef(null);
+  const arquivoAtualRef = useRef(null);
+  const dadosUploadRef = useRef(null);
+  const versaoVideoRef = useRef(0);
 
-  // NOVO: impede dois cliques simultâneos no mesmo vídeo.
-  const iniciandoPublicadasRef = useRef(new Set())
+  const consultasPublicadasRef = useRef(new Set());
+  const iniciandoPublicadasRef = useRef(new Set());
+  const interacoesEmAndamentoRef = useRef(new Set());
+  const consultaPreviaRef = useRef(false);
 
-  // GET: carregar publicações salvas no Xano.
-  async function carregarVideos() {
+  // =====================================================
+  // CARREGAR PERFIL DO USUÁRIO CONECTADO
+  // =====================================================
+
+  useEffect(() => {
+    let ativo = true;
+
+    async function carregarPerfilAtual() {
+      try {
+        setCarregandoPerfil(true);
+
+        const token = obterToken();
+
+        if (!token) {
+          router.replace("/");
+          return;
+        }
+
+        const resposta = await fetch(
+          `${XANO_BASE}/meu_perfil`,
+          {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              Accept: "application/json",
+            },
+            cache: "no-store",
+          }
+        );
+
+        if (resposta.status === 401) {
+          localStorage.removeItem("token");
+          router.replace("/");
+          return;
+        }
+
+        if (!resposta.ok) {
+          throw new Error(
+            `Erro ao carregar perfil: ${resposta.status}`
+          );
+        }
+
+        const dados = await resposta.json();
+
+        if (!dados?.users_id) {
+          throw new Error(
+            "O Xano não retornou um perfil válido."
+          );
+        }
+
+        if (ativo) {
+          setPerfilAtual(dados);
+        }
+      } catch (erro) {
+        console.error("Erro ao carregar perfil:", erro);
+
+        if (ativo) {
+          setErroFeed(
+            erro.message || "Erro ao carregar perfil."
+          );
+        }
+      } finally {
+        if (ativo) {
+          setCarregandoPerfil(false);
+        }
+      }
+    }
+
+    carregarPerfilAtual();
+
+    return () => {
+      ativo = false;
+    };
+  }, [router]);
+
+  // =====================================================
+  // CARREGAR VÍDEOS DO XANO
+  // =====================================================
+
+  const carregarVideos = useCallback(async () => {
     try {
-      setErroFeed("")
+      setCarregandoVideos(true);
+      setErroFeed("");
 
       const resposta = await fetch(XANO_GET_URL, {
         method: "GET",
         cache: "no-store",
-      })
+      });
 
       if (!resposta.ok) {
         throw new Error(
-          `Não foi possível carregar os vídeos. HTTP ${resposta.status}`
-        )
+          `Erro ao carregar vídeos: ${resposta.status}`
+        );
       }
 
-      const dados = await resposta.json()
+      const dados = await resposta.json();
 
       const lista = Array.isArray(dados)
         ? dados
-        : Array.isArray(dados.api1)
+        : Array.isArray(dados?.api1)
           ? dados.api1
-          : Array.isArray(dados.data)
+          : Array.isArray(dados?.data)
             ? dados.data
-            : null
+            : null;
 
       if (!lista) {
         throw new Error(
-          "O GET respondeu, mas o formato da lista de vídeos é diferente do esperado."
-        )
+          "O Xano retornou uma lista de vídeos inválida."
+        );
       }
 
-      setVideos(lista)
+      setVideos(lista);
     } catch (erro) {
-      console.error("Erro ao carregar vídeos do Xano:", erro)
+      console.error("Erro ao carregar vídeos:", erro);
       setErroFeed(
-        erro.message || "Erro ao carregar as publicações."
-      )
+        erro.message || "Erro ao carregar vídeos."
+      );
     } finally {
-      setCarregandoVideos(false)
+      setCarregandoVideos(false);
     }
-  }
+  }, []);
 
   useEffect(() => {
-    carregarVideos()
-  }, [])
+    carregarVideos();
+  }, [carregarVideos]);
 
-  // Consultar automaticamente a análise antes da publicação.
-  useEffect(() => {
-    if (!analisandoVideo || !operationName) return
+  // =====================================================
+  // ATUALIZAR INTERAÇÕES SEM RECARREGAR O FEED
+  // =====================================================
 
-    const intervalo = setInterval(() => {
-      consultarResultadoAnalise()
-    }, 3000)
+  async function atualizarInteracao(item, alteracoes) {
+    const id = String(item.id);
 
-    return () => clearInterval(intervalo)
-  }, [analisandoVideo, operationName])
+    if (interacoesEmAndamentoRef.current.has(id)) {
+      return false;
+    }
 
-  // Fecha apenas a análise do vídeo selecionado.
-  function fecharAnalisePublicada(id) {
-    setAnalisesPublicadas((anterior) => {
-      const atualizadas = { ...anterior }
-      delete atualizadas[String(id)]
-      return atualizadas
-    })
-  }
+    interacoesEmAndamentoRef.current.add(id);
 
-  // NOVO: iniciar uma nova análise para um vídeo publicado.
-  async function analisarPublicacao(item) {
-    const id = String(
-      item.id ?? item.id_cloudinary ?? ""
-    )
+    setAtualizandoInteracao((anterior) => ({
+      ...anterior,
+      [id]: true,
+    }));
 
-    const videoUri = item.url_do_video
+    try {
+      const dados = {
+        post_id: Number(item.id),
+        url_do_video: item.url_do_video ?? "",
+        id_cloudinary: item.id_cloudinary ?? "",
+        legenda: item.legenda ?? null,
 
-    if (!id || !videoUri) {
+        // Mantém o autor original.
+        // O Xano ainda deverá proteger esse campo.
+        usuario_id: obterIdAutor(item),
+
+        status: item.status ?? "publicado",
+
+        curtidas: Number(
+          alteracoes.curtidas ??
+          item.curtidas ??
+          0
+        ),
+
+        amei: Number(
+          alteracoes.amei ??
+          item.amei ??
+          0
+        ),
+
+        comentarios: Array.isArray(
+          alteracoes.comentarios
+        )
+          ? alteracoes.comentarios
+          : Array.isArray(item.comentarios)
+            ? item.comentarios
+            : [],
+      };
+
+      const resposta = await fetch(XANO_POST_URL, {
+        method: "POST",
+        headers: headersAutenticados(),
+        body: JSON.stringify(dados),
+      });
+
+      if (!resposta.ok) {
+        throw new Error(
+          `Erro ao atualizar interação: ${resposta.status}`
+        );
+      }
+
+      // Atualiza somente o vídeo selecionado.
+      // Não reorganiza o feed e não desloca a página.
+      setVideos((listaAnterior) =>
+        listaAnterior.map((video) =>
+          String(video.id) === id
+            ? {
+                ...video,
+                curtidas: dados.curtidas,
+                amei: dados.amei,
+                comentarios: dados.comentarios,
+              }
+            : video
+        )
+      );
+
+      return true;
+    } catch (erro) {
+      console.error("Erro na interação:", erro);
       alert(
-        "Esta publicação não possui um vídeo válido para análise."
-      )
-      return
+        "Não foi possível atualizar a interação."
+      );
+      return false;
+    } finally {
+      interacoesEmAndamentoRef.current.delete(id);
+
+      setAtualizandoInteracao((anterior) => ({
+        ...anterior,
+        [id]: false,
+      }));
+    }
+  }
+
+  async function enviarComentario(item) {
+    const texto = (
+      novoComentario[item.id] || ""
+    ).trim();
+
+    if (!texto) {
+      alert("Digite um comentário primeiro.");
+      return;
     }
 
-    if (iniciandoPublicadasRef.current.has(id)) {
-      return
+    const comentarios = Array.isArray(item.comentarios)
+      ? item.comentarios
+      : [];
+
+    const sucesso = await atualizarInteracao(item, {
+      comentarios: [...comentarios, texto],
+    });
+
+    if (sucesso) {
+      setNovoComentario((anterior) => ({
+        ...anterior,
+        [item.id]: "",
+      }));
+    }
+  }
+
+  // =====================================================
+  // SELECIONAR E CANCELAR VÍDEO
+  // =====================================================
+
+  function escolherVideo(event) {
+    const arquivo = event.target.files?.[0];
+
+    if (!arquivo) return;
+
+    if (
+      publicando ||
+      enviandoVideo ||
+      analisandoVideo
+    ) {
+      alert("Aguarde a operação atual terminar.");
+      return;
+    }
+
+    if (videoSelecionado) {
+      URL.revokeObjectURL(videoSelecionado);
+    }
+
+    versaoVideoRef.current += 1;
+    arquivoAtualRef.current = arquivo;
+    dadosUploadRef.current = null;
+    uploadEmAndamentoRef.current = null;
+
+    setArquivoVideo(arquivo);
+    setVideoSelecionado(
+      URL.createObjectURL(arquivo)
+    );
+
+    setAnaliseConcluida(false);
+    setResultadoAnalise(null);
+    setErroAnalise("");
+    setOperationName("");
+    setAnalisandoVideo(false);
+    setEnviandoVideo(false);
+
+    event.target.value = "";
+  }
+
+  function cancelarVideo() {
+    if (
+      publicando ||
+      enviandoVideo ||
+      analisandoVideo
+    ) {
+      return;
+    }
+
+    if (videoSelecionado) {
+      URL.revokeObjectURL(videoSelecionado);
+    }
+
+    versaoVideoRef.current += 1;
+    arquivoAtualRef.current = null;
+    dadosUploadRef.current = null;
+    uploadEmAndamentoRef.current = null;
+
+    setArquivoVideo(null);
+    setVideoSelecionado(null);
+    setAnaliseConcluida(false);
+    setResultadoAnalise(null);
+    setErroAnalise("");
+    setOperationName("");
+    setAnalisandoVideo(false);
+    setEnviandoVideo(false);
+  }
+
+  // =====================================================
+  // UPLOAD CLOUDINARY
+  // =====================================================
+
+  async function garantirUploadCloudinary() {
+    if (!arquivoVideo) {
+      throw new Error("Selecione um vídeo primeiro.");
     }
 
     if (
-      analisesPublicadas[id]?.status === "iniciando" ||
-      analisesPublicadas[id]?.status === "processando"
+      dadosUploadRef.current &&
+      arquivoAtualRef.current === arquivoVideo
     ) {
-      return
+      return dadosUploadRef.current;
     }
 
-    iniciandoPublicadasRef.current.add(id)
+    if (uploadEmAndamentoRef.current) {
+      return uploadEmAndamentoRef.current;
+    }
 
-    // Limpa a análise anterior para solicitar uma nova.
+    const arquivoDestaOperacao = arquivoVideo;
+    const versaoDestaOperacao =
+      versaoVideoRef.current;
+
+    const promessa = (async () => {
+      const respostaAssinatura = await fetch(
+        "/api/upload-video-signature",
+        { method: "POST" }
+      );
+
+      const dadosAssinatura =
+        await respostaAssinatura.json();
+
+      if (!respostaAssinatura.ok) {
+        throw new Error(
+          dadosAssinatura.error ||
+          "Não foi possível preparar o upload."
+        );
+      }
+
+      const formulario = new FormData();
+
+      formulario.append(
+        "file",
+        arquivoDestaOperacao
+      );
+      formulario.append(
+        "api_key",
+        dadosAssinatura.apiKey
+      );
+      formulario.append(
+        "timestamp",
+        String(dadosAssinatura.timestamp)
+      );
+      formulario.append(
+        "signature",
+        dadosAssinatura.signature
+      );
+      formulario.append(
+        "folder",
+        dadosAssinatura.folder
+      );
+
+      const respostaUpload = await fetch(
+        `https://api.cloudinary.com/v1_1/${dadosAssinatura.cloudName}/video/upload`,
+        {
+          method: "POST",
+          body: formulario,
+        }
+      );
+
+      const resultado = await respostaUpload.json();
+
+      if (!respostaUpload.ok) {
+        throw new Error(
+          resultado.error?.message ||
+          "Erro ao enviar vídeo ao Cloudinary."
+        );
+      }
+
+      if (
+        !resultado.secure_url ||
+        !resultado.public_id
+      ) {
+        throw new Error(
+          "O Cloudinary não retornou os dados do vídeo."
+        );
+      }
+
+      if (
+        versaoVideoRef.current !==
+          versaoDestaOperacao ||
+        arquivoAtualRef.current !==
+          arquivoDestaOperacao
+      ) {
+        throw new Error(
+          "O vídeo selecionado mudou durante o upload."
+        );
+      }
+
+      const dados = {
+        secure_url: resultado.secure_url,
+        public_id: resultado.public_id,
+      };
+
+      dadosUploadRef.current = dados;
+
+      return dados;
+    })();
+
+    uploadEmAndamentoRef.current = promessa;
+    setEnviandoVideo(true);
+
+    try {
+      return await promessa;
+    } finally {
+      if (
+        uploadEmAndamentoRef.current === promessa
+      ) {
+        uploadEmAndamentoRef.current = null;
+      }
+
+      setEnviandoVideo(false);
+    }
+  }
+
+  // =====================================================
+  // PUBLICAR VÍDEO
+  // =====================================================
+
+  async function publicarVideo() {
+    if (!arquivoVideo) {
+      alert("Selecione um vídeo primeiro.");
+      return;
+    }
+
+    if (!perfilAtual?.users_id) {
+      alert(
+        "Não foi possível identificar seu usuário."
+      );
+      return;
+    }
+
+    if (publicando || enviandoVideo) return;
+
+    try {
+      setPublicando(true);
+
+      const dadosCloudinary =
+        await garantirUploadCloudinary();
+
+      const respostaXano = await fetch(
+        XANO_POST_URL,
+        {
+          method: "POST",
+          headers: headersAutenticados(),
+          body: JSON.stringify({
+            post_id: null,
+            url_do_video:
+              dadosCloudinary.secure_url,
+            id_cloudinary:
+              dadosCloudinary.public_id,
+            legenda: null,
+
+            // ID do perfil conectado.
+            // O Xano deverá validá-lo com auth.id.
+            usuario_id: perfilAtual.users_id,
+
+            status: "publicado",
+            curtidas: 0,
+            amei: 0,
+            comentarios: [],
+          }),
+        }
+      );
+
+      const textoResposta =
+        await respostaXano.text();
+
+      let dadosXano = null;
+
+      try {
+        dadosXano = textoResposta
+          ? JSON.parse(textoResposta)
+          : null;
+      } catch {
+        dadosXano = textoResposta;
+      }
+
+      if (!respostaXano.ok) {
+        throw new Error(
+          dadosXano?.message ||
+          dadosXano?.mensagem ||
+          dadosXano?.error ||
+          `O Xano não salvou o vídeo: ${respostaXano.status}`
+        );
+      }
+
+      // Preserva a gravação independente no GCS.
+      try {
+        const respostaStorage = await fetch(
+          WORKER_STORAGE,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              acao: "salvar_video",
+              videoUri:
+                dadosCloudinary.secure_url,
+            }),
+          }
+        );
+
+        const dadosStorage =
+          await respostaStorage.json();
+
+        if (
+          !respostaStorage.ok ||
+          dadosStorage.status !== "salvo"
+        ) {
+          throw new Error(
+            dadosStorage.detalhes ||
+            dadosStorage.erro ||
+            "O Google Storage não confirmou a gravação."
+          );
+        }
+
+        console.log(
+          "Vídeo salvo no Google Storage:",
+          dadosStorage.videoUri
+        );
+      } catch (erroStorage) {
+        console.error(
+          "Falha ao salvar vídeo no Google Storage:",
+          erroStorage
+        );
+      }
+
+      await carregarVideos();
+
+      if (!analisandoVideo) {
+        cancelarVideo();
+      }
+
+      alert(
+        "Vídeo publicado e salvo no Xano com sucesso!"
+      );
+    } catch (erro) {
+      console.error("Erro ao publicar vídeo:", erro);
+      alert(
+        erro.message || "Erro ao publicar vídeo."
+      );
+    } finally {
+      setPublicando(false);
+    }
+  }
+
+  // =====================================================
+  // INICIAR ANÁLISE ANTES DA PUBLICAÇÃO
+  // =====================================================
+
+  async function enviarVideoParaAnalise() {
+    if (!arquivoVideo) {
+      alert("Selecione um vídeo primeiro.");
+      return;
+    }
+
+    if (
+      enviandoVideo ||
+      publicando ||
+      analisandoVideo
+    ) {
+      return;
+    }
+
+    try {
+      setErroAnalise("");
+      setAnaliseConcluida(false);
+      setResultadoAnalise(null);
+      setOperationName("");
+
+      const resultado =
+        await garantirUploadCloudinary();
+
+      const resposta = await fetch(
+        XANO_INICIAR_ANALISE_URL,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            videoUri: resultado.secure_url,
+            operationName: "",
+          }),
+        }
+      );
+
+      const texto = await resposta.text();
+
+      let dados = null;
+
+      try {
+        dados = texto ? JSON.parse(texto) : null;
+      } catch {
+        dados = texto;
+      }
+
+      if (!resposta.ok) {
+        throw new Error(
+          "O Xano não conseguiu iniciar a análise."
+        );
+      }
+
+      const nomeOperacao =
+        extrairNomeOperacao(dados);
+
+      if (!nomeOperacao) {
+        throw new Error(
+          "O Xano não retornou o identificador da análise."
+        );
+      }
+
+      setOperationName(nomeOperacao);
+      setAnalisandoVideo(true);
+
+      alert("Análise iniciada com sucesso!");
+    } catch (erro) {
+      console.error("Erro ao iniciar análise:", erro);
+      setErroAnalise(
+        erro.message || "Erro ao iniciar análise."
+      );
+      alert(
+        erro.message || "Erro ao iniciar análise."
+      );
+    }
+  }
+
+  // =====================================================
+  // CONSULTAR ANÁLISE ANTES DA PUBLICAÇÃO
+  // =====================================================
+
+  const consultarResultadoAnalise = useCallback(
+    async () => {
+      if (
+        !operationName ||
+        consultaPreviaRef.current
+      ) {
+        return;
+      }
+
+      consultaPreviaRef.current = true;
+
+      try {
+        const resposta = await fetch(
+          `${XANO_CONSULTAR_ANALISE_URL}?operation_name=${encodeURIComponent(operationName)}`,
+          {
+            method: "GET",
+            cache: "no-store",
+          }
+        );
+
+        const texto = await resposta.text();
+        const dados = texto
+          ? JSON.parse(texto)
+          : null;
+
+        const resultado =
+          extrairResultadoAnalise(dados);
+
+        if (resultado?.status === "concluido") {
+          setResultadoAnalise(resultado);
+          setAnaliseConcluida(true);
+          setAnalisandoVideo(false);
+          setErroAnalise("");
+        } else if (
+          resultado?.status === "parcial" ||
+          resultado?.status === "erro"
+        ) {
+          setErroAnalise(
+            resultado.detalhes ||
+            resultado.mensagem ||
+            "A análise não foi concluída."
+          );
+
+          setAnalisandoVideo(false);
+          setAnaliseConcluida(false);
+        } else if (!resposta.ok) {
+          throw new Error(
+            "Erro ao consultar a análise."
+          );
+        }
+      } catch (erro) {
+        console.error(
+          "Erro ao consultar análise:",
+          erro
+        );
+
+        setErroAnalise(
+          erro.message ||
+          "Erro ao consultar análise."
+        );
+        setAnalisandoVideo(false);
+      } finally {
+        consultaPreviaRef.current = false;
+      }
+    },
+    [operationName]
+  );
+
+  useEffect(() => {
+    if (!analisandoVideo || !operationName) return;
+
+    const intervalo = setInterval(() => {
+      consultarResultadoAnalise();
+    }, 3000);
+
+    return () => clearInterval(intervalo);
+  }, [
+    analisandoVideo,
+    operationName,
+    consultarResultadoAnalise,
+  ]);
+
+  // =====================================================
+  // ANÁLISE DE VÍDEOS JÁ PUBLICADOS
+  // =====================================================
+
+  async function analisarPublicacao(item) {
+    const id = String(
+      item.id ?? item.id_cloudinary ?? ""
+    );
+
+    const videoUri = item.url_do_video;
+
+    if (!id || !videoUri) {
+      alert(
+        "Esta publicação não possui um vídeo válido."
+      );
+      return;
+    }
+
+    if (iniciandoPublicadasRef.current.has(id)) {
+      return;
+    }
+
+    if (
+      analisesPublicadas[id]?.status ===
+        "iniciando" ||
+      analisesPublicadas[id]?.status ===
+        "processando"
+    ) {
+      return;
+    }
+
+    iniciandoPublicadasRef.current.add(id);
+
     setAnalisesPublicadas((anterior) => ({
       ...anterior,
       [id]: {
@@ -345,7 +1042,7 @@ export default function FeedVideos() {
         resultado: null,
         erro: "",
       },
-    }))
+    }));
 
     try {
       const resposta = await fetch(
@@ -360,36 +1057,31 @@ export default function FeedVideos() {
             operationName: "",
           }),
         }
-      )
+      );
 
-      const texto = await resposta.text()
-      let dados = null
+      const texto = await resposta.text();
+
+      let dados = null;
 
       try {
-        dados = texto ? JSON.parse(texto) : null
+        dados = texto ? JSON.parse(texto) : null;
       } catch {
-        dados = texto
+        dados = texto;
       }
-
-      console.log(
-        "Início da análise da publicação:",
-        id,
-        resposta.status,
-        dados
-      )
 
       if (!resposta.ok) {
         throw new Error(
-          "O Xano não conseguiu iniciar a análise desta publicação."
-        )
+          "O Xano não conseguiu iniciar a análise."
+        );
       }
 
-      const nomeOperacao = extrairNomeOperacao(dados)
+      const nomeOperacao =
+        extrairNomeOperacao(dados);
 
       if (!nomeOperacao) {
         throw new Error(
-          "A análise foi solicitada, mas o Xano não retornou o identificador da operação."
-        )
+          "O Xano não retornou o identificador da operação."
+        );
       }
 
       setAnalisesPublicadas((anterior) => ({
@@ -400,12 +1092,12 @@ export default function FeedVideos() {
           resultado: null,
           erro: "",
         },
-      }))
+      }));
     } catch (erro) {
       console.error(
         "Erro ao analisar publicação:",
         erro
-      )
+      );
 
       setAnalisesPublicadas((anterior) => ({
         ...anterior,
@@ -417,84 +1109,113 @@ export default function FeedVideos() {
             erro.message ||
             "Não foi possível iniciar a análise.",
         },
-      }))
+      }));
     } finally {
-      iniciandoPublicadasRef.current.delete(id)
+      iniciandoPublicadasRef.current.delete(id);
     }
   }
 
-  // NOVO: consultar a análise de uma publicação.
-  async function consultarAnalisePublicada(
-    id,
-    nomeOperacao
-  ) {
-    const chaveConsulta = `${id}:${nomeOperacao}`
+  const consultarAnalisePublicada = useCallback(
+    async (id, nomeOperacao) => {
+      const chave = `${id}:${nomeOperacao}`;
 
-    if (
-      consultasPublicadasRef.current.has(chaveConsulta)
-    ) {
-      return
-    }
+      if (
+        consultasPublicadasRef.current.has(chave)
+      ) {
+        return;
+      }
 
-    consultasPublicadasRef.current.add(chaveConsulta)
-
-    try {
-      const resposta = await fetch(
-        `${XANO_CONSULTAR_ANALISE_URL}?operation_name=${encodeURIComponent(nomeOperacao)}`,
-        {
-          method: "GET",
-          cache: "no-store",
-        }
-      )
-
-      const texto = await resposta.text()
-      let dados = null
+      consultasPublicadasRef.current.add(chave);
 
       try {
-        dados = texto ? JSON.parse(texto) : null
-      } catch {
-        throw new Error(
-          "O Xano retornou uma resposta inválida."
-        )
-      }
+        const resposta = await fetch(
+          `${XANO_CONSULTAR_ANALISE_URL}?operation_name=${encodeURIComponent(nomeOperacao)}`,
+          {
+            method: "GET",
+            cache: "no-store",
+          }
+        );
 
-      const resultado = extrairResultadoAnalise(dados)
+        const texto = await resposta.text();
 
-      if (!resposta.ok) {
-        throw new Error(
-          resultado?.mensagem ||
-          resultado?.detalhes ||
-          "Erro ao consultar a análise."
-        )
-      }
+        let dados = null;
 
-      if (resultado?.status === "concluido") {
+        try {
+          dados = texto ? JSON.parse(texto) : null;
+        } catch {
+          throw new Error(
+            "O Xano retornou uma resposta inválida."
+          );
+        }
+
+        const resultado =
+          extrairResultadoAnalise(dados);
+
+        if (!resposta.ok) {
+          throw new Error(
+            resultado?.mensagem ||
+            resultado?.detalhes ||
+            "Erro ao consultar a análise."
+          );
+        }
+
+        if (resultado?.status === "concluido") {
+          setAnalisesPublicadas((anterior) => {
+            if (
+              anterior[id]?.operationName !==
+              nomeOperacao
+            ) {
+              return anterior;
+            }
+
+            return {
+              ...anterior,
+              [id]: {
+                status: "concluido",
+                operationName: nomeOperacao,
+                resultado,
+                erro: "",
+              },
+            };
+          });
+        } else if (
+          resultado?.status === "parcial" ||
+          resultado?.status === "erro"
+        ) {
+          setAnalisesPublicadas((anterior) => {
+            if (
+              anterior[id]?.operationName !==
+              nomeOperacao
+            ) {
+              return anterior;
+            }
+
+            return {
+              ...anterior,
+              [id]: {
+                status: "erro",
+                operationName: nomeOperacao,
+                resultado: null,
+                erro:
+                  resultado.detalhes ||
+                  resultado.mensagem ||
+                  "A análise não foi concluída.",
+              },
+            };
+          });
+        }
+      } catch (erro) {
+        console.error(
+          "Erro ao consultar análise publicada:",
+          erro
+        );
+
         setAnalisesPublicadas((anterior) => {
           if (
-            anterior[id]?.operationName !== nomeOperacao
+            anterior[id]?.operationName !==
+            nomeOperacao
           ) {
-            return anterior
-          }
-
-          return {
-            ...anterior,
-            [id]: {
-              status: "concluido",
-              operationName: nomeOperacao,
-              resultado,
-              erro: "",
-            },
-          }
-        })
-      } else if (
-        resultado?.status === "parcial" ||
-        resultado?.status === "erro"
-      ) {
-        setAnalisesPublicadas((anterior) => {
-          if (
-            anterior[id]?.operationName !== nomeOperacao
-          ) {
-            return anterior
+            return anterior;
           }
 
           return {
@@ -504,46 +1225,20 @@ export default function FeedVideos() {
               operationName: nomeOperacao,
               resultado: null,
               erro:
-                resultado.detalhes ||
-                resultado.mensagem ||
-                "A análise não foi concluída.",
+                erro.message ||
+                "Não foi possível consultar a análise.",
             },
-          }
-        })
+          };
+        });
+      } finally {
+        consultasPublicadasRef.current.delete(
+          chave
+        );
       }
-    } catch (erro) {
-      console.error(
-        "Erro ao consultar análise publicada:",
-        erro
-      )
+    },
+    []
+  );
 
-      setAnalisesPublicadas((anterior) => {
-        if (
-          anterior[id]?.operationName !== nomeOperacao
-        ) {
-          return anterior
-        }
-
-        return {
-          ...anterior,
-          [id]: {
-            status: "erro",
-            operationName: nomeOperacao,
-            resultado: null,
-            erro:
-              erro.message ||
-              "Não foi possível consultar a análise.",
-          },
-        }
-      })
-    } finally {
-      consultasPublicadasRef.current.delete(
-        chaveConsulta
-      )
-    }
-  }
-
-  // NOVO: acompanha todas as análises publicadas.
   useEffect(() => {
     const pendentes = Object.entries(
       analisesPublicadas
@@ -551,631 +1246,66 @@ export default function FeedVideos() {
       ([, analise]) =>
         analise.status === "processando" &&
         analise.operationName
-    )
+    );
 
-    if (pendentes.length === 0) return
+    if (pendentes.length === 0) return;
 
     const intervalo = setInterval(() => {
       pendentes.forEach(([id, analise]) => {
         consultarAnalisePublicada(
           id,
           analise.operationName
-        )
-      })
-    }, 3000)
+        );
+      });
+    }, 3000);
 
-    return () => clearInterval(intervalo)
-  }, [analisesPublicadas])
+    return () => clearInterval(intervalo);
+  }, [
+    analisesPublicadas,
+    consultarAnalisePublicada,
+  ]);
 
-  // Atualizar curtidas, amei e comentários no Xano.
-  async function atualizarInteracao(item, alteracoes) {
-    const id = item.id
-
-    if (atualizandoInteracao[id]) return
-
-    setAtualizandoInteracao((anterior) => ({
-      ...anterior,
-      [id]: true,
-    }))
-
-    try {
-      const dados = {
-        post_id: Number(item.id),
-        url_do_video: item.url_do_video ?? "",
-        id_cloudinary: item.id_cloudinary ?? "",
-        legenda: item.legenda ?? null,
-        usuario_id: item.usuario_id ?? 10,
-        status: item.status ?? "publicado",
-
-        curtidas: Number(
-          alteracoes.curtidas ?? item.curtidas ?? 0
-        ),
-
-        amei: Number(
-          alteracoes.amei ?? item.amei ?? 0
-        ),
-
-        comentarios: Array.isArray(
-          alteracoes.comentarios
-        )
-          ? alteracoes.comentarios
-          : Array.isArray(item.comentarios)
-            ? item.comentarios
-            : [],
-      }
-
-      const resposta = await fetch(XANO_POST_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(dados),
-      })
-
-      const texto = await resposta.text()
-
-      if (!resposta.ok) {
-        throw new Error(
-          texto || "Erro ao atualizar interação."
-        )
-      }
-
-      await carregarVideos()
-    } catch (erro) {
-      console.error("Erro na interação:", erro)
-      alert(
-        "Não foi possível atualizar. Tente novamente."
-      )
-    } finally {
-      setAtualizandoInteracao((anterior) => ({
-        ...anterior,
-        [id]: false,
-      }))
-    }
+  function fecharAnalisePublicada(id) {
+    setAnalisesPublicadas((anterior) => {
+      const atualizadas = { ...anterior };
+      delete atualizadas[String(id)];
+      return atualizadas;
+    });
   }
 
-  async function enviarComentario(item) {
-    const texto = (
-      novoComentario[item.id] || ""
-    ).trim()
-
-    if (!texto) {
-      alert("Digite um comentário primeiro.")
-      return
-    }
-
-    const comentarios = Array.isArray(
-      item.comentarios
-    )
-      ? item.comentarios
-      : []
-
-    await atualizarInteracao(item, {
-      comentarios: [...comentarios, texto],
-    })
-
-    setNovoComentario((anterior) => ({
-      ...anterior,
-      [item.id]: "",
-    }))
-  }
+  // =====================================================
+  // NAVEGAÇÃO
+  // =====================================================
 
   function logout() {
-    router.push("/feed")
+    router.push("/feed");
   }
 
-  // Selecionar um vídeo.
-  function escolherVideo(event) {
-    const arquivo = event.target.files?.[0]
-
-    if (!arquivo) return
-
-    if (
-      publicando ||
-      enviandoVideo ||
-      analisandoVideo
-    ) {
-      alert("Aguarde a operação atual terminar.")
-      return
-    }
-
-    if (videoSelecionado) {
-      URL.revokeObjectURL(videoSelecionado)
-    }
-
-    versaoVideoRef.current += 1
-    arquivoAtualRef.current = arquivo
-    dadosUploadRef.current = null
-    uploadEmAndamentoRef.current = null
-
-    setArquivoVideo(arquivo)
-    setVideoSelecionado(
-      URL.createObjectURL(arquivo)
-    )
-
-    setAnaliseConcluida(false)
-    setResultadoAnalise(null)
-    setErroAnalise("")
-    setOperationName("")
-    setUrlVideoCloudinary("")
-    setIdCloudinary("")
-    setAnalisandoVideo(false)
-    setEnviandoVideo(false)
-
-    event.target.value = ""
-  }
-
-  function cancelarVideo() {
-    if (
-      publicando ||
-      enviandoVideo ||
-      analisandoVideo
-    ) {
-      return
-    }
-
-    if (videoSelecionado) {
-      URL.revokeObjectURL(videoSelecionado)
-    }
-
-    versaoVideoRef.current += 1
-    arquivoAtualRef.current = null
-    dadosUploadRef.current = null
-    uploadEmAndamentoRef.current = null
-
-    setArquivoVideo(null)
-    setVideoSelecionado(null)
-    setAnaliseConcluida(false)
-    setResultadoAnalise(null)
-    setErroAnalise("")
-    setOperationName("")
-    setUrlVideoCloudinary("")
-    setIdCloudinary("")
-    setAnalisandoVideo(false)
-    setEnviandoVideo(false)
-  }
-
-  // Upload independente da análise.
-  // Tanto Publicar quanto Analisar podem usar esta função.
-  async function garantirUploadCloudinary() {
-    if (!arquivoVideo) {
-      throw new Error(
-        "Selecione um vídeo primeiro."
-      )
-    }
-
-    if (
-      dadosUploadRef.current &&
-      arquivoAtualRef.current === arquivoVideo
-    ) {
-      return dadosUploadRef.current
-    }
-
-    if (uploadEmAndamentoRef.current) {
-      return uploadEmAndamentoRef.current
-    }
-
-    const arquivoDestaOperacao = arquivoVideo
-    const versaoDestaOperacao =
-      versaoVideoRef.current
-
-    const promessa = (async () => {
-      // 1. Obter assinatura do upload.
-      const respostaAssinatura = await fetch(
-        "/api/upload-video-signature",
-        { method: "POST" }
-      )
-
-      const dadosAssinatura =
-        await respostaAssinatura.json()
-
-      if (!respostaAssinatura.ok) {
-        throw new Error(
-          dadosAssinatura.error ||
-          "Não foi possível preparar o envio do vídeo."
-        )
-      }
-
-      // 2. Enviar arquivo ao Cloudinary.
-      const formulario = new FormData()
-
-      formulario.append(
-        "file",
-        arquivoDestaOperacao
-      )
-      formulario.append(
-        "api_key",
-        dadosAssinatura.apiKey
-      )
-      formulario.append(
-        "timestamp",
-        String(dadosAssinatura.timestamp)
-      )
-      formulario.append(
-        "signature",
-        dadosAssinatura.signature
-      )
-      formulario.append(
-        "folder",
-        dadosAssinatura.folder
-      )
-
-      const respostaUpload = await fetch(
-        `https://api.cloudinary.com/v1_1/${dadosAssinatura.cloudName}/video/upload`,
-        {
-          method: "POST",
-          body: formulario,
-        }
-      )
-
-      const resultado =
-        await respostaUpload.json()
-
-      if (!respostaUpload.ok) {
-        throw new Error(
-          resultado.error?.message ||
-          "Não foi possível enviar o vídeo ao Cloudinary."
-        )
-      }
-
-      if (
-        !resultado.secure_url ||
-        !resultado.public_id
-      ) {
-        throw new Error(
-          "O Cloudinary não retornou os dados do vídeo."
-        )
-      }
-
-      if (
-        versaoVideoRef.current !==
-          versaoDestaOperacao ||
-        arquivoAtualRef.current !==
-          arquivoDestaOperacao
-      ) {
-        throw new Error(
-          "O vídeo selecionado mudou durante o envio."
-        )
-      }
-
-      const dados = {
-        secure_url: resultado.secure_url,
-        public_id: resultado.public_id,
-      }
-
-      dadosUploadRef.current = dados
-      setUrlVideoCloudinary(
-        dados.secure_url
-      )
-      setIdCloudinary(dados.public_id)
-
-      return dados
-    })()
-
-    uploadEmAndamentoRef.current = promessa
-    setEnviandoVideo(true)
-
-    try {
-      return await promessa
-    } finally {
-      if (
-        uploadEmAndamentoRef.current === promessa
-      ) {
-        uploadEmAndamentoRef.current = null
-      }
-
-      setEnviandoVideo(false)
-    }
-  }
-
-  // Análise opcional antes da publicação.
-  async function enviarVideoParaAnalise() {
-    if (!arquivoVideo) {
-      alert("Selecione um vídeo primeiro.")
-      return
-    }
-
-    if (
-      enviandoVideo ||
-      publicando ||
-      analisandoVideo
-    ) {
-      return
-    }
-
-    try {
-      setErroAnalise("")
-      setAnaliseConcluida(false)
-      setResultadoAnalise(null)
-      setOperationName("")
-
-      const resultado =
-        await garantirUploadCloudinary()
-
-      const respostaAnalise = await fetch(
-        XANO_INICIAR_ANALISE_URL,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            videoUri: resultado.secure_url,
-            operationName: "",
-          }),
-        }
-      )
-
-      const textoResposta =
-        await respostaAnalise.text()
-
-      let dadosAnalise = null
-
-      try {
-        dadosAnalise = textoResposta
-          ? JSON.parse(textoResposta)
-          : null
-      } catch {
-        dadosAnalise = textoResposta
-      }
-
-      console.log(
-        "Resposta do início da análise no Xano:",
-        respostaAnalise.status,
-        dadosAnalise
-      )
-
-      if (!respostaAnalise.ok) {
-        throw new Error(
-          "O Xano não conseguiu iniciar a análise."
-        )
-      }
-
-      const nomeOperacao =
-        extrairNomeOperacao(dadosAnalise)
-
-      if (!nomeOperacao) {
-        throw new Error(
-          "A análise foi solicitada, mas não encontramos o identificador da operação. Verifique o console."
-        )
-      }
-
-      setOperationName(nomeOperacao)
-      setAnalisandoVideo(true)
-
-      alert("Análise iniciada com sucesso!")
-    } catch (erro) {
-      console.error(
-        "Erro ao iniciar análise:",
-        erro
-      )
-      setErroAnalise(
-        erro.message ||
-        "Erro ao iniciar análise."
-      )
-      alert(
-        erro.message ||
-        "Erro ao iniciar análise."
-      )
-    }
-  }
-
-  // Consultar o resultado da análise antes da publicação.
-  async function consultarResultadoAnalise() {
-    if (!operationName) return
-
-    try {
-      const resposta = await fetch(
-        `${XANO_CONSULTAR_ANALISE_URL}?operation_name=${encodeURIComponent(operationName)}`,
-        {
-          method: "GET",
-          cache: "no-store",
-        }
-      )
-
-      const texto = await resposta.text()
-      const dados = texto
-        ? JSON.parse(texto)
-        : null
-
-      console.log(
-        "Resultado da consulta da análise:",
-        dados
-      )
-
-      const resultado =
-        extrairResultadoAnalise(dados)
-
-      console.log(
-        "Resultado identificado:",
-        resultado
-      )
-
-      if (
-        resultado?.status === "concluido"
-      ) {
-        setResultadoAnalise(resultado)
-        setAnaliseConcluida(true)
-        setAnalisandoVideo(false)
-        setErroAnalise("")
-      } else if (
-        resultado?.status === "parcial" ||
-        resultado?.status === "erro"
-      ) {
-        setErroAnalise(
-          resultado.detalhes ||
-          resultado.mensagem ||
-          "A análise não foi concluída."
-        )
-
-        setAnalisandoVideo(false)
-        setAnaliseConcluida(false)
-      } else if (!resposta.ok) {
-        throw new Error(
-          "Erro ao consultar o resultado da análise."
-        )
-      }
-    } catch (erro) {
-      console.error(
-        "Erro ao consultar análise:",
-        erro
-      )
-      setErroAnalise(
-        erro.message ||
-        "Erro ao consultar análise."
-      )
-      setAnalisandoVideo(false)
-    }
-  }
-
-  // Publicação independente da análise.
-  async function publicarVideo() {
-    if (!arquivoVideo) {
-      alert("Selecione um vídeo primeiro.")
-      return
-    }
-
-    if (
-      publicando ||
-      enviandoVideo
-    ) {
-      return
-    }
-
-    try {
-      setPublicando(true)
-
-      // Upload, se ainda não foi realizado.
-      const dadosCloudinary =
-        await garantirUploadCloudinary()
-
-      // Salvar a publicação no Xano.
-      const respostaXano = await fetch(
-        XANO_POST_URL,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            post_id: null,
-            url_do_video:
-              dadosCloudinary.secure_url,
-            id_cloudinary:
-              dadosCloudinary.public_id,
-            legenda: null,
-            usuario_id: 10,
-            status: "publicado",
-            curtidas: 0,
-            amei: 0,
-            comentarios: [],
-          }),
-        }
-      )
-
-      const textoResposta =
-        await respostaXano.text()
-
-      let dadosXano = null
-
-      try {
-        dadosXano = textoResposta
-          ? JSON.parse(textoResposta)
-          : null
-      } catch {
-        dadosXano = textoResposta
-      }
-
-      console.log(
-        "Resposta do POST no Xano:",
-        respostaXano.status,
-        dadosXano
-      )
-
-      if (!respostaXano.ok) {
-        throw new Error(
-          typeof dadosXano === "object" &&
-          dadosXano
-            ? dadosXano.message ||
-              dadosXano.mensagem ||
-              dadosXano.error ||
-              `O Xano não salvou a publicação. HTTP ${respostaXano.status}`
-            : `O Xano não salvou a publicação. HTTP ${respostaXano.status}`
-        )
-      }
-
-      // Salvar uma cópia no Google Cloud Storage.
-      try {
-        const respostaStorage = await fetch(
-          "https://sentiment-gemini-vision-video.claitonwr17.workers.dev/",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              acao: "salvar_video",
-              videoUri:
-                dadosCloudinary.secure_url,
-            }),
-          }
-        )
-
-        const dadosStorage =
-          await respostaStorage.json()
-
-        if (
-          !respostaStorage.ok ||
-          dadosStorage.status !== "salvo"
-        ) {
-          throw new Error(
-            dadosStorage.detalhes ||
-            dadosStorage.erro ||
-            "O Google Storage não confirmou a gravação."
-          )
-        }
-
-        console.log(
-          "Vídeo salvo no Google Storage:",
-          dadosStorage.videoUri
-        )
-      } catch (erroStorage) {
-        console.error(
-          "Falha ao salvar vídeo no Google Storage:",
-          erroStorage
-        )
-      }
-
-      // Atualizar o feed.
-      await carregarVideos()
-
-      if (!analisandoVideo) {
-        cancelarVideo()
-      }
-
-      alert(
-        "Vídeo publicado e salvo no Xano com sucesso!"
-      )
-    } catch (erro) {
-      console.error(
-        "Erro ao publicar vídeo:",
-        erro
-      )
-      alert(
-        erro.message ||
-        "Erro ao publicar vídeo."
-      )
-    } finally {
-      setPublicando(false)
-    }
-  }
-
- 
-return (
-  <div style={styles.page}>
-    {/* SIDEBAR */}
-    <div style={styles.sidebar}>
-      <div>
+  const itensMenu = [
+    { id: "home", texto: "🏠 Home", href: "/feed" },
+    { id: "ia", texto: "IA", href: "/IA" },
+    { id: "feed", texto: "📰 Feed", href: "/imagens" },
+    { id: "perfil", texto: "👤 Perfil", href: "/perfil" },
+    {
+      id: "privacidade",
+      texto: "🔒 Política de Privacidade",
+      href: "/politica-de-privacidade",
+    },
+    {
+      id: "termos",
+      texto: "📜 Termos de Uso",
+      href: "/termos-de-uso",
+    },
+  ];
+
+  // =====================================================
+  // INTERFACE
+  // =====================================================
+
+  return (
+    <div style={styles.page}>
+      {/* MENU LATERAL */}
+      <div style={styles.sidebar}>
         <div style={styles.logo}>
           <img
             src="/logo/logo-simbolo.png"
@@ -1185,141 +1315,93 @@ return (
           <span>Conrad</span>
         </div>
 
-        {/* MENU */}
         <div style={styles.menu}>
-          <Link
-            href="/feed"
-            style={{
-              textDecoration: "none",
-            }}
-          >
-            <div
-              style={{
-                ...styles.menuItem,
-                ...(hoverItem === "home"
-                  ? styles.menuHover
-                  : {}),
-              }}
-              onMouseEnter={() => setHoverItem("home")}
-              onMouseLeave={() => setHoverItem("")}
+          {itensMenu.slice(0, 4).map((item) => (
+            <Link
+              key={item.id}
+              href={item.href}
+              style={{ textDecoration: "none" }}
             >
-              🏠 Home
-            </div>
-          </Link>
-
-          <div
-            style={{
-              ...styles.menuItem,
-              ...(hoverItem === "ia"
-                ? styles.menuHover
-                : {}),
-              display: "flex",
-              alignItems: "center",
-              gap: 12,
-            }}
-            onMouseEnter={() => setHoverItem("ia")}
-            onMouseLeave={() => setHoverItem("")}
-            onClick={() => router.push("/IA")}
-          >
-            <img
-              src="/logo/logo-simbolo.png"
-              alt="IA"
-              style={{
-                width: 32,
-                height: 32,
-                objectFit: "contain",
-              }}
-            />
-            <span>IA</span>
-          </div>
-
-          <div
-            style={{
-              ...styles.menuItem,
-              ...(hoverItem === "feed"
-                ? styles.menuHover
-                : {}),
-            }}
-            onMouseEnter={() => setHoverItem("feed")}
-            onMouseLeave={() => setHoverItem("")}
-            onClick={() => router.push("/imagens")}
-          >
-            📰 Feed
-          </div>
-
-          <div
-            style={{
-              ...styles.menuItem,
-              ...(hoverItem === "perfil"
-                ? styles.menuHover
-                : {}),
-            }}
-            onMouseEnter={() => setHoverItem("perfil")}
-            onMouseLeave={() => setHoverItem("")}
-            onClick={() => router.push("/perfil")}
-          >
-            👤 Perfil
-          </div>
+              <div
+                style={{
+                  ...styles.menuItem,
+                  ...(hoverItem === item.id
+                    ? styles.menuHover
+                    : {}),
+                }}
+                onMouseEnter={() =>
+                  setHoverItem(item.id)
+                }
+                onMouseLeave={() =>
+                  setHoverItem("")
+                }
+              >
+                {item.id === "ia" && (
+                  <img
+                    src="/logo/logo-simbolo.png"
+                    alt="IA"
+                    style={{
+                      width: 28,
+                      height: 28,
+                      objectFit: "contain",
+                      verticalAlign: "middle",
+                      marginRight: 8,
+                    }}
+                  />
+                )}
+                {item.texto}
+              </div>
+            </Link>
+          ))}
 
           <div style={styles.menuAtivo}>
             🎬 Feed de vídeos
           </div>
 
-          
-{/* POLÍTICA DE PRIVACIDADE */}
-<div
-  style={{
-    ...styles.menuItem,
-    ...(hoverItem === "privacidade"
-      ? styles.menuHover
-      : {}),
-  }}
-  onMouseEnter={() => setHoverItem("privacidade")}
-  onMouseLeave={() => setHoverItem("")}
-  onClick={() =>
-    router.push("/politica-de-privacidade")
-  }
->
-  🔒 Política de Privacidade
-</div>
+          {itensMenu.slice(4).map((item) => (
+            <Link
+              key={item.id}
+              href={item.href}
+              style={{ textDecoration: "none" }}
+            >
+              <div
+                style={{
+                  ...styles.menuItem,
+                  ...(hoverItem === item.id
+                    ? styles.menuHover
+                    : {}),
+                }}
+                onMouseEnter={() =>
+                  setHoverItem(item.id)
+                }
+                onMouseLeave={() =>
+                  setHoverItem("")
+                }
+              >
+                {item.texto}
+              </div>
+            </Link>
+          ))}
 
-{/* TERMOS DE USO */}
-<div
-  style={{
-    ...styles.menuItem,
-    ...(hoverItem === "termos"
-      ? styles.menuHover
-      : {}),
-  }}
-  onMouseEnter={() => setHoverItem("termos")}
-  onMouseLeave={() => setHoverItem("")}
-  onClick={() => router.push("/termos-de-uso")}
->
-  📜 Termos de Uso
-</div>
-
-{/* SAIR */}
-<div
-  style={{
-    ...styles.logout,
-    ...(hoverItem === "logout"
-      ? styles.logoutHover
-      : {}),
-    marginTop: 12,
-  }}
-  onMouseEnter={() => setHoverItem("logout")}
-  onMouseLeave={() => setHoverItem("")}
-  onClick={logout}
->
-  Sair
-</div>
-</div>
-</div>
-</div>
-
-
-    {/* CONTEÚDO */}
-
+          <div
+            style={{
+              ...styles.logout,
+              ...(hoverItem === "logout"
+                ? styles.logoutHover
+                : {}),
+            }}
+            onMouseEnter={() =>
+              setHoverItem("logout")
+            }
+            onMouseLeave={() =>
+              setHoverItem("")
+            }
+            onClick={logout}
+          >
+            Sair
+          </div>
+        </div>
+      </div>
 
       {/* CONTEÚDO */}
       <div style={styles.content}>
@@ -1328,18 +1410,21 @@ return (
             Feed de vídeos
           </div>
 
-          {/* CARTÃO DE PUBLICAÇÃO */}
+          {/* PUBLICAR VÍDEO */}
           <div style={styles.postCard}>
             <div style={styles.usuario}>
-              <img
-                src="/insta.png"
-                alt="Claiton Wroblewski"
-                style={styles.avatarImage}
+              <Avatar
+                foto={obterUrlFoto(
+                  perfilAtual?.foto_perfil
+                )}
               />
 
               <div>
                 <div style={styles.nomeUsuario}>
-                  Claiton Wroblewski
+                  {perfilAtual?.nome ||
+                    (carregandoPerfil
+                      ? "Carregando perfil..."
+                      : "Usuário")}
                 </div>
 
                 <div style={styles.agora}>
@@ -1350,23 +1435,23 @@ return (
 
             <label style={styles.botaoVideo}>
               🎥 Escolher vídeo
+
               <input
                 type="file"
                 accept="video/*"
                 onChange={escolherVideo}
-                style={{
-                  display: "none",
-                }}
+                style={{ display: "none" }}
                 disabled={
                   publicando ||
                   enviandoVideo ||
-                  analisandoVideo
+                  analisandoVideo ||
+                  carregandoPerfil
                 }
               />
             </label>
           </div>
 
-          {/* PRÉVIA DO VÍDEO */}
+          {/* PRÉVIA */}
           {videoSelecionado && (
             <div>
               <div style={styles.videoCard}>
@@ -1379,13 +1464,10 @@ return (
               </div>
 
               <div style={styles.acoesVideo}>
-                {/* ANÁLISE OPCIONAL */}
                 <button
                   type="button"
                   style={styles.botaoPublicar}
-                  onClick={
-                    enviarVideoParaAnalise
-                  }
+                  onClick={enviarVideoParaAnalise}
                   disabled={
                     enviandoVideo ||
                     publicando ||
@@ -1400,14 +1482,14 @@ return (
                       : "Analisar vídeo"}
                 </button>
 
-                {/* PUBLICAÇÃO SEM ANÁLISE OBRIGATÓRIA */}
                 <button
                   type="button"
                   style={styles.botaoPublicar}
                   onClick={publicarVideo}
                   disabled={
                     publicando ||
-                    enviandoVideo
+                    enviandoVideo ||
+                    !perfilAtual
                   }
                 >
                   {publicando
@@ -1429,7 +1511,6 @@ return (
                 </button>
               </div>
 
-              {/* RESULTADO DA ANÁLISE ANTES DA PUBLICAÇÃO */}
               {analisandoVideo && (
                 <div
                   style={styles.painelAnalise}
@@ -1462,18 +1543,16 @@ return (
               {analiseConcluida &&
                 resultadoAnalise && (
                   <ResultadoAnaliseVideo
-                    resultado={
-                      resultadoAnalise
-                    }
+                    resultado={resultadoAnalise}
                   />
                 )}
             </div>
           )}
 
-          {/* PUBLICAÇÕES SALVAS NO XANO */}
+          {/* VÍDEOS PUBLICADOS */}
           <div style={styles.secaoPublicacoes}>
             <div style={styles.tituloPublicacoes}>
-              Vídeos publicados
+              <span>Vídeos publicados</span>
 
               <button
                 type="button"
@@ -1493,28 +1572,26 @@ return (
               </p>
             )}
 
-            {!carregandoVideos &&
-              erroFeed && (
-                <div style={styles.erro}>
-                  <p>{erroFeed}</p>
+            {erroFeed && (
+              <div style={styles.erro}>
+                <p>{erroFeed}</p>
 
-                  <button
-                    type="button"
-                    style={styles.botaoCancelar}
-                    onClick={carregarVideos}
-                  >
-                    Tentar novamente
-                  </button>
-                </div>
-              )}
+                <button
+                  type="button"
+                  style={styles.botaoCancelar}
+                  onClick={carregarVideos}
+                >
+                  Tentar novamente
+                </button>
+              </div>
+            )}
 
             {!carregandoVideos &&
               !erroFeed &&
               videos.length === 0 && (
                 <div style={styles.postCard}>
                   <p style={styles.mensagem}>
-                    Ainda não há vídeos
-                    publicados.
+                    Ainda não há vídeos publicados.
                   </p>
                 </div>
               )}
@@ -1525,51 +1602,47 @@ return (
                   item.id ??
                   item.id_cloudinary ??
                   ""
-                )
+                );
+
+                const autor = obterAutorVideo(
+                  item,
+                  perfilAtual
+                );
 
                 const analise =
-                  analisesPublicadas[id]
+                  analisesPublicadas[id];
 
                 const analisandoPublicacao =
-                  analise?.status ===
-                    "iniciando" ||
-                  analise?.status ===
-                    "processando"
+                  analise?.status === "iniciando" ||
+                  analise?.status === "processando";
 
                 const resultadoPublicado =
-                  analise?.status ===
-                  "concluido"
+                  analise?.status === "concluido"
                     ? analise.resultado
-                    : null
+                    : null;
+
+                const comentarios =
+                  Array.isArray(item.comentarios)
+                    ? item.comentarios
+                    : [];
 
                 return (
                   <div
                     key={id}
-                    style={
-                      styles.publicacaoCard
-                    }
+                    style={styles.publicacaoCard}
                   >
+                    {/* AUTOR REAL */}
                     <div style={styles.usuario}>
-                      <img
-                        src="/insta.png"
-                        alt="Conrad"
-                        style={
-                          styles.avatarImage
-                        }
-                      />
+                      <Avatar foto={autor.foto} />
 
                       <div>
                         <div
-                          style={
-                            styles.nomeUsuario
-                          }
+                          style={styles.nomeUsuario}
                         >
-                          Claiton Wroblewski
+                          {autor.nome}
                         </div>
 
-                        <div
-                          style={styles.agora}
-                        >
+                        <div style={styles.agora}>
                           {item.criado_em
                             ? new Date(
                                 Number(
@@ -1584,9 +1657,7 @@ return (
                     </div>
 
                     <video
-                      src={
-                        item.url_do_video
-                      }
+                      src={item.url_do_video}
                       controls
                       playsInline
                       preload="metadata"
@@ -1594,26 +1665,18 @@ return (
                     />
 
                     {item.legenda && (
-                      <p
-                        style={
-                          styles.legenda
-                        }
-                      >
+                      <p style={styles.legenda}>
                         {item.legenda}
                       </p>
                     )}
 
-                    {/* BOTÕES DE INTERAÇÃO */}
+                    {/* INTERAÇÕES */}
                     <div
-                      style={
-                        styles.interacoesVideo
-                      }
+                      style={styles.interacoesVideo}
                     >
                       <button
                         type="button"
-                        style={
-                          styles.botaoCurtirAmei
-                        }
+                        style={styles.botaoCurtirAmei}
                         disabled={
                           !!atualizandoInteracao[
                             item.id
@@ -1632,16 +1695,13 @@ return (
                           )
                         }
                       >
-                        <span>👍🏿</span>
-                        {" "}Curtir{" "}
+                        👍🏿 Curtir{" "}
                         {item.curtidas || 0}
                       </button>
 
                       <button
                         type="button"
-                        style={
-                          styles.botaoCurtirAmei
-                        }
+                        style={styles.botaoCurtirAmei}
                         disabled={
                           !!atualizandoInteracao[
                             item.id
@@ -1653,23 +1713,19 @@ return (
                             {
                               amei:
                                 Number(
-                                  item.amei ||
-                                  0
+                                  item.amei || 0
                                 ) + 1,
                             }
                           )
                         }
                       >
-                        <span>🖤</span>
-                        {" "}Amei{" "}
+                        🖤 Amei{" "}
                         {item.amei || 0}
                       </button>
 
                       <button
                         type="button"
-                        style={
-                          styles.botaoCurtirAmei
-                        }
+                        style={styles.botaoCurtirAmei}
                         onClick={() =>
                           setComentariosAbertos(
                             (anterior) => ({
@@ -1683,28 +1739,17 @@ return (
                         }
                       >
                         💬 Comentários (
-                        {Array.isArray(
-                          item.comentarios
-                        )
-                          ? item.comentarios
-                              .length
-                          : 0}
-                        )
+                        {comentarios.length})
                       </button>
 
-                      {/* NOVO BOTÃO: ANÁLISE DE VÍDEO PUBLICADO */}
                       <button
                         type="button"
-                        style={
-                          styles.botaoAnalisarIA
-                        }
+                        style={styles.botaoAnalisarIA}
                         disabled={
                           analisandoPublicacao
                         }
                         onClick={() =>
-                          analisarPublicacao(
-                            item
-                          )
+                          analisarPublicacao(item)
                         }
                       >
                         {analisandoPublicacao
@@ -1713,7 +1758,7 @@ return (
                       </button>
                     </div>
 
-                    {/* NOVO: ACOMPANHAMENTO DA ANÁLISE */}
+                    {/* ANÁLISE EM ANDAMENTO */}
                     {analisandoPublicacao && (
                       <div
                         style={
@@ -1722,18 +1767,12 @@ return (
                         role="status"
                       >
                         <h3
-                          style={
-                            styles.tituloAnalise
-                          }
+                          style={styles.tituloAnalise}
                         >
                           ✨ Análise com IA
                         </h3>
 
-                        <p
-                          style={
-                            styles.mensagem
-                          }
-                        >
+                        <p style={styles.mensagem}>
                           {analise.status ===
                           "iniciando"
                             ? "Iniciando uma nova análise deste vídeo..."
@@ -1742,51 +1781,48 @@ return (
                       </div>
                     )}
 
-                    {/* NOVO: ERRO DA ANÁLISE */}
-                    {analise?.status ===
-                      "erro" && (
+                    {/* ERRO DA ANÁLISE */}
+                    {analise?.status === "erro" && (
                       <div
                         style={styles.erro}
                         role="alert"
                       >
                         <strong>
-                          Não foi possível
-                          concluir a análise.
+                          Não foi possível concluir
+                          a análise.
                         </strong>
-
-                        <p>
-                          {analise.erro}
-                        </p>
+                        <p>{analise.erro}</p>
                       </div>
                     )}
 
-                    
+                    {/* RESULTADO */}
                     {resultadoPublicado && (
                       <div>
                         <ResultadoAnaliseVideo
-                          resultado={resultadoPublicado}
+                          resultado={
+                            resultadoPublicado
+                          }
                           publicado={true}
                         />
 
-                        <div style={{
-                          display: "flex",
-                          justifyContent: "flex-end",
-                          marginTop: 10,
-                          marginBottom: 20,
-                        }}>
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "flex-end",
+                            marginTop: 10,
+                            marginBottom: 20,
+                          }}
+                        >
                           <button
                             type="button"
-                            onClick={() => fecharAnalisePublicada(id)}
-                            style={{
-                              backgroundColor: "#111827",
-                              color: "#ffffff",
-                              border: "none",
-                              borderRadius: 10,
-                              padding: "12px 22px",
-                              fontSize: 15,
-                              fontWeight: "bold",
-                              cursor: "pointer",
-                            }}
+                            onClick={() =>
+                              fecharAnalisePublicada(
+                                id
+                              )
+                            }
+                            style={
+                              styles.botaoAnalisarIA
+                            }
                           >
                             ✕ Fechar análise
                           </button>
@@ -1794,49 +1830,42 @@ return (
                       </div>
                     )}
 
-                    {/* ÁREA DE COMENTÁRIOS */}
+                    {/* COMENTÁRIOS */}
                     {comentariosAbertos[
                       item.id
                     ] && (
                       <div
-                        style={
-                          styles.areaComentarios
-                        }
+                        style={styles.areaComentarios}
                       >
                         <div
                           style={
                             styles.listaComentarios
                           }
                         >
-                          {Array.isArray(
-                            item.comentarios
-                          ) &&
-                            item.comentarios.map(
-                              (
-                                comentario,
-                                indice
-                              ) => (
-                                <div
-                                  key={
-                                    indice
-                                  }
-                                  style={
-                                    styles.comentario
-                                  }
-                                >
-                                  {
-                                    comentario
-                                  }
-                                </div>
-                              )
-                            )}
+                          {comentarios.map(
+                            (
+                              comentario,
+                              indice
+                            ) => (
+                              <div
+                                key={indice}
+                                style={
+                                  styles.comentario
+                                }
+                              >
+                                {typeof comentario ===
+                                "string"
+                                  ? comentario
+                                  : comentario?.texto ??
+                                    JSON.stringify(
+                                      comentario
+                                    )}
+                              </div>
+                            )
+                          )}
 
-                          {(!Array.isArray(
-                            item.comentarios
-                          ) ||
-                            item.comentarios
-                              .length ===
-                              0) && (
+                          {comentarios.length ===
+                            0 && (
                             <p
                               style={
                                 styles.mensagem
@@ -1861,9 +1890,7 @@ return (
                                 item.id
                               ] || ""
                             }
-                            onChange={(
-                              event
-                            ) =>
+                            onChange={(event) =>
                               setNovoComentario(
                                 (anterior) => ({
                                   ...anterior,
@@ -1905,14 +1932,18 @@ return (
                       </div>
                     )}
                   </div>
-                )
+                );
               })}
           </div>
         </div>
       </div>
     </div>
-  )
+  );
 }
+
+// =====================================================
+// ESTILOS
+// =====================================================
 
 const styles = {
   page: {
@@ -1922,18 +1953,17 @@ const styles = {
     fontFamily: "Inter, sans-serif",
   },
 
-  
-   sidebar: {
-  width: 240,
-  flexShrink: 0,
-  backgroundColor: "white",
-  padding: 25,
-  display: "flex",
-  flexDirection: "column",
-  justifyContent: "flex-start",
-  gap: 12,
-  borderRight: "1px solid #ddd",
-},
+  sidebar: {
+    width: 240,
+    flexShrink: 0,
+    backgroundColor: "white",
+    padding: 25,
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "flex-start",
+    gap: 12,
+    borderRight: "1px solid #ddd",
+  },
 
   logo: {
     display: "flex",
@@ -1950,6 +1980,12 @@ const styles = {
     objectFit: "contain",
   },
 
+  menu: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 15,
+  },
+
   menuItem: {
     padding: "14px 18px",
     borderRadius: 12,
@@ -1957,12 +1993,6 @@ const styles = {
     color: "#444",
     fontSize: 18,
     transition: "0.2s",
-  },
-
-  menu: {
-    display: "flex",
-    flexDirection: "column",
-    gap: 15,
   },
 
   menuHover: {
@@ -1988,6 +2018,7 @@ const styles = {
     cursor: "pointer",
     transition: "0.2s",
     textAlign: "center",
+    marginTop: 12,
   },
 
   logoutHover: {
@@ -2021,7 +2052,8 @@ const styles = {
     borderRadius: 20,
     padding: 20,
     marginBottom: 20,
-    boxShadow: "0 4px 15px rgba(0,0,0,0.05)",
+    boxShadow:
+      "0 4px 15px rgba(0,0,0,0.05)",
   },
 
   usuario: {
@@ -2036,6 +2068,17 @@ const styles = {
     height: 52,
     borderRadius: "50%",
     objectFit: "cover",
+  },
+
+  avatarVazio: {
+    width: 52,
+    height: 52,
+    borderRadius: "50%",
+    backgroundColor: "#e9edf3",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: 26,
   },
 
   nomeUsuario: {
@@ -2066,7 +2109,8 @@ const styles = {
     borderRadius: 20,
     overflow: "hidden",
     marginBottom: 20,
-    boxShadow: "0 4px 15px rgba(0,0,0,0.08)",
+    boxShadow:
+      "0 4px 15px rgba(0,0,0,0.08)",
   },
 
   video: {
@@ -2138,7 +2182,8 @@ const styles = {
     padding: 20,
     marginBottom: 24,
     overflow: "hidden",
-    boxShadow: "0 4px 15px rgba(0,0,0,0.05)",
+    boxShadow:
+      "0 4px 15px rgba(0,0,0,0.05)",
   },
 
   legenda: {
@@ -2160,9 +2205,9 @@ const styles = {
   },
 
   botaoCurtirAmei: {
-    backgroundColor: "#ffffff",
-    color: "#000000",
-    border: "1px solid #dddddd",
+    backgroundColor: "#fff",
+    color: "#000",
+    border: "1px solid #ddd",
     borderRadius: 10,
     padding: "11px 16px",
     fontSize: 14,
@@ -2170,10 +2215,9 @@ const styles = {
     cursor: "pointer",
   },
 
-  // NOVO: botão de análise dos vídeos publicados.
   botaoAnalisarIA: {
     backgroundColor: "#111827",
-    color: "#ffffff",
+    color: "#fff",
     border: "1px solid #111827",
     borderRadius: 10,
     padding: "11px 16px",
@@ -2182,7 +2226,6 @@ const styles = {
     cursor: "pointer",
   },
 
-  // NOVO: resultado exibido abaixo da publicação.
   painelAnalisePublicada: {
     backgroundColor: "#f8fafc",
     border: "1px solid #e2e8f0",
@@ -2254,7 +2297,8 @@ const styles = {
     borderRadius: 16,
     padding: 22,
     marginBottom: 24,
-    boxShadow: "0 4px 15px rgba(0,0,0,0.05)",
+    boxShadow:
+      "0 4px 15px rgba(0,0,0,0.05)",
   },
 
   tituloAnalise: {
@@ -2285,14 +2329,6 @@ const styles = {
     marginBottom: 6,
   },
 
-  observacaoAnalise: {
-    color: "#666",
-    fontSize: 14,
-    lineHeight: 1.6,
-    borderTop: "1px solid #eee",
-    paddingTop: 12,
-  },
-
   erro: {
     backgroundColor: "white",
     color: "#a12622",
@@ -2300,4 +2336,4 @@ const styles = {
     borderRadius: 16,
     marginBottom: 20,
   },
-}
+};
