@@ -54,27 +54,30 @@ function obterUrlFoto(valor) {
   return "";
 }
 
+
 function obterPerfilDoVideo(item) {
   if (!item) return null;
 
-  if (Array.isArray(item._perfis)) {
-    return item._perfis[0] || null;
-  }
+  const fontes = [
+    item._perfis_of_users,
+    item._perfis,
+    item.perfis,
+    item.perfil,
+  ];
 
-  if (item._perfis && typeof item._perfis === "object") {
-    return item._perfis;
-  }
-
-  if (Array.isArray(item.perfis)) {
-    return item.perfis[0] || null;
-  }
-
-  if (item.perfil && typeof item.perfil === "object") {
-    return item.perfil;
+  for (const fonte of fontes) {
+    if (Array.isArray(fonte)) {
+      if (fonte.length > 0) {
+        return fonte[0];
+      }
+    } else if (fonte && typeof fonte === "object") {
+      return fonte;
+    }
   }
 
   return null;
 }
+
 
 function obterIdAutor(item) {
   return (
