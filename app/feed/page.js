@@ -2,9 +2,10 @@
 "use client";
 
 import "@fontsource/inter";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-
+const XANO_PESQUISAR_USUARIOS_URL =
+  "https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3/pesquisar_usuarios";
 export default function Pag2() {
   const router = useRouter();
 
@@ -20,7 +21,114 @@ export default function Pag2() {
 
   const [postSelecionado, setPostSelecionado] = useState(null);
   const [comentariosAberto, setComentariosAberto] = useState(false);
+// PESQUISA DE USUÁRIOS DO CONRAD AI
 
+const [buscaUsuarios, setBuscaUsuarios] = useState("");
+const [usuariosEncontrados, setUsuariosEncontrados] = useState([]);
+const [pesquisandoUsuarios, setPesquisandoUsuarios] = useState(false);
+const [erroPesquisa, setErroPesquisa] = useState("");
+const [mostrarResultados, setMostrarResultados] = useState(false);
+
+const areaPesquisaRef = useRef(null);
+
+// Consulta o endpoint de pesquisa do Xano.
+useEffect(() => {
+  const termo = buscaUsuarios.trim();
+
+  if (!termo) {
+    setUsuariosEncontrados([]);
+    setPesquisandoUsuarios(false);
+    setErroPesquisa("");
+    return;
+  }
+
+  const controller = new AbortController();
+
+  // Aguarda uma pequena pausa na digitação.
+  const timer = setTimeout(async () => {
+    setPesquisandoUsuarios(true);
+    setErroPesquisa("");
+
+    try {
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+        setUsuariosEncontrados([]);
+        setErroPesquisa("Faça login para pesquisar usuários.");
+        return;
+      }
+
+      const url = new URL(XANO_PESQUISAR_USUARIOS_URL);
+      url.searchParams.set("busca", termo);
+
+      const response = await fetch(url.toString(), {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        signal: controller.signal,
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          throw new Error(
+            "Sessão inválida ou expirada. Faça login novamente."
+          );
+        }
+
+        throw new Error(
+          `Erro ao pesquisar usuários: HTTP ${response.status}`
+        );
+      }
+
+      const dados = await response.json();
+
+      // Estrutura confirmada no teste do Xano:
+      // usuarios.items
+      setUsuariosEncontrados(
+        Array.isArray(dados?.usuarios?.items)
+          ? dados.usuarios.items
+          : []
+      );
+
+    } catch (error) {
+      if (error.name !== "AbortError") {
+        console.error("Erro na pesquisa de usuários:", error);
+        setUsuariosEncontrados([]);
+        setErroPesquisa(
+          error.message || "Não foi possível pesquisar usuários."
+        );
+      }
+    } finally {
+      if (!controller.signal.aborted) {
+        setPesquisandoUsuarios(false);
+      }
+    }
+  }, 350);
+
+  return () => {
+    clearTimeout(timer);
+    controller.abort();
+  };
+}, [buscaUsuarios]);
+
+// Fecha os resultados ao clicar fora da pesquisa.
+useEffect(() => {
+  function fecharAoClicarFora(event) {
+    if (
+      areaPesquisaRef.current &&
+      !areaPesquisaRef.current.contains(event.target)
+    ) {
+      setMostrarResultados(false);
+    }
+  }
+
+  document.addEventListener("mousedown", fecharAoClicarFora);
+
+  return () => {
+    document.removeEventListener("mousedown", fecharAoClicarFora);
+  };
+}, []);
   useEffect(() => {
     buscarPosts();
   }, []);
@@ -175,7 +283,102 @@ export default function Pag2() {
           <span style={styles.logoText}>Conrad</span>
         </div>
 
-        <input placeholder="Pesquisar" style={styles.search} />
+        {/* PESQUISA DE USUÁRIOS */}
+<div ref={areaPesquisaRef} style={styles.searchArea}>
+
+  <input
+    type="search"
+    placeholder="Pesquisar usuários"
+    aria-label="Pesquisar usuários"
+    autoComplete="off"
+    style={styles.search}
+    value={buscaUsuarios}
+    onChange={(e) => {
+      setBuscaUsuarios(e.target.value);
+      setMostrarResultados(true);
+    }}
+    onFocus={() => setMostrarResultados(true)}
+    onKeyDown={(e) => {
+      if (e.key === "Escape") {
+        setMostrarResultados(false);
+      }
+    }}
+  />
+
+  {mostrarResultados && buscaUsuarios.trim() !== "" && (
+
+    <div
+      style={styles.resultadosPesquisa}
+      role="status"
+      aria-live="polite"
+    >
+
+      {pesquisandoUsuarios ? (
+
+        <div style={styles.mensagemPesquisa}>
+          Pesquisando...
+        </div>
+
+      ) : erroPesquisa ? (
+
+        <div style={styles.erroPesquisa}>
+          {erroPesquisa}
+        </div>
+
+      ) : usuariosEncontrados.length === 0 ? (
+
+        <div style={styles.mensagemPesquisa}>
+          Nenhum usuário encontrado.
+        </div>
+
+      ) : (
+
+        usuariosEncontrados.map((usuario) => (
+
+          <div
+            key={usuario.id}
+            style={styles.usuarioResultado}
+          >
+
+            {usuario.foto_perfil ? (
+
+              <img
+                src={usuario.foto_perfil}
+                alt={`Foto de ${usuario.nome || "usuário"}`}
+                style={styles.fotoUsuarioPesquisa}
+              />
+
+            ) : (
+
+              <div style={styles.fotoUsuarioVazia}>
+                👤
+              </div>
+
+            )}
+
+            <div style={styles.dadosUsuarioPesquisa}>
+
+              <strong style={styles.nomeUsuarioPesquisa}>
+                {usuario.nome || "Usuário"}
+              </strong>
+
+              <span style={styles.usernamePesquisa}>
+                @{usuario.username || "sem-username"}
+              </span>
+
+            </div>
+
+          </div>
+
+        ))
+
+      )}
+
+    </div>
+
+  )}
+
+</div>
       </div>
 
       {/* SIDEBAR */}
@@ -519,13 +722,91 @@ const styles = {
     fontSize: 18,
   },
 
-  search: {
-    padding: 10,
-    borderRadius: 20,
-    border: "1px solid #ddd",
-    width: 250,
-    outline: "none",
-  },
+ searchArea: {
+  position: "relative",
+  width: 250,
+  maxWidth: "50vw",
+},
+
+search: {
+  boxSizing: "border-box",
+  padding: 10,
+  borderRadius: 20,
+  border: "1px solid #ddd",
+  width: "100%",
+  outline: "none",
+},
+
+resultadosPesquisa: {
+  position: "absolute",
+  top: "calc(100% + 8px)",
+  right: 0,
+  width: "min(340px, 90vw)",
+  maxHeight: 360,
+  overflowY: "auto",
+  backgroundColor: "white",
+  border: "1px solid #e5e7eb",
+  borderRadius: 12,
+  boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
+  zIndex: 1100,
+},
+
+usuarioResultado: {
+  display: "flex",
+  alignItems: "center",
+  gap: 12,
+  padding: "11px 14px",
+  borderBottom: "1px solid #f0f0f0",
+},
+
+fotoUsuarioPesquisa: {
+  width: 42,
+  height: 42,
+  borderRadius: "50%",
+  objectFit: "cover",
+  flexShrink: 0,
+},
+
+fotoUsuarioVazia: {
+  width: 42,
+  height: 42,
+  borderRadius: "50%",
+  backgroundColor: "#f0f2f5",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  flexShrink: 0,
+},
+
+dadosUsuarioPesquisa: {
+  display: "flex",
+  flexDirection: "column",
+  minWidth: 0,
+},
+
+nomeUsuarioPesquisa: {
+  fontSize: 14,
+  color: "#111827",
+  overflowWrap: "anywhere",
+},
+
+usernamePesquisa: {
+  fontSize: 13,
+  color: "#6b7280",
+  overflowWrap: "anywhere",
+},
+
+mensagemPesquisa: {
+  padding: 15,
+  color: "#6b7280",
+  fontSize: 14,
+},
+
+erroPesquisa: {
+  padding: 15,
+  color: "#b91c1c",
+  fontSize: 14,
+},
 
   sidebar: {
     width: 220,
