@@ -1849,22 +1849,12 @@ export default function FeedVideos() {
             </div>
           )}
 
-          {/* VÍDEOS PUBLICADOS */}
-          <div style={styles.secaoPublicacoes}>
-            <div style={styles.tituloPublicacoes}>
-              <span>Vídeos publicados</span>
-
-              <button
-                type="button"
-                style={styles.botaoAtualizar}
-                onClick={carregarVideos}
-                disabled={carregandoVideos}
-              >
-                {carregandoVideos
-                  ? "Carregando..."
-                  : "Atualizar"}
-              </button>
-            </div>
+          
+         {/* VÍDEOS PUBLICADOS */}
+<div style={styles.secaoPublicacoes}>
+  <div style={styles.tituloPublicacoes}>
+    <span>Vídeos publicados</span>
+  </div>
 
             {carregandoVideos && (
               <p style={styles.mensagem}>
