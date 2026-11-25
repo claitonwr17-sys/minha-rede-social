@@ -290,6 +290,263 @@ function PesquisaUsuariosPerfil() {
     </div>
   );
 }
+
+function BotaoAmizadePerfil({ usuarioVisitadoId }) {
+  const [situacao, setSituacao] = useState("carregando");
+  const [enviando, setEnviando] = useState(false);
+  const [erro, setErro] = useState("");
+  const [meuUsuarioId, setMeuUsuarioId] = useState(null);
+
+  useEffect(() => {
+    if (!usuarioVisitadoId) return;
+
+    const controller = new AbortController();
+
+    async function consultarAmizade() {
+      setSituacao("carregando");
+      setErro("");
+
+      try {
+        const token = localStorage.getItem("token");
+
+        if (!token) {
+          throw new Error("Faça login para continuar.");
+        }
+
+        const headers = {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/json"
+        };
+
+        const [respostaMeuPerfil, respostaAmizade] =
+          await Promise.all([
+            fetch(`${XANO_BASE}/meu_perfil`, {
+              headers,
+              signal: controller.signal,
+              cache: "no-store"
+            }),
+
+            fetch(
+              `${XANO_BASE}/consultar_status_amizade?destinatario_id=${encodeURIComponent(usuarioVisitadoId)}`,
+              {
+                headers,
+                signal: controller.signal,
+                cache: "no-store"
+              }
+            )
+          ]);
+
+        if (!respostaMeuPerfil.ok || !respostaAmizade.ok) {
+          throw new Error(
+            "Não foi possível consultar a situação da amizade."
+          );
+        }
+
+        const dadosMeuPerfil = await respostaMeuPerfil.json();
+        const dadosAmizade = await respostaAmizade.json();
+
+        if (controller.signal.aborted) return;
+
+        const meuId = Number(
+          dadosMeuPerfil?.users_id ??
+          dadosMeuPerfil?.perfil?.users_id
+        );
+
+        if (!Number.isInteger(meuId) || meuId <= 0) {
+          throw new Error(
+            "Não foi possível identificar sua conta."
+          );
+        }
+
+        setMeuUsuarioId(meuId);
+
+        const visitadoId = Number(usuarioVisitadoId);
+
+        if (meuId === visitadoId) {
+          setSituacao("proprio");
+          return;
+        }
+
+        const lista = Array.isArray(dadosAmizade?.solicitacoes)
+          ? dadosAmizade.solicitacoes
+          : [];
+
+        const registros = lista.filter((solicitacao) => {
+          const solicitante = Number(
+            solicitacao.solicitante_id
+          );
+
+          const destinatario = Number(
+            solicitacao.destinatario_id
+          );
+
+          return (
+            (solicitante === meuId &&
+              destinatario === visitadoId) ||
+            (solicitante === visitadoId &&
+              destinatario === meuId)
+          );
+        });
+
+        const amizadeAceita = registros.find(
+          (solicitacao) => solicitacao.status === "aceita"
+        );
+
+        if (amizadeAceita) {
+          setSituacao("amigos");
+          return;
+        }
+
+        const solicitacaoPendente = registros.find(
+          (solicitacao) => solicitacao.status === "pendente"
+        );
+
+        if (solicitacaoPendente) {
+          const fuiEuQueEnviei =
+            Number(solicitacaoPendente.solicitante_id) ===
+            meuId;
+
+          setSituacao(
+            fuiEuQueEnviei ? "enviada" : "recebida"
+          );
+
+          return;
+        }
+
+        setSituacao("disponivel");
+      } catch (error) {
+        if (controller.signal.aborted) return;
+
+        console.error("Erro ao consultar amizade:", error);
+
+        setErro(
+          error.message ||
+          "Não foi possível consultar a amizade."
+        );
+
+        setSituacao("erro");
+      }
+    }
+
+    consultarAmizade();
+
+    return () => controller.abort();
+  }, [usuarioVisitadoId]);
+
+  async function adicionarAmigo() {
+    if (
+      enviando ||
+      situacao !== "disponivel" ||
+      !meuUsuarioId
+    ) {
+      return;
+    }
+
+    try {
+      setEnviando(true);
+      setErro("");
+
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+        throw new Error("Faça login para continuar.");
+      }
+
+      const resposta = await fetch(
+        `${XANO_BASE}/enviar_solicitacao_amizade`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+            Accept: "application/json"
+          },
+          body: JSON.stringify({
+            destinatario_id: Number(usuarioVisitadoId)
+          })
+        }
+      );
+
+      const dados = await resposta.json().catch(() => null);
+
+      if (!resposta.ok) {
+        throw new Error(
+          dados?.message ||
+          "Não foi possível enviar a solicitação."
+        );
+      }
+
+      setSituacao("enviada");
+    } catch (error) {
+      console.error("Erro ao adicionar amigo:", error);
+
+      setErro(
+        error.message ||
+        "Não foi possível enviar a solicitação."
+      );
+    } finally {
+      setEnviando(false);
+    }
+  }
+
+  if (!usuarioVisitadoId || situacao === "proprio") {
+    return null;
+  }
+
+  const carregando = situacao === "carregando";
+
+  const disponivel = situacao === "disponivel";
+
+  const textoBotao =
+    enviando ? "Enviando..." :
+    carregando ? "Verificando amizade..." :
+    situacao === "enviada" ? "✓ Solicitação enviada" :
+    situacao === "recebida" ? "Solicitação recebida" :
+    situacao === "amigos" ? "✓ Amigos" :
+    situacao === "erro" ? "Amizade indisponível" :
+    "＋ Adicionar amigo";
+
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: 8,
+        alignItems: "flex-start"
+      }}
+    >
+      <button
+        type="button"
+        onClick={adicionarAmigo}
+        disabled={!disponivel || enviando}
+        style={{
+          ...styles.botao,
+          backgroundColor: disponivel ? "#000" : "#e5e7eb",
+          color: disponivel ? "#fff" : "#374151",
+          cursor: disponivel ? "pointer" : "default",
+          opacity: enviando || carregando ? 0.7 : 1,
+          fontSize: 16
+        }}
+      >
+        {textoBotao}
+      </button>
+
+      {erro && (
+        <span
+          role="alert"
+          style={{
+            color: "#b42318",
+            fontSize: 13,
+            maxWidth: 280
+          }}
+        >
+          {erro}
+        </span>
+      )}
+    </div>
+  );
+}
+
 export default function Perfil() {
   const router = useRouter()
 
@@ -1228,7 +1485,7 @@ await buscarTotalPosts(dadosPerfil.users_id)
                 </div>
               </div>
 
-              {!visualizandoOutroPerfil && (
+             {!visualizandoOutroPerfil ? (
   <button
     type="button"
     style={styles.botao}
@@ -1237,6 +1494,10 @@ await buscarTotalPosts(dadosPerfil.users_id)
   >
     Editar perfil
   </button>
+) : (
+  <BotaoAmizadePerfil
+    usuarioVisitadoId={perfil.users_id}
+  />
 )}
             </div>
 
