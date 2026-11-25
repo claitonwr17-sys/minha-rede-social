@@ -335,10 +335,24 @@ useEffect(() => {
 
         usuariosEncontrados.map((usuario) => (
 
-          <div
-            key={usuario.id}
-            style={styles.usuarioResultado}
-          >
+  <div
+    key={usuario.id}
+    style={{
+      ...styles.usuarioResultado,
+      cursor: "pointer"
+    }}
+    role="link"
+    tabIndex={0}
+    onClick={() => {
+      router.push(`/perfil?users_id=${usuario.users_id}`);
+    }}
+    onKeyDown={(e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        router.push(`/perfil?users_id=${usuario.users_id}`);
+      }
+    }}
+  >
 
             {usuario.foto_perfil ? (
 
