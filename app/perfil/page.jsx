@@ -13,6 +13,8 @@ export default function Perfil() {
 
   const [hoverItem, setHoverItem] = useState("")
   const [perfil, setPerfil] = useState(null)
+  const [perfilVisitadoId, setPerfilVisitadoId] = useState(null)
+const [visualizandoOutroPerfil, setVisualizandoOutroPerfil] = useState(false)
   const [carregandoPerfil, setCarregandoPerfil] = useState(true)
   const [erroPerfil, setErroPerfil] = useState("")
 
@@ -75,15 +77,30 @@ export default function Perfil() {
         router.replace("/")
         return
       }
+     // IDENTIFICAR O PERFIL SOLICITADO NA URL
+const parametros = new URLSearchParams(window.location.search)
+const idNaUrl = parametros.get("users_id")
 
-      const resposta = await fetch(`${XANO_BASE}/meu_perfil`, {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: "application/json"
-        },
-        cache: "no-store"
-      })
+const idSolicitado =
+  idNaUrl && /^[1-9]\d*$/.test(idNaUrl)
+    ? Number(idNaUrl)
+    : null
+
+setPerfilVisitadoId(idSolicitado)
+
+      // DEFINIR QUAL ENDPOINT CONSULTAR
+const urlPerfil = idSolicitado
+  ? `${XANO_BASE}/perfil_publico?users_id=${idSolicitado}`
+  : `${XANO_BASE}/meu_perfil`
+
+const resposta = await fetch(urlPerfil, {
+  method: "GET",
+  headers: {
+    Authorization: `Bearer ${token}`,
+    Accept: "application/json"
+  },
+  cache: "no-store"
+})
 
       if (!resposta.ok) {
         if (resposta.status === 401) {
@@ -97,30 +114,46 @@ export default function Perfil() {
         )
       }
 
-      const dados = await resposta.json()
+      // RECEBER A RESPOSTA DO XANO
+const dados = await resposta.json()
 
-      if (
-        !dados ||
-        typeof dados !== "object" ||
-        !dados.users_id
-      ) {
-        throw new Error(
-          "O Xano não retornou um perfil válido."
-        )
-      }
+// IDENTIFICAR SE É PERFIL PRÓPRIO OU VISITADO
+const visualizandoOutro = idSolicitado !== null
 
-      setPerfil(dados)
+// EXTRAIR OS DADOS CORRETAMENTE
+const dadosPerfil = visualizandoOutro
+  ? dados?.perfil
+  : dados
 
-      // NOVO: se não existir fotografia, mantém vazio.
-      setFotoPerfil(
-        obterUrlImagem(dados.foto_perfil, "")
-      )
+// VALIDAR O PERFIL
+if (
+  !dadosPerfil ||
+  typeof dadosPerfil !== "object" ||
+  !dadosPerfil.users_id
+) {
+  throw new Error(
+    "O Xano não retornou um perfil válido."
+  )
+}
 
-      setFotoCapa(
-        obterUrlImagem(dados.foto_capa, "")
-      )
+// REGISTRAR SE É UM PERFIL VISITADO
+setVisualizandoOutroPerfil(visualizandoOutro)
 
-      await buscarTotalPosts(dados.users_id)
+// GUARDAR OS DADOS DO PERFIL
+setPerfil(dadosPerfil)
+
+// FOTO DE PERFIL
+setFotoPerfil(
+  obterUrlImagem(dadosPerfil.foto_perfil, "")
+)
+
+// FOTO DE CAPA
+setFotoCapa(
+  obterUrlImagem(dadosPerfil.foto_capa, "")
+)
+
+// CARREGAR AS PUBLICAÇÕES DESSE USUÁRIO
+await buscarTotalPosts(dadosPerfil.users_id)
     } catch (erro) {
       console.error("Erro ao buscar perfil:", erro)
 
@@ -256,8 +289,12 @@ export default function Perfil() {
   // EDIÇÃO DO PERFIL
   // =====================================================
 
-  function abrirEdicaoPerfil() {
-    if (!perfil || operacaoEmAndamento) return
+ function abrirEdicaoPerfil() {
+  if (
+    !perfil ||
+    visualizandoOutroPerfil ||
+    operacaoEmAndamento
+  ) return
 
     setNomeEditado(perfil.nome || "")
     setBioEditada(perfil.bio || "")
@@ -270,6 +307,11 @@ export default function Perfil() {
   // =====================================================
 
   async function atualizarPerfilXano(campos) {
+    if (visualizandoOutroPerfil) {
+  throw new Error(
+    "Você não tem permissão para editar este perfil."
+  )
+}
     const token = localStorage.getItem("token")
 
     if (!token) {
@@ -819,77 +861,80 @@ export default function Perfil() {
                   </span>
                 </div>
               )}
+             {!visualizandoOutroPerfil && (
+  <label
+    style={{
+      ...styles.changeCoverButton,
+      opacity: operacaoEmAndamento ? 0.65 : 1,
+      cursor: operacaoEmAndamento ? "wait" : "pointer"
+    }}
+  >
+    {salvandoCapa ? "Salvando capa..." : "Alterar capa"}
 
-              <label
-                style={{
-                  ...styles.changeCoverButton,
-                  opacity: operacaoEmAndamento
-                    ? 0.65
-                    : 1,
-                  cursor: operacaoEmAndamento
-                    ? "wait"
-                    : "pointer"
-                }}
-              >
-                {salvandoCapa
-                  ? "Salvando capa..."
-                  : "Alterar capa"}
+    <input
+      type="file"
+      accept="image/*"
+      hidden
+      disabled={operacaoEmAndamento}
+      onChange={alterarFotoCapa}
+    />
+  </label>
+)}
+</div>
 
-                <input
-                  type="file"
-                  accept="image/*"
-                  hidden
-                  disabled={operacaoEmAndamento}
-                  onChange={alterarFotoCapa}
-                />
-              </label>
-            </div>
+          {/* FOTO DE PERFIL */}
+<div style={styles.avatarArea}>
+  {visualizandoOutroPerfil ? (
+    <div>
+      {fotoPerfil ? (
+        <img
+          src={fotoPerfil}
+          alt="Foto de perfil"
+          style={styles.avatar}
+        />
+      ) : (
+        <div style={styles.avatarVazio}>
+          👤
+        </div>
+      )}
+    </div>
+  ) : (
+    <label
+      style={{
+        ...styles.avatarLabel,
+        opacity: operacaoEmAndamento ? 0.65 : 1,
+        cursor: operacaoEmAndamento ? "wait" : "pointer"
+      }}
+      title="Alterar foto de perfil"
+    >
+      {fotoPerfil ? (
+        <img
+          src={fotoPerfil}
+          alt="Foto de perfil"
+          style={styles.avatar}
+        />
+      ) : (
+        <div style={styles.avatarVazio}>
+          👤
+        </div>
+      )}
 
-            {/* FOTO DE PERFIL */}
-            <div style={styles.avatarArea}>
-              <label
-                style={{
-                  ...styles.avatarLabel,
-                  opacity: operacaoEmAndamento
-                    ? 0.65
-                    : 1,
-                  cursor: operacaoEmAndamento
-                    ? "wait"
-                    : "pointer"
-                }}
-                title="Alterar foto de perfil"
-              >
-                {fotoPerfil ? (
-                  <img
-                    src={fotoPerfil}
-                    alt="Foto de perfil"
-                    style={styles.avatar}
-                  />
-                ) : (
-                  <div
-                    style={styles.avatarVazio}
-                  >
-                    👤
-                  </div>
-                )}
+      <span style={styles.avatarHint}>
+        {salvandoFoto ? "Salvando foto..." : "Alterar foto"}
+      </span>
 
-                <span style={styles.avatarHint}>
-                  {salvandoFoto
-                    ? "Salvando foto..."
-                    : "Alterar foto"}
-                </span>
+      <input
+        type="file"
+        accept="image/*"
+        hidden
+        disabled={operacaoEmAndamento}
+        onChange={alterarFotoPerfil}
+      />
+    </label>
+  )}
+</div>
 
-                <input
-                  type="file"
-                  accept="image/*"
-                  hidden
-                  disabled={operacaoEmAndamento}
-                  onChange={alterarFotoPerfil}
-                />
-              </label>
-            </div>
-
-            {/* INFORMAÇÕES */}
+{/* INFORMAÇÕES */}
             <div style={styles.info}>
               <div>
                 <div style={styles.nome}>
@@ -904,14 +949,16 @@ export default function Perfil() {
                 </div>
               </div>
 
-              <button
-                type="button"
-                style={styles.botao}
-                onClick={abrirEdicaoPerfil}
-                disabled={operacaoEmAndamento}
-              >
-                Editar perfil
-              </button>
+              {!visualizandoOutroPerfil && (
+  <button
+    type="button"
+    style={styles.botao}
+    onClick={abrirEdicaoPerfil}
+    disabled={operacaoEmAndamento}
+  >
+    Editar perfil
+  </button>
+)}
             </div>
 
             <div style={styles.bio}>
