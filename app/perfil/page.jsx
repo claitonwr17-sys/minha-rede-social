@@ -457,7 +457,7 @@ if (solicitacaoPendente) {
       }
 
       const resposta = await fetch(
-        `${XANO_BASE}/enviar_solicitacao_amizade`,
+        `${XANO_BASE}/_enviar_solicitacao_amizade`,
         {
           method: "POST",
           headers: {
