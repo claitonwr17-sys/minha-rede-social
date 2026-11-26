@@ -799,8 +799,8 @@ setFotoCapa(
   obterUrlImagem(dadosPerfil.foto_capa, "")
 )
 
-// CARREGAR AS PUBLICAÇÕES DESSE USUÁRIO
-await buscarTotalPosts(dadosPerfil.users_id)
+// CARREGAR AS PUBLICAÇÕES SEM BLOQUEAR O PERFIL
+buscarTotalPosts(dadosPerfil.users_id)
     } catch (erro) {
       console.error("Erro ao buscar perfil:", erro)
 
@@ -822,29 +822,51 @@ await buscarTotalPosts(dadosPerfil.users_id)
     try {
       setCarregandoPosts(true)
 
-      const [
-        resTexto,
-        resImagens,
-        resVideos
-      ] = await Promise.all([
-        fetch(`${XANO_BASE}/posts`),
-        fetch(`${XANO_BASE}/get_imagens`),
-        fetch(`${XANO_BASE}/listar-publicacoes-videos`)
-      ])
+      
+const resultados = await Promise.allSettled([
+  fetch(`${XANO_BASE}/posts`),
+  fetch(`${XANO_BASE}/get_imagens`),
+  fetch(`${XANO_BASE}/listar-publicacoes-videos`)
+]);
 
-      if (
-        !resTexto.ok ||
-        !resImagens.ok ||
-        !resVideos.ok
-      ) {
-        throw new Error(
-          "Erro ao buscar publicações do Xano"
-        )
-      }
+async function obterDados(resultado, nome) {
+  if (resultado.status !== "fulfilled") {
+    console.error(`Falha na consulta ${nome}:`, resultado.reason);
+    return null;
+  }
 
-      const respostaTexto = await resTexto.json()
-      const respostaImagens = await resImagens.json()
-      const respostaVideos = await resVideos.json()
+  if (!resultado.value.ok) {
+    console.warn(
+      `Falha na consulta ${nome}: HTTP ${resultado.value.status}`
+    );
+    return null;
+  }
+
+  try {
+    return await resultado.value.json();
+  } catch (erro) {
+    console.error(`Erro ao ler ${nome}:`, erro);
+    return null;
+  }
+}
+
+const [respostaTexto, respostaImagens, respostaVideos] =
+  await Promise.all([
+    obterDados(resultados[0], "posts"),
+    obterDados(resultados[1], "get_imagens"),
+    obterDados(resultados[2], "listar-publicacoes-videos")
+  ]);
+
+if (
+  respostaTexto === null &&
+  respostaImagens === null &&
+  respostaVideos === null
+) {
+  throw new Error(
+    "Nenhuma consulta de publicações foi concluída."
+  );
+}
+
 
       function extrairLista(dados) {
         if (Array.isArray(dados)) return dados
