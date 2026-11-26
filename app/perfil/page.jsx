@@ -293,6 +293,7 @@ function PesquisaUsuariosPerfil() {
 
 function BotaoAmizadePerfil({ usuarioVisitadoId }) {
   const [situacao, setSituacao] = useState("carregando");
+  const [solicitacaoRecebidaId, setSolicitacaoRecebidaId] = useState(null);
   const [enviando, setEnviando] = useState(false);
   const [erro, setErro] = useState("");
   const [meuUsuarioId, setMeuUsuarioId] = useState(null);
@@ -303,8 +304,9 @@ function BotaoAmizadePerfil({ usuarioVisitadoId }) {
     const controller = new AbortController();
 
     async function consultarAmizade() {
-      setSituacao("carregando");
-      setErro("");
+     setSituacao("carregando");
+setSolicitacaoRecebidaId(null);
+setErro("");
 
       try {
         const token = localStorage.getItem("token");
@@ -400,18 +402,20 @@ function BotaoAmizadePerfil({ usuarioVisitadoId }) {
         const solicitacaoPendente = registros.find(
           (solicitacao) => solicitacao.status === "pendente"
         );
+if (solicitacaoPendente) {
+  const fuiEuQueEnviei =
+    Number(solicitacaoPendente.solicitante_id) === meuId;
 
-        if (solicitacaoPendente) {
-          const fuiEuQueEnviei =
-            Number(solicitacaoPendente.solicitante_id) ===
-            meuId;
+  setSolicitacaoRecebidaId(
+    fuiEuQueEnviei ? null : Number(solicitacaoPendente.id)
+  );
 
-          setSituacao(
-            fuiEuQueEnviei ? "enviada" : "recebida"
-          );
+  setSituacao(
+    fuiEuQueEnviei ? "enviada" : "recebida"
+  );
 
-          return;
-        }
+  return;
+}
 
         setSituacao("disponivel");
       } catch (error) {
@@ -488,6 +492,68 @@ function BotaoAmizadePerfil({ usuarioVisitadoId }) {
       setEnviando(false);
     }
   }
+  
+async function responderSolicitacao(acao) {
+  if (
+    enviando ||
+    situacao !== "recebida" ||
+    !solicitacaoRecebidaId ||
+    !["aceitar", "recusar"].includes(acao)
+  ) {
+    return;
+  }
+
+  try {
+    setEnviando(true);
+    setErro("");
+
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      throw new Error("Faça login para continuar.");
+    }
+
+    const resposta = await fetch(
+      `${XANO_BASE}/responder_solicitacao_amizade`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+          Accept: "application/json"
+        },
+        body: JSON.stringify({
+          solicitacao_id: solicitacaoRecebidaId,
+          acao
+        })
+      }
+    );
+
+    const dados = await resposta.json().catch(() => null);
+
+    if (!resposta.ok) {
+      throw new Error(
+        dados?.message ||
+        "Não foi possível responder à solicitação."
+      );
+    }
+
+    setSolicitacaoRecebidaId(null);
+
+    setSituacao(
+      acao === "aceitar" ? "amigos" : "disponivel"
+    );
+  } catch (error) {
+    console.error("Erro ao responder solicitação:", error);
+
+    setErro(
+      error.message ||
+      "Não foi possível responder à solicitação."
+    );
+  } finally {
+    setEnviando(false);
+  }
+}
 
   if (!usuarioVisitadoId || situacao === "proprio") {
     return null;
@@ -506,15 +572,55 @@ function BotaoAmizadePerfil({ usuarioVisitadoId }) {
     situacao === "erro" ? "Amizade indisponível" :
     "＋ Adicionar amigo";
 
-  return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        gap: 8,
-        alignItems: "flex-start"
-      }}
-    >
+
+return (
+  <div
+    style={{
+      display: "flex",
+      flexDirection: "column",
+      gap: 8,
+      alignItems: "flex-start"
+    }}
+  >
+    {situacao === "recebida" ? (
+      <div
+        style={{
+          display: "flex",
+          gap: 10,
+          flexWrap: "wrap"
+        }}
+      >
+        <button
+          type="button"
+          onClick={() => responderSolicitacao("aceitar")}
+          disabled={enviando}
+          style={{
+            ...styles.botao,
+            fontSize: 16,
+            opacity: enviando ? 0.6 : 1,
+            cursor: enviando ? "wait" : "pointer"
+          }}
+        >
+          {enviando ? "Processando..." : "✓ Aceitar"}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => responderSolicitacao("recusar")}
+          disabled={enviando}
+          style={{
+            ...styles.botao,
+            fontSize: 16,
+            backgroundColor: "#e5e7eb",
+            color: "#374151",
+            opacity: enviando ? 0.6 : 1,
+            cursor: enviando ? "wait" : "pointer"
+          }}
+        >
+          Recusar
+        </button>
+      </div>
+    ) : (
       <button
         type="button"
         onClick={adicionarAmigo}
@@ -530,22 +636,24 @@ function BotaoAmizadePerfil({ usuarioVisitadoId }) {
       >
         {textoBotao}
       </button>
+    )}
 
-      {erro && (
-        <span
-          role="alert"
-          style={{
-            color: "#b42318",
-            fontSize: 13,
-            maxWidth: 280
-          }}
-        >
-          {erro}
-        </span>
-      )}
-    </div>
-  );
+    {erro && (
+      <span
+        role="alert"
+        style={{
+          color: "#b42318",
+          fontSize: 13,
+          maxWidth: 280
+        }}
+      >
+        {erro}
+      </span>
+    )}
+  </div>
+);
 }
+
 
 export default function Perfil() {
   const router = useRouter()
