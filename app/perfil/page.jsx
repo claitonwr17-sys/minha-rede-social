@@ -1,14 +1,213 @@
 
-"use client"
+"use client";
 
-import "@fontsource/inter"
-import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { useEffect, useRef, useState } from "react"
+import "@fontsource/inter";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 
-const XANO_BASE = "https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3"
+const XANO_BASE = "https://x8ki-letl-twmt.n7.xano.io/api:Pg6r9BN3";
+
 // =====================================================
-// CONRAD AI - PESQUISA DE USUÁRIOS NA PÁGINA PERFIL
+// CONTROLE DE CONSULTAS AO XANO
+// =====================================================
+
+// Evita consultar repetidamente o próprio perfil.
+// O cache é separado por token e permanece somente
+// na memória desta página, sem usar localStorage.
+
+let cacheMeuPerfil = null;
+let cachePublicacoes = null;
+
+function limparCacheMeuPerfil() {
+  cacheMeuPerfil = null;
+}
+
+function limparCaches() {
+  cacheMeuPerfil = null;
+  cachePublicacoes = null;
+}
+
+function esperar(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function obterMensagemHttp(status, nome) {
+  if (status === 429) {
+    return (
+      "O Xano está limitando temporariamente as " +
+      "requisições. Aguarde alguns instantes e tente novamente."
+    );
+  }
+
+  if (status === 401) {
+    return "Sua sessão expirou. Faça login novamente.";
+  }
+
+  return `Não foi possível consultar ${nome}. Código: ${status}`;
+}
+
+async function consultarJson(url, opcoes = {}, nome = "o Xano") {
+  const resposta = await fetch(url, {
+    cache: "no-store",
+    ...opcoes,
+  });
+
+  if (!resposta.ok) {
+    const erro = new Error(
+      obterMensagemHttp(resposta.status, nome)
+    );
+    erro.status = resposta.status;
+    throw erro;
+  }
+
+  return resposta.json();
+}
+
+function consultarMeuPerfil(token, forcar = false) {
+  const agora = Date.now();
+
+  if (
+    !forcar &&
+    cacheMeuPerfil &&
+    cacheMeuPerfil.token === token &&
+    cacheMeuPerfil.expiraEm > agora
+  ) {
+    return cacheMeuPerfil.promise;
+  }
+
+  const promise = consultarJson(
+    `${XANO_BASE}/meu_perfil`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/json",
+      },
+    },
+    "seu perfil"
+  );
+
+  const entrada = {
+    token,
+    promise,
+    expiraEm: agora + 30000,
+  };
+
+  cacheMeuPerfil = entrada;
+
+  promise.catch(() => {
+    if (cacheMeuPerfil === entrada) {
+      cacheMeuPerfil = null;
+    }
+  });
+
+  return promise;
+}
+
+function extrairLista(dados) {
+  if (Array.isArray(dados)) return dados;
+  if (Array.isArray(dados?.items)) return dados.items;
+  if (Array.isArray(dados?.result)) return dados.result;
+  return [];
+}
+
+async function consultarPublicacoes() {
+  const agora = Date.now();
+
+  if (
+    cachePublicacoes &&
+    cachePublicacoes.expiraEm > agora
+  ) {
+    return cachePublicacoes.promise;
+  }
+
+  // Consultas sequenciais, com pequeno intervalo.
+  // Isso reduz o pico de requisições simultâneas.
+
+  const promise = (async () => {
+    const endpoints = [
+      ["posts", `${XANO_BASE}/posts`],
+      ["imagens", `${XANO_BASE}/get_imagens`],
+      ["videos", `${XANO_BASE}/listar-publicacoes-videos`],
+    ];
+
+    const resultado = {
+      posts: [],
+      imagens: [],
+      videos: [],
+      falhas: [],
+    };
+
+    for (let i = 0; i < endpoints.length; i++) {
+      const [nome, url] = endpoints[i];
+
+      if (i > 0) {
+        await esperar(350);
+      }
+
+      try {
+        const dados = await consultarJson(
+          url,
+          {},
+          `publicações de ${nome}`
+        );
+
+        resultado[nome] = extrairLista(dados);
+      } catch (erro) {
+        console.warn(`Falha em ${nome}:`, erro);
+        resultado.falhas.push(nome);
+      }
+    }
+
+    return resultado;
+  })();
+
+  const entrada = {
+    promise,
+    expiraEm: agora + 30000,
+  };
+
+  cachePublicacoes = entrada;
+
+  promise
+    .then((resultado) => {
+      if (
+        cachePublicacoes === entrada &&
+        resultado.falhas.length > 0
+      ) {
+        cachePublicacoes = null;
+      }
+    })
+    .catch(() => {
+      if (cachePublicacoes === entrada) {
+        cachePublicacoes = null;
+      }
+    });
+
+  return promise;
+}
+
+function obterUrlImagem(valor, fallback = "") {
+  if (!valor) return fallback;
+
+  if (typeof valor === "string") {
+    return valor.trim() || fallback;
+  }
+
+  if (typeof valor === "object") {
+    return (
+      valor.url ||
+      valor.path ||
+      valor.image_url ||
+      fallback
+    );
+  }
+
+  return fallback;
+}
+
+// =====================================================
+// PESQUISA DE USUÁRIOS
 // =====================================================
 
 function PesquisaUsuariosPerfil() {
@@ -16,14 +215,15 @@ function PesquisaUsuariosPerfil() {
   const [usuarios, setUsuarios] = useState([]);
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState("");
-  const [mostrarResultados, setMostrarResultados] = useState(false);
+  const [mostrarResultados, setMostrarResultados] =
+    useState(false);
 
   const areaRef = useRef(null);
 
   useEffect(() => {
     const termo = busca.trim();
 
-    if (!termo) {
+    if (termo.length < 2) {
       setUsuarios([]);
       setCarregando(false);
       setErro("");
@@ -32,70 +232,59 @@ function PesquisaUsuariosPerfil() {
 
     const controller = new AbortController();
 
-    setUsuarios([]);
     setCarregando(true);
     setErro("");
 
+    // Aguarda o usuário parar de digitar.
     const timer = setTimeout(async () => {
       try {
         const token = localStorage.getItem("token");
 
         if (!token) {
-          throw new Error("Faça login para pesquisar usuários.");
+          throw new Error(
+            "Faça login para pesquisar usuários."
+          );
         }
 
         const url = new URL(
           `${XANO_BASE}/pesquisar_usuarios`
         );
-
         url.searchParams.set("busca", termo);
 
-        const resposta = await fetch(url.toString(), {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            Accept: "application/json"
+        const dados = await consultarJson(
+          url.toString(),
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              Accept: "application/json",
+            },
+            signal: controller.signal,
           },
-          signal: controller.signal
-        });
+          "a pesquisa de usuários"
+        );
 
-        if (!resposta.ok) {
-          if (resposta.status === 401) {
-            throw new Error(
-              "Sua sessão expirou. Faça login novamente."
-            );
-          }
+        if (controller.signal.aborted) return;
 
-          throw new Error(
-            `Erro ao pesquisar usuários: ${resposta.status}`
-          );
-        }
-
-        const dados = await resposta.json();
-
-        if (!controller.signal.aborted) {
-          setUsuarios(
-            Array.isArray(dados?.usuarios?.items)
-              ? dados.usuarios.items
-              : []
-          );
-        }
-
+        setUsuarios(
+          Array.isArray(dados?.usuarios?.items)
+            ? dados.usuarios.items
+            : []
+        );
       } catch (error) {
-        if (!controller.signal.aborted) {
-          console.error("Erro na pesquisa:", error);
-          setUsuarios([]);
-          setErro(
-            error.message ||
+        if (controller.signal.aborted) return;
+
+        console.error("Erro na pesquisa:", error);
+        setUsuarios([]);
+        setErro(
+          error.message ||
             "Não foi possível pesquisar usuários."
-          );
-        }
+        );
       } finally {
         if (!controller.signal.aborted) {
           setCarregando(false);
         }
       }
-    }, 350);
+    }, 650);
 
     return () => {
       clearTimeout(timer);
@@ -116,100 +305,15 @@ function PesquisaUsuariosPerfil() {
     document.addEventListener("mousedown", clicarFora);
 
     return () => {
-      document.removeEventListener("mousedown", clicarFora);
+      document.removeEventListener(
+        "mousedown",
+        clicarFora
+      );
     };
   }, []);
 
-  const estilos = {
-    area: {
-      position: "relative",
-      width: 300,
-      maxWidth: "100%",
-      zIndex: 100
-    },
-
-    input: {
-      width: "100%",
-      boxSizing: "border-box",
-      padding: 12,
-      borderRadius: 30,
-      border: "1px solid #ddd",
-      outline: "none",
-      fontSize: 15,
-      backgroundColor: "white"
-    },
-
-    resultados: {
-      position: "absolute",
-      top: "calc(100% + 8px)",
-      left: 0,
-      width: "min(350px, 90vw)",
-      maxHeight: 350,
-      overflowY: "auto",
-      borderRadius: 14,
-      border: "1px solid #e5e7eb",
-      backgroundColor: "white",
-      boxShadow: "0 8px 25px rgba(0,0,0,0.12)",
-      zIndex: 101
-    },
-
-    usuario: {
-      display: "flex",
-      alignItems: "center",
-      gap: 12,
-      padding: 12,
-      borderBottom: "1px solid #f0f0f0",
-      color: "#222",
-      textDecoration: "none",
-      cursor: "pointer"
-    },
-
-    foto: {
-      width: 44,
-      height: 44,
-      borderRadius: "50%",
-      objectFit: "cover",
-      flexShrink: 0
-    },
-
-    semFoto: {
-      width: 44,
-      height: 44,
-      borderRadius: "50%",
-      backgroundColor: "#f0f2f5",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      flexShrink: 0
-    },
-
-    dados: {
-      display: "flex",
-      flexDirection: "column",
-      minWidth: 0
-    },
-
-    nome: {
-      fontSize: 14,
-      fontWeight: "bold",
-      overflowWrap: "anywhere"
-    },
-
-    username: {
-      fontSize: 13,
-      color: "#777",
-      overflowWrap: "anywhere"
-    },
-
-    mensagem: {
-      padding: 15,
-      fontSize: 14,
-      color: "#666"
-    }
-  };
-
   return (
-    <div ref={areaRef} style={estilos.area}>
+    <div ref={areaRef} style={styles.pesquisaArea}>
       <input
         type="search"
         placeholder="Pesquisar usuários"
@@ -226,61 +330,63 @@ function PesquisaUsuariosPerfil() {
             setMostrarResultados(false);
           }
         }}
-        style={estilos.input}
+        style={styles.search}
       />
 
       {mostrarResultados && busca.trim() !== "" && (
-        <div
-          style={estilos.resultados}
-          role="status"
-          aria-live="polite"
-        >
-          {carregando ? (
-            <div style={estilos.mensagem}>
+        <div style={styles.resultadosPesquisa}>
+          {busca.trim().length < 2 ? (
+            <div style={styles.mensagemPesquisa}>
+              Digite pelo menos 2 caracteres.
+            </div>
+          ) : carregando ? (
+            <div style={styles.mensagemPesquisa}>
               Pesquisando...
             </div>
           ) : erro ? (
             <div
               style={{
-                ...estilos.mensagem,
-                color: "#b91c1c"
+                ...styles.mensagemPesquisa,
+                color: "#b42318",
               }}
             >
               {erro}
             </div>
           ) : usuarios.length === 0 ? (
-            <div style={estilos.mensagem}>
+            <div style={styles.mensagemPesquisa}>
               Nenhum usuário encontrado.
             </div>
           ) : (
             usuarios.map((usuario) => (
               <a
-                key={usuario.id}
+                key={usuario.id ?? usuario.users_id}
                 href={`/perfil?users_id=${encodeURIComponent(
                   usuario.users_id
                 )}`}
-                style={estilos.usuario}
+                style={styles.usuarioPesquisa}
               >
-                {usuario.foto_perfil ? (
+                {obterUrlImagem(usuario.foto_perfil) ? (
                   <img
-                    src={usuario.foto_perfil}
-                    alt={`Foto de ${usuario.nome || "usuário"}`}
-                    style={estilos.foto}
+                    src={obterUrlImagem(
+                      usuario.foto_perfil
+                    )}
+                    alt="Foto do usuário"
+                    style={styles.fotoPesquisa}
                   />
                 ) : (
-                  <div style={estilos.semFoto}>
+                  <div style={styles.semFotoPesquisa}>
                     👤
                   </div>
                 )}
 
-                <div style={estilos.dados}>
-                  <span style={estilos.nome}>
+                <div>
+                  <div style={styles.nomePesquisa}>
                     {usuario.nome || "Usuário"}
-                  </span>
+                  </div>
 
-                  <span style={estilos.username}>
+                  <div style={styles.usernamePesquisa}>
                     @{usuario.username || "sem-username"}
-                  </span>
+                  </div>
                 </div>
               </a>
             ))
@@ -291,67 +397,49 @@ function PesquisaUsuariosPerfil() {
   );
 }
 
+// =====================================================
+// BOTÃO DE AMIZADE
+// =====================================================
+
 function BotaoAmizadePerfil({ usuarioVisitadoId }) {
   const [situacao, setSituacao] = useState("carregando");
-  const [solicitacaoRecebidaId, setSolicitacaoRecebidaId] = useState(null);
+  const [solicitacaoRecebidaId, setSolicitacaoRecebidaId] =
+    useState(null);
   const [enviando, setEnviando] = useState(false);
   const [erro, setErro] = useState("");
   const [meuUsuarioId, setMeuUsuarioId] = useState(null);
+  const [tentativa, setTentativa] = useState(0);
 
   useEffect(() => {
     if (!usuarioVisitadoId) return;
 
+    let ativo = true;
     const controller = new AbortController();
 
     async function consultarAmizade() {
-     setSituacao("carregando");
-setSolicitacaoRecebidaId(null);
-setErro("");
+      setSituacao("carregando");
+      setSolicitacaoRecebidaId(null);
+      setErro("");
+      setMeuUsuarioId(null);
 
       try {
         const token = localStorage.getItem("token");
 
         if (!token) {
-          throw new Error("Faça login para continuar.");
-        }
-
-        const headers = {
-          Authorization: `Bearer ${token}`,
-          Accept: "application/json"
-        };
-
-        const [respostaMeuPerfil, respostaAmizade] =
-          await Promise.all([
-            fetch(`${XANO_BASE}/meu_perfil`, {
-              headers,
-              signal: controller.signal,
-              cache: "no-store"
-            }),
-
-            fetch(
-              `${XANO_BASE}/consultar_status_amizade?destinatario_id=${encodeURIComponent(usuarioVisitadoId)}`,
-              {
-                headers,
-                signal: controller.signal,
-                cache: "no-store"
-              }
-            )
-          ]);
-
-        if (!respostaMeuPerfil.ok || !respostaAmizade.ok) {
           throw new Error(
-            "Não foi possível consultar a situação da amizade."
+            "Faça login para continuar."
           );
         }
 
-        const dadosMeuPerfil = await respostaMeuPerfil.json();
-        const dadosAmizade = await respostaAmizade.json();
+        // Reaproveita /meu_perfil quando já consultado.
+        const dadosMeuPerfil =
+          await consultarMeuPerfil(token);
 
-        if (controller.signal.aborted) return;
+        if (!ativo) return;
 
         const meuId = Number(
           dadosMeuPerfil?.users_id ??
-          dadosMeuPerfil?.perfil?.users_id
+            dadosMeuPerfil?.perfil?.users_id
         );
 
         if (!Number.isInteger(meuId) || meuId <= 0) {
@@ -360,38 +448,62 @@ setErro("");
           );
         }
 
-        setMeuUsuarioId(meuId);
-
         const visitadoId = Number(usuarioVisitadoId);
+
+        setMeuUsuarioId(meuId);
 
         if (meuId === visitadoId) {
           setSituacao("proprio");
           return;
         }
 
-        const lista = Array.isArray(dadosAmizade?.solicitacoes)
+        // Consulta amizade somente depois de
+        // identificar a conta autenticada.
+        const dadosAmizade = await consultarJson(
+          `${XANO_BASE}/consultar_status_amizade?destinatario_id=${encodeURIComponent(
+            usuarioVisitadoId
+          )}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              Accept: "application/json",
+            },
+            signal: controller.signal,
+          },
+          "a situação da amizade"
+        );
+
+        if (!ativo || controller.signal.aborted) return;
+
+        const lista = Array.isArray(
+          dadosAmizade?.solicitacoes
+        )
           ? dadosAmizade.solicitacoes
           : [];
 
-        const registros = lista.filter((solicitacao) => {
-          const solicitante = Number(
-            solicitacao.solicitante_id
-          );
+        const registros = lista.filter(
+          (solicitacao) => {
+            const solicitante = Number(
+              solicitacao.solicitante_id
+            );
 
-          const destinatario = Number(
-            solicitacao.destinatario_id
-          );
+            const destinatario = Number(
+              solicitacao.destinatario_id
+            );
 
-          return (
-            (solicitante === meuId &&
-              destinatario === visitadoId) ||
-            (solicitante === visitadoId &&
-              destinatario === meuId)
-          );
-        });
+            return (
+              (solicitante === meuId &&
+                destinatario === visitadoId) ||
+              (solicitante === visitadoId &&
+                destinatario === meuId)
+            );
+          }
+        );
 
+        // Amizade aceita tem prioridade,
+        // mesmo que existam registros antigos recusados.
         const amizadeAceita = registros.find(
-          (solicitacao) => solicitacao.status === "aceita"
+          (item) => item.status === "aceita"
         );
 
         if (amizadeAceita) {
@@ -399,33 +511,37 @@ setErro("");
           return;
         }
 
-        const solicitacaoPendente = registros.find(
-          (solicitacao) => solicitacao.status === "pendente"
+        const pendente = registros.find(
+          (item) => item.status === "pendente"
         );
-if (solicitacaoPendente) {
-  const fuiEuQueEnviei =
-    Number(solicitacaoPendente.solicitante_id) === meuId;
 
-  setSolicitacaoRecebidaId(
-    fuiEuQueEnviei ? null : Number(solicitacaoPendente.id)
-  );
+        if (pendente) {
+          const fuiEuQueEnviei =
+            Number(pendente.solicitante_id) === meuId;
 
-  setSituacao(
-    fuiEuQueEnviei ? "enviada" : "recebida"
-  );
+          setSolicitacaoRecebidaId(
+            fuiEuQueEnviei ? null : Number(pendente.id)
+          );
 
-  return;
-}
+          setSituacao(
+            fuiEuQueEnviei ? "enviada" : "recebida"
+          );
+
+          return;
+        }
 
         setSituacao("disponivel");
       } catch (error) {
-        if (controller.signal.aborted) return;
+        if (!ativo || controller.signal.aborted) return;
 
-        console.error("Erro ao consultar amizade:", error);
+        console.error(
+          "Erro ao consultar amizade:",
+          error
+        );
 
         setErro(
           error.message ||
-          "Não foi possível consultar a amizade."
+            "Não foi possível consultar a amizade."
         );
 
         setSituacao("erro");
@@ -434,8 +550,11 @@ if (solicitacaoPendente) {
 
     consultarAmizade();
 
-    return () => controller.abort();
-  }, [usuarioVisitadoId]);
+    return () => {
+      ativo = false;
+      controller.abort();
+    };
+  }, [usuarioVisitadoId, tentativa]);
 
   async function adicionarAmigo() {
     if (
@@ -453,575 +572,536 @@ if (solicitacaoPendente) {
       const token = localStorage.getItem("token");
 
       if (!token) {
-        throw new Error("Faça login para continuar.");
+        throw new Error(
+          "Faça login para continuar."
+        );
       }
 
-      const resposta = await fetch(
+      const dados = await consultarJson(
         `${XANO_BASE}/_enviar_solicitacao_amizade`,
         {
           method: "POST",
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
-            Accept: "application/json"
+            Accept: "application/json",
           },
           body: JSON.stringify({
-            destinatario_id: Number(usuarioVisitadoId)
-          })
-        }
+            destinatario_id: Number(usuarioVisitadoId),
+          }),
+        },
+        "o envio da solicitação"
       );
 
-      const dados = await resposta.json().catch(() => null);
-
-      if (!resposta.ok) {
-        throw new Error(
-          dados?.message ||
-          "Não foi possível enviar a solicitação."
-        );
-      }
+      console.log("Solicitação enviada:", dados);
 
       setSituacao("enviada");
     } catch (error) {
-      console.error("Erro ao adicionar amigo:", error);
+      console.error(
+        "Erro ao adicionar amigo:",
+        error
+      );
 
       setErro(
         error.message ||
-        "Não foi possível enviar a solicitação."
+          "Não foi possível enviar a solicitação."
       );
     } finally {
       setEnviando(false);
     }
   }
-  
-async function responderSolicitacao(acao) {
-  if (
-    enviando ||
-    situacao !== "recebida" ||
-    !solicitacaoRecebidaId ||
-    !["aceitar", "recusar"].includes(acao)
-  ) {
-    return;
-  }
 
-  try {
-    setEnviando(true);
-    setErro("");
-
-    const token = localStorage.getItem("token");
-
-    if (!token) {
-      throw new Error("Faça login para continuar.");
+  async function responderSolicitacao(acao) {
+    if (
+      enviando ||
+      situacao !== "recebida" ||
+      !solicitacaoRecebidaId ||
+      !["aceitar", "recusar"].includes(acao)
+    ) {
+      return;
     }
 
-    const resposta = await fetch(
-      `${XANO_BASE}/responder_solicitacao_amizade`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-          Accept: "application/json"
-        },
-        body: JSON.stringify({
-          solicitacao_id: solicitacaoRecebidaId,
-          acao
-        })
+    try {
+      setEnviando(true);
+      setErro("");
+
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+        throw new Error(
+          "Faça login para continuar."
+        );
       }
-    );
 
-    const dados = await resposta.json().catch(() => null);
-
-    if (!resposta.ok) {
-      throw new Error(
-        dados?.message ||
-        "Não foi possível responder à solicitação."
+      await consultarJson(
+        `${XANO_BASE}/responder_solicitacao_amizade`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+          body: JSON.stringify({
+            solicitacao_id: solicitacaoRecebidaId,
+            acao,
+          }),
+        },
+        "a resposta da solicitação"
       );
+
+      setSolicitacaoRecebidaId(null);
+
+      setSituacao(
+        acao === "aceitar" ? "amigos" : "disponivel"
+      );
+    } catch (error) {
+      console.error(
+        "Erro ao responder solicitação:",
+        error
+      );
+
+      setErro(
+        error.message ||
+          "Não foi possível responder à solicitação."
+      );
+    } finally {
+      setEnviando(false);
     }
-
-    setSolicitacaoRecebidaId(null);
-
-    setSituacao(
-      acao === "aceitar" ? "amigos" : "disponivel"
-    );
-  } catch (error) {
-    console.error("Erro ao responder solicitação:", error);
-
-    setErro(
-      error.message ||
-      "Não foi possível responder à solicitação."
-    );
-  } finally {
-    setEnviando(false);
   }
-}
 
   if (!usuarioVisitadoId || situacao === "proprio") {
     return null;
   }
 
   const carregando = situacao === "carregando";
-
   const disponivel = situacao === "disponivel";
 
-  const textoBotao =
-    enviando ? "Enviando..." :
-    carregando ? "Verificando amizade..." :
-    situacao === "enviada" ? "✓ Solicitação enviada" :
-    situacao === "recebida" ? "Solicitação recebida" :
-    situacao === "amigos" ? "✓ Amigos" :
-    situacao === "erro" ? "Amizade indisponível" :
-    "＋ Adicionar amigo";
+  const textoBotao = enviando
+    ? "Enviando..."
+    : carregando
+    ? "Verificando amizade..."
+    : situacao === "enviada"
+    ? "✓ Solicitação enviada"
+    : situacao === "amigos"
+    ? "✓ Amigos"
+    : situacao === "erro"
+    ? "Amizade indisponível"
+    : "＋ Adicionar amigo";
 
+  return (
+    <div style={styles.areaAmizade}>
+      {situacao === "recebida" ? (
+        <div style={styles.botoesAmizade}>
+          <button
+            type="button"
+            onClick={() =>
+              responderSolicitacao("aceitar")
+            }
+            disabled={enviando}
+            style={{
+              ...styles.botao,
+              fontSize: 16,
+              opacity: enviando ? 0.6 : 1,
+            }}
+          >
+            {enviando
+              ? "Processando..."
+              : "✓ Aceitar"}
+          </button>
 
-return (
-  <div
-    style={{
-      display: "flex",
-      flexDirection: "column",
-      gap: 8,
-      alignItems: "flex-start"
-    }}
-  >
-    {situacao === "recebida" ? (
-      <div
-        style={{
-          display: "flex",
-          gap: 10,
-          flexWrap: "wrap"
-        }}
-      >
+          <button
+            type="button"
+            onClick={() =>
+              responderSolicitacao("recusar")
+            }
+            disabled={enviando}
+            style={{
+              ...styles.botao,
+              ...styles.botaoCinza,
+              opacity: enviando ? 0.6 : 1,
+            }}
+          >
+            Recusar
+          </button>
+        </div>
+      ) : (
         <button
           type="button"
-          onClick={() => responderSolicitacao("aceitar")}
-          disabled={enviando}
+          onClick={adicionarAmigo}
+          disabled={!disponivel || enviando}
           style={{
             ...styles.botao,
+            backgroundColor: disponivel
+              ? "#000"
+              : "#e5e7eb",
+            color: disponivel ? "#fff" : "#374151",
+            cursor: disponivel
+              ? "pointer"
+              : "default",
             fontSize: 16,
-            opacity: enviando ? 0.6 : 1,
-            cursor: enviando ? "wait" : "pointer"
           }}
         >
-          {enviando ? "Processando..." : "✓ Aceitar"}
+          {textoBotao}
         </button>
+      )}
 
-        <button
-          type="button"
-          onClick={() => responderSolicitacao("recusar")}
-          disabled={enviando}
-          style={{
-            ...styles.botao,
-            fontSize: 16,
-            backgroundColor: "#e5e7eb",
-            color: "#374151",
-            opacity: enviando ? 0.6 : 1,
-            cursor: enviando ? "wait" : "pointer"
-          }}
-        >
-          Recusar
-        </button>
-      </div>
-    ) : (
-      <button
-        type="button"
-        onClick={adicionarAmigo}
-        disabled={!disponivel || enviando}
-        style={{
-          ...styles.botao,
-          backgroundColor: disponivel ? "#000" : "#e5e7eb",
-          color: disponivel ? "#fff" : "#374151",
-          cursor: disponivel ? "pointer" : "default",
-          opacity: enviando || carregando ? 0.7 : 1,
-          fontSize: 16
-        }}
-      >
-        {textoBotao}
-      </button>
-    )}
+      {erro && (
+        <div style={styles.erroAmizade}>
+          <span role="alert">{erro}</span>
 
-    {erro && (
-      <span
-        role="alert"
-        style={{
-          color: "#b42318",
-          fontSize: 13,
-          maxWidth: 280
-        }}
-      >
-        {erro}
-      </span>
-    )}
-  </div>
-);
-}
-
-
-export default function Perfil() {
-  const router = useRouter()
-
-  const [hoverItem, setHoverItem] = useState("")
-  const [perfil, setPerfil] = useState(null)
-  const [perfilVisitadoId, setPerfilVisitadoId] = useState(null)
-const [visualizandoOutroPerfil, setVisualizandoOutroPerfil] = useState(false)
-  const [carregandoPerfil, setCarregandoPerfil] = useState(true)
-  const [erroPerfil, setErroPerfil] = useState("")
-
-  const [totalPosts, setTotalPosts] = useState(0)
-  const [postsPerfil, setPostsPerfil] = useState([])
-  const [carregandoPosts, setCarregandoPosts] = useState(true)
-
-  // NOVO: nenhum usuário recebe uma foto padrão pessoal.
-  const [fotoPerfil, setFotoPerfil] = useState("")
-  const [fotoCapa, setFotoCapa] = useState("")
-
-  const [salvandoFoto, setSalvandoFoto] = useState(false)
-  const [salvandoCapa, setSalvandoCapa] = useState(false)
-
-  const [editandoPerfil, setEditandoPerfil] = useState(false)
-  const [nomeEditado, setNomeEditado] = useState("")
-  const [bioEditada, setBioEditada] = useState("")
-  const [salvandoPerfil, setSalvandoPerfil] = useState(false)
-  const [erroEdicao, setErroEdicao] = useState("")
-
-  const operacaoEmAndamento =
-    salvandoFoto || salvandoCapa || salvandoPerfil
-
-  function logout() {
-    localStorage.removeItem("token")
-    router.push("/")
-  }
-
-  function obterUrlImagem(valor, fallback = "") {
-    if (!valor) return fallback
-
-    if (typeof valor === "string") {
-      return valor.trim() || fallback
-    }
-
-    if (typeof valor === "object") {
-      return (
-        valor.url ||
-        valor.path ||
-        valor.image_url ||
-        fallback
-      )
-    }
-
-    return fallback
-  }
-
-  // =====================================================
-  // CARREGAR PERFIL DO USUÁRIO AUTENTICADO
-  // =====================================================
-
-  async function buscarPerfil() {
-    try {
-      setCarregandoPerfil(true)
-      setErroPerfil("")
-
-      const token = localStorage.getItem("token")
-
-      if (!token) {
-        router.replace("/")
-        return
-      }
-     // IDENTIFICAR O PERFIL SOLICITADO NA URL
-const parametros = new URLSearchParams(window.location.search)
-const idNaUrl = parametros.get("users_id")
-
-const idSolicitado =
-  idNaUrl && /^[1-9]\d*$/.test(idNaUrl)
-    ? Number(idNaUrl)
-    : null
-
-setPerfilVisitadoId(idSolicitado)
-
-      // DEFINIR QUAL ENDPOINT CONSULTAR
-const urlPerfil = idSolicitado
-  ? `${XANO_BASE}/perfil_publico?users_id=${idSolicitado}`
-  : `${XANO_BASE}/meu_perfil`
-
-const resposta = await fetch(urlPerfil, {
-  method: "GET",
-  headers: {
-    Authorization: `Bearer ${token}`,
-    Accept: "application/json"
-  },
-  cache: "no-store"
-})
-
-      if (!resposta.ok) {
-        if (resposta.status === 401) {
-          localStorage.removeItem("token")
-          router.replace("/")
-          return
-        }
-
-        throw new Error(
-          `Não foi possível carregar o perfil. Código: ${resposta.status}`
-        )
-      }
-
-      // RECEBER A RESPOSTA DO XANO
-const dados = await resposta.json()
-
-// IDENTIFICAR SE É PERFIL PRÓPRIO OU VISITADO
-const visualizandoOutro = idSolicitado !== null
-
-// EXTRAIR OS DADOS CORRETAMENTE
-const dadosPerfil = visualizandoOutro
-  ? dados?.perfil
-  : dados
-
-// VALIDAR O PERFIL
-if (
-  !dadosPerfil ||
-  typeof dadosPerfil !== "object" ||
-  !dadosPerfil.users_id
-) {
-  throw new Error(
-    "O Xano não retornou um perfil válido."
-  )
-}
-
-// REGISTRAR SE É UM PERFIL VISITADO
-setVisualizandoOutroPerfil(visualizandoOutro)
-
-// GUARDAR OS DADOS DO PERFIL
-setPerfil(dadosPerfil)
-
-// FOTO DE PERFIL
-setFotoPerfil(
-  obterUrlImagem(dadosPerfil.foto_perfil, "")
-)
-
-// FOTO DE CAPA
-setFotoCapa(
-  obterUrlImagem(dadosPerfil.foto_capa, "")
-)
-
-// CARREGAR AS PUBLICAÇÕES SEM BLOQUEAR O PERFIL
-buscarTotalPosts(dadosPerfil.users_id)
-    } catch (erro) {
-      console.error("Erro ao buscar perfil:", erro)
-
-      setErroPerfil(
-        erro.message || "Erro ao carregar perfil."
-      )
-
-      setCarregandoPosts(false)
-    } finally {
-      setCarregandoPerfil(false)
-    }
-  }
-
-  // =====================================================
-  // BUSCAR PUBLICAÇÕES DO USUÁRIO
-  // =====================================================
-
-  async function buscarTotalPosts(usuarioId) {
-    try {
-      setCarregandoPosts(true)
-
-      
-const resultados = await Promise.allSettled([
-  fetch(`${XANO_BASE}/posts`),
-  fetch(`${XANO_BASE}/get_imagens`),
-  fetch(`${XANO_BASE}/listar-publicacoes-videos`)
-]);
-
-async function obterDados(resultado, nome) {
-  if (resultado.status !== "fulfilled") {
-    console.error(`Falha na consulta ${nome}:`, resultado.reason);
-    return null;
-  }
-
-  if (!resultado.value.ok) {
-    console.warn(
-      `Falha na consulta ${nome}: HTTP ${resultado.value.status}`
-    );
-    return null;
-  }
-
-  try {
-    return await resultado.value.json();
-  } catch (erro) {
-    console.error(`Erro ao ler ${nome}:`, erro);
-    return null;
-  }
-}
-
-const [respostaTexto, respostaImagens, respostaVideos] =
-  await Promise.all([
-    obterDados(resultados[0], "posts"),
-    obterDados(resultados[1], "get_imagens"),
-    obterDados(resultados[2], "listar-publicacoes-videos")
-  ]);
-
-if (
-  respostaTexto === null &&
-  respostaImagens === null &&
-  respostaVideos === null
-) {
-  throw new Error(
-    "Nenhuma consulta de publicações foi concluída."
+          {situacao === "erro" && (
+            <button
+              type="button"
+              style={styles.botaoTentarNovamente}
+              onClick={() =>
+                setTentativa((atual) => atual + 1)
+              }
+            >
+              Tentar novamente
+            </button>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 
+// =====================================================
+// PÁGINA PERFIL
+// =====================================================
 
-      function extrairLista(dados) {
-        if (Array.isArray(dados)) return dados
-        if (Array.isArray(dados?.items)) return dados.items
-        if (Array.isArray(dados?.result)) return dados.result
-        return []
+export default function Perfil() {
+  const router = useRouter();
+
+  const [hoverItem, setHoverItem] = useState("");
+  const [perfil, setPerfil] = useState(null);
+  const [visualizandoOutroPerfil, setVisualizandoOutroPerfil] =
+    useState(false);
+
+  const [carregandoPerfil, setCarregandoPerfil] =
+    useState(true);
+  const [erroPerfil, setErroPerfil] = useState("");
+
+  const [totalPosts, setTotalPosts] = useState(0);
+  const [postsPerfil, setPostsPerfil] = useState([]);
+  const [carregandoPosts, setCarregandoPosts] =
+    useState(true);
+  const [erroPosts, setErroPosts] = useState("");
+
+  const [fotoPerfil, setFotoPerfil] = useState("");
+  const [fotoCapa, setFotoCapa] = useState("");
+
+  const [salvandoFoto, setSalvandoFoto] = useState(false);
+  const [salvandoCapa, setSalvandoCapa] = useState(false);
+
+  const [editandoPerfil, setEditandoPerfil] =
+    useState(false);
+  const [nomeEditado, setNomeEditado] = useState("");
+  const [bioEditada, setBioEditada] = useState("");
+  const [salvandoPerfil, setSalvandoPerfil] =
+    useState(false);
+  const [erroEdicao, setErroEdicao] = useState("");
+
+  const carregamentoIdRef = useRef(0);
+
+  const operacaoEmAndamento =
+    salvandoFoto || salvandoCapa || salvandoPerfil;
+
+  function logout() {
+    limparCaches();
+    localStorage.removeItem("token");
+    router.push("/");
+  }
+
+  // =====================================================
+  // BUSCAR PERFIL
+  // =====================================================
+
+  async function buscarPerfil() {
+    const carregamentoId = ++carregamentoIdRef.current;
+
+    try {
+      setCarregandoPerfil(true);
+      setErroPerfil("");
+
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+        router.replace("/");
+        return;
       }
 
-      const postsTexto = extrairLista(respostaTexto)
-      const postsImagens = extrairLista(respostaImagens)
-      const postsVideos = extrairLista(respostaVideos)
+      const parametros = new URLSearchParams(
+        window.location.search
+      );
+
+      const idNaUrl = parametros.get("users_id");
+
+      const idSolicitado =
+        idNaUrl && /^[1-9]\d*$/.test(idNaUrl)
+          ? Number(idNaUrl)
+          : null;
+
+      const visualizandoOutro =
+        idSolicitado !== null;
+
+      let dadosPerfil;
+
+      if (visualizandoOutro) {
+        const dados = await consultarJson(
+          `${XANO_BASE}/perfil_publico?users_id=${idSolicitado}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              Accept: "application/json",
+            },
+          },
+          "o perfil público"
+        );
+
+        dadosPerfil = dados?.perfil;
+      } else {
+        dadosPerfil =
+          await consultarMeuPerfil(token);
+      }
+
+      if (
+        !dadosPerfil ||
+        typeof dadosPerfil !== "object" ||
+        !dadosPerfil.users_id
+      ) {
+        throw new Error(
+          "O Xano não retornou um perfil válido."
+        );
+      }
+
+      if (carregamentoId !== carregamentoIdRef.current) {
+        return;
+      }
+
+      setVisualizandoOutroPerfil(visualizandoOutro);
+      setPerfil(dadosPerfil);
+
+      setFotoPerfil(
+        obterUrlImagem(dadosPerfil.foto_perfil)
+      );
+
+      setFotoCapa(
+        obterUrlImagem(dadosPerfil.foto_capa)
+      );
+
+      // Carrega publicações separadamente.
+      // A falha nas publicações não impede
+      // a exibição do perfil.
+      buscarTotalPosts(
+        dadosPerfil.users_id,
+        carregamentoId
+      );
+    } catch (erro) {
+      if (carregamentoId !== carregamentoIdRef.current) {
+        return;
+      }
+
+      console.error(
+        "Erro ao buscar perfil:",
+        erro
+      );
+
+      setErroPerfil(
+        erro.message || "Erro ao carregar perfil."
+      );
+
+      setCarregandoPosts(false);
+    } finally {
+      if (carregamentoId === carregamentoIdRef.current) {
+        setCarregandoPerfil(false);
+      }
+    }
+  }
+
+  // =====================================================
+  // BUSCAR PUBLICAÇÕES
+  // =====================================================
+
+  async function buscarTotalPosts(
+    usuarioId,
+    carregamentoId = carregamentoIdRef.current
+  ) {
+    try {
+      setCarregandoPosts(true);
+      setErroPosts("");
+
+      // Pequena espera para não disputar imediatamente
+      // com as consultas de perfil e amizade.
+      await esperar(900);
+
+      if (
+        carregamentoId !== carregamentoIdRef.current
+      ) {
+        return;
+      }
+
+      const resultado = await consultarPublicacoes();
+
+      if (
+        carregamentoId !== carregamentoIdRef.current
+      ) {
+        return;
+      }
+
+      const postsTexto = resultado.posts;
+      const postsImagens = resultado.imagens;
+      const postsVideos = resultado.videos;
 
       const textosDoUsuario = postsTexto.filter(
-        post =>
+        (post) =>
           Number(post._usuario_id) === Number(usuarioId)
-      )
+      );
 
       const imagensDoUsuario = postsImagens.filter(
-        post =>
+        (post) =>
           Number(post.usuario_id) === Number(usuarioId)
-      )
+      );
 
       const videosDoUsuario = postsVideos.filter(
-        post =>
+        (post) =>
           Number(post.usuario_id) === Number(usuarioId)
-      )
-
-      setTotalPosts(
-        textosDoUsuario.length +
-        imagensDoUsuario.length +
-        videosDoUsuario.length
-      )
+      );
 
       const publicacoesTexto = textosDoUsuario.map(
-        post => ({
+        (post) => ({
           tipo: "texto",
           id: post.id,
           texto: post.texto,
-          data: post.id
+          data: post.id,
         })
-      )
+      );
 
       const publicacoesImagem = imagensDoUsuario.map(
-        post => ({
+        (post) => ({
           tipo: "imagem",
           id: post.id,
           imagem: post.image_url,
-          data: post.id
+          data: post.id,
         })
-      )
+      );
 
       const publicacoesVideo = videosDoUsuario.map(
-        post => ({
+        (post) => ({
           tipo: "video",
           id: post.id,
           video: post.url_do_video,
           legenda: post.legenda || "",
-          data: post.id
+          data: post.id,
         })
-      )
+      );
 
       const todasPublicacoes = [
         ...publicacoesTexto,
         ...publicacoesImagem,
-        ...publicacoesVideo
+        ...publicacoesVideo,
       ].sort(
         (a, b) => Number(b.data) - Number(a.data)
-      )
+      );
 
-      setPostsPerfil(todasPublicacoes)
+      setPostsPerfil(todasPublicacoes);
+      setTotalPosts(todasPublicacoes.length);
+
+      if (resultado.falhas.length > 0) {
+        setErroPosts(
+          "Algumas publicações não puderam ser carregadas. " +
+            "A contagem exibida pode estar incompleta."
+        );
+      }
+
+      if (resultado.falhas.length === 3) {
+        setErroPosts(
+          "Não foi possível carregar as publicações. " +
+            "Tente novamente em alguns instantes."
+        );
+      }
     } catch (erro) {
-      console.error(
-        "Erro ao buscar posts do perfil:",
-        erro
-      )
+      if (
+        carregamentoId !== carregamentoIdRef.current
+      ) {
+        return;
+      }
 
-      setPostsPerfil([])
-      setTotalPosts(0)
+      console.error(
+        "Erro ao buscar publicações:",
+        erro
+      );
+
+      // Mantém os dados já exibidos numa falha.
+      setErroPosts(
+        erro.message ||
+          "Não foi possível carregar as publicações."
+      );
     } finally {
-      setCarregandoPosts(false)
+      if (
+        carregamentoId === carregamentoIdRef.current
+      ) {
+        setCarregandoPosts(false);
+      }
     }
   }
 
   useEffect(() => {
-    buscarPerfil()
-  }, [])
+    buscarPerfil();
+
+    return () => {
+      carregamentoIdRef.current += 1;
+    };
+  }, []);
 
   // =====================================================
-  // EDIÇÃO DO PERFIL
+  // EDITAR PERFIL
   // =====================================================
 
- function abrirEdicaoPerfil() {
-  if (
-    !perfil ||
-    visualizandoOutroPerfil ||
-    operacaoEmAndamento
-  ) return
+  function abrirEdicaoPerfil() {
+    if (
+      !perfil ||
+      visualizandoOutroPerfil ||
+      operacaoEmAndamento
+    ) {
+      return;
+    }
 
-    setNomeEditado(perfil.nome || "")
-    setBioEditada(perfil.bio || "")
-    setErroEdicao("")
-    setEditandoPerfil(true)
+    setNomeEditado(perfil.nome || "");
+    setBioEditada(perfil.bio || "");
+    setErroEdicao("");
+    setEditandoPerfil(true);
   }
-
-  // =====================================================
-  // ATUALIZAR PERFIL NO XANO
-  // =====================================================
 
   async function atualizarPerfilXano(campos) {
     if (visualizandoOutroPerfil) {
-  throw new Error(
-    "Você não tem permissão para editar este perfil."
-  )
-}
-    const token = localStorage.getItem("token")
+      throw new Error(
+        "Você não tem permissão para editar este perfil."
+      );
+    }
+
+    const token = localStorage.getItem("token");
 
     if (!token) {
       throw new Error(
         "Sua sessão expirou. Entre novamente."
-      )
+      );
     }
 
-    const resposta = await fetch(
+    const atualizado = await consultarJson(
       `${XANO_BASE}/meu_perfil`,
       {
         method: "PATCH",
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
-          Accept: "application/json"
+          Accept: "application/json",
         },
-        body: JSON.stringify(campos)
-      }
-    )
-
-    if (resposta.status === 401) {
-      localStorage.removeItem("token")
-      router.replace("/")
-
-      throw new Error(
-        "Sua sessão expirou."
-      )
-    }
-
-    if (!resposta.ok) {
-      const detalhes = await resposta
-        .text()
-        .catch(() => "")
-
-      throw new Error(
-        `Não foi possível atualizar o perfil. Código: ${resposta.status}. ${detalhes}`
-      )
-    }
-
-    const atualizado = await resposta.json()
+        body: JSON.stringify(campos),
+      },
+      "a atualização do perfil"
+    );
 
     if (
       !atualizado ||
@@ -1029,14 +1109,15 @@ if (
         Number(perfil.users_id)
     ) {
       throw new Error(
-        "O Xano não retornou o perfil atualizado corretamente."
-      )
+        "O Xano não confirmou a atualização do perfil."
+      );
     }
 
-    return atualizado
+    limparCacheMeuPerfil();
+
+    return atualizado;
   }
 
-  // Preserva os dados já existentes.
   function montarDadosPerfil(alteracoes = {}) {
     return {
       nome: perfil.nome || "",
@@ -1044,101 +1125,97 @@ if (
       bio: perfil.bio || "",
       foto_perfil: perfil.foto_perfil || "",
       foto_capa: perfil.foto_capa || "",
-      ...alteracoes
-    }
+      ...alteracoes,
+    };
   }
 
   function aplicarPerfilAtualizado(atualizado) {
-    setPerfil(atualizado)
+    setPerfil(atualizado);
 
-    // NOVO: não utiliza mais /insta.png.
     setFotoPerfil(
-      obterUrlImagem(atualizado.foto_perfil, "")
-    )
+      obterUrlImagem(atualizado.foto_perfil)
+    );
 
     setFotoCapa(
-      obterUrlImagem(atualizado.foto_capa, "")
-    )
+      obterUrlImagem(atualizado.foto_capa)
+    );
   }
 
-  // =====================================================
-  // SALVAR NOME E BIOGRAFIA
-  // =====================================================
-
   async function salvarEdicaoPerfil(evento) {
-    evento.preventDefault()
+    evento.preventDefault();
 
-    if (!perfil || operacaoEmAndamento) return
+    if (!perfil || operacaoEmAndamento) return;
 
-    const nome = nomeEditado.trim()
-    const bio = bioEditada.trim()
+    const nome = nomeEditado.trim();
+    const bio = bioEditada.trim();
 
     if (!nome) {
       setErroEdicao(
         "Informe um nome para o perfil."
-      )
-      return
+      );
+      return;
     }
 
     try {
-      setSalvandoPerfil(true)
-      setErroEdicao("")
+      setSalvandoPerfil(true);
+      setErroEdicao("");
 
       const atualizado = await atualizarPerfilXano(
         montarDadosPerfil({
           nome,
-          bio
+          bio,
         })
-      )
+      );
 
-      aplicarPerfilAtualizado(atualizado)
-      setEditandoPerfil(false)
+      aplicarPerfilAtualizado(atualizado);
+      setEditandoPerfil(false);
     } catch (erro) {
       console.error(
         "Erro ao salvar perfil:",
         erro
-      )
+      );
 
       setErroEdicao(
         erro.message ||
-        "Não foi possível salvar as alterações."
-      )
+          "Não foi possível salvar as alterações."
+      );
     } finally {
-      setSalvandoPerfil(false)
+      setSalvandoPerfil(false);
     }
   }
 
   // =====================================================
-  // UPLOAD DE IMAGEM
-  // UTILIZA A ROTA EXISTENTE DO CONRAD AI
+  // UPLOAD DE IMAGENS
   // =====================================================
 
   async function enviarImagem(arquivo) {
     if (!arquivo.type.startsWith("image/")) {
       throw new Error(
         "Selecione um arquivo de imagem."
-      )
+      );
     }
 
-    const formData = new FormData()
-    formData.append("file", arquivo)
+    const formData = new FormData();
+    formData.append("file", arquivo);
 
     const respostaUpload = await fetch(
       "/api/upload",
       {
         method: "POST",
-        body: formData
+        body: formData,
       }
-    )
+    );
 
     if (!respostaUpload.ok) {
       throw new Error(
         `Falha no envio da imagem. Código: ${respostaUpload.status}`
-      )
+      );
     }
 
-    const dadosUpload = await respostaUpload.json()
-    const urlImagem = dadosUpload?.url
+    const dadosUpload =
+      await respostaUpload.json();
+
+    const urlImagem = dadosUpload?.url;
 
     if (
       typeof urlImagem !== "string" ||
@@ -1146,125 +1223,113 @@ if (
     ) {
       throw new Error(
         "O upload não retornou um endereço válido para a imagem."
-      )
+      );
     }
 
-    return urlImagem
+    return urlImagem;
   }
 
-  // =====================================================
-  // ALTERAR FOTO DE PERFIL
-  // =====================================================
-
   async function alterarFotoPerfil(evento) {
-    const arquivo = evento.target.files?.[0]
+    const arquivo = evento.target.files?.[0];
 
     if (
       !arquivo ||
       !perfil ||
       operacaoEmAndamento
     ) {
-      return
+      return;
     }
 
     try {
-      setSalvandoFoto(true)
+      setSalvandoFoto(true);
 
-      const urlFoto = await enviarImagem(arquivo)
+      const urlFoto = await enviarImagem(arquivo);
 
       const atualizado = await atualizarPerfilXano(
         montarDadosPerfil({
-          foto_perfil: urlFoto
+          foto_perfil: urlFoto,
         })
-      )
+      );
 
-      const urlSalva = obterUrlImagem(
-        atualizado.foto_perfil,
-        ""
-      )
-
-      if (urlSalva !== urlFoto) {
+      if (
+        obterUrlImagem(atualizado.foto_perfil) !==
+        urlFoto
+      ) {
         throw new Error(
           "O Xano não confirmou o salvamento da fotografia."
-        )
+        );
       }
 
-      aplicarPerfilAtualizado(atualizado)
+      aplicarPerfilAtualizado(atualizado);
 
       alert(
         "Foto de perfil salva com sucesso!"
-      )
+      );
     } catch (erro) {
       console.error(
         "Erro ao salvar foto de perfil:",
         erro
-      )
+      );
 
       alert(
         erro.message ||
-        "Não foi possível salvar a foto de perfil."
-      )
+          "Não foi possível salvar a foto de perfil."
+      );
     } finally {
-      setSalvandoFoto(false)
-      evento.target.value = ""
+      setSalvandoFoto(false);
+      evento.target.value = "";
     }
   }
 
-  // =====================================================
-  // ALTERAR E SALVAR FOTO DE CAPA
-  // =====================================================
-
   async function alterarFotoCapa(evento) {
-    const arquivo = evento.target.files?.[0]
+    const arquivo = evento.target.files?.[0];
 
     if (
       !arquivo ||
       !perfil ||
       operacaoEmAndamento
     ) {
-      return
+      return;
     }
 
     try {
-      setSalvandoCapa(true)
+      setSalvandoCapa(true);
 
-      const urlCapa = await enviarImagem(arquivo)
+      const urlCapa = await enviarImagem(arquivo);
 
       const atualizado = await atualizarPerfilXano(
         montarDadosPerfil({
-          foto_capa: urlCapa
+          foto_capa: urlCapa,
         })
-      )
+      );
 
-      const urlSalva = obterUrlImagem(
-        atualizado.foto_capa,
-        ""
-      )
-
-      if (urlSalva !== urlCapa) {
+      if (
+        obterUrlImagem(atualizado.foto_capa) !==
+        urlCapa
+      ) {
         throw new Error(
-          "O Xano não confirmou o salvamento da foto de capa. Verifique o campo foto_capa."
-        )
+          "O Xano não confirmou o salvamento da foto de capa."
+        );
       }
 
-      aplicarPerfilAtualizado(atualizado)
+      aplicarPerfilAtualizado(atualizado);
 
       alert(
         "Foto de capa salva com sucesso!"
-      )
+      );
     } catch (erro) {
       console.error(
         "Erro ao salvar foto de capa:",
         erro
-      )
+      );
 
       alert(
         erro.message ||
-        "Não foi possível salvar a foto de capa."
-      )
+          "Não foi possível salvar a foto de capa."
+      );
     } finally {
-      setSalvandoCapa(false)
-      evento.target.value = ""
+      setSalvandoCapa(false);
+      evento.target.value = "";
     }
   }
 
@@ -1276,33 +1341,34 @@ if (
     {
       id: "home",
       texto: "🏠 Home",
-      rota: "/feed"
+      rota: "/feed",
+    },
+    {
+      id: "ia",
+      texto: "IA",
+      rota: "/IA",
     },
     {
       id: "explorar",
       texto: "📰 Feed",
-      rota: "/imagens"
+      rota: "/imagens",
     },
     {
       id: "videos",
       texto: "🎬 Feed de vídeos",
-      rota: "/feed-videos"
+      rota: "/feed-videos",
     },
     {
       id: "privacidade",
       texto: "🔒 Política de Privacidade",
-      rota: "/politica-de-privacidade"
+      rota: "/politica-de-privacidade",
     },
     {
       id: "termos",
       texto: "📜 Termos de Uso",
-      rota: "/termos-de-uso"
-    }
-  ]
-
-  // =====================================================
-  // PUBLICAÇÕES
-  // =====================================================
+      rota: "/termos-de-uso",
+    },
+  ];
 
   function renderizarPublicacao(post) {
     return (
@@ -1342,112 +1408,34 @@ if (
           </div>
         )}
       </div>
-    )
+    );
   }
 
   // =====================================================
-  // INTERFACE DA PÁGINA
+  // INTERFACE DO PERFIL
   // =====================================================
 
   return (
     <div style={styles.page}>
-      {/* MENU LATERAL */}
-      <div style={styles.sidebar}>
+      <aside style={styles.sidebar}>
         <div>
           <div style={styles.logo}>
             Conrad
           </div>
 
-          <div style={styles.menu}>
-            <Link
-              href="/feed"
-              style={{ textDecoration: "none" }}
-            >
-              <div
-                style={{
-                  ...styles.menuItem,
-                  ...(hoverItem === "home" &&
-                    styles.menuHover)
-                }}
-                onMouseEnter={() =>
-                  setHoverItem("home")
-                }
-                onMouseLeave={() =>
-                  setHoverItem("")
-                }
+          <nav style={styles.menu}>
+            {itensMenu.slice(0, 3).map((item) => (
+              <Link
+                key={item.id}
+                href={item.rota}
+                style={{ textDecoration: "none" }}
               >
-                🏠 Home
-              </div>
-            </Link>
-
-            <div
-              style={{
-                ...styles.menuItem,
-                ...(hoverItem === "ia" &&
-                  styles.menuHover),
-                display: "flex",
-                alignItems: "center",
-                gap: 12
-              }}
-              onMouseEnter={() =>
-                setHoverItem("ia")
-              }
-              onMouseLeave={() =>
-                setHoverItem("")
-              }
-              onClick={() =>
-                router.push("/IA")
-              }
-            >
-              <img
-                src="/logo/logo-simbolo.png"
-                alt="IA"
-                style={{
-                  width: 32,
-                  height: 32,
-                  objectFit: "contain"
-                }}
-              />
-
-              <span>IA</span>
-            </div>
-
-            <div
-              style={{
-                ...styles.menuItem,
-                ...(hoverItem === "explorar" &&
-                  styles.menuHover)
-              }}
-              onMouseEnter={() =>
-                setHoverItem("explorar")
-              }
-              onMouseLeave={() =>
-                setHoverItem("")
-              }
-              onClick={() =>
-                router.push("/imagens")
-              }
-            >
-              📰 Feed
-            </div>
-
-            <div style={styles.menuAtivo}>
-              👤 Perfil
-            </div>
-
-            {itensMenu
-              .filter(
-                item =>
-                  item.id !== "home" &&
-                  item.id !== "explorar"
-              )
-              .map(item => (
                 <div
-                  key={item.id}
                   style={{
                     ...styles.menuItem,
-                    ...(hoverItem === item.id &&
-                      styles.menuHover)
+                    ...(hoverItem === item.id
+                      ? styles.menuHover
+                      : {}),
                   }}
                   onMouseEnter={() =>
                     setHoverItem(item.id)
@@ -1455,51 +1443,76 @@ if (
                   onMouseLeave={() =>
                     setHoverItem("")
                   }
-                  onClick={() =>
-                    router.push(item.rota)
+                >
+                  {item.id === "ia" && (
+                    <img
+                      src="/logo/logo-simbolo.png"
+                      alt=""
+                      style={styles.logoIA}
+                    />
+                  )}
+                  {item.texto}
+                </div>
+              </Link>
+            ))}
+
+            <div style={styles.menuAtivo}>
+              👤 Perfil
+            </div>
+
+            {itensMenu.slice(3).map((item) => (
+              <Link
+                key={item.id}
+                href={item.rota}
+                style={{ textDecoration: "none" }}
+              >
+                <div
+                  style={{
+                    ...styles.menuItem,
+                    ...(hoverItem === item.id
+                      ? styles.menuHover
+                      : {}),
+                  }}
+                  onMouseEnter={() =>
+                    setHoverItem(item.id)
+                  }
+                  onMouseLeave={() =>
+                    setHoverItem("")
                   }
                 >
                   {item.texto}
                 </div>
-              ))}
-          </div>
+              </Link>
+            ))}
+          </nav>
         </div>
 
-        <div
-          style={{
-            ...styles.logout,
-            ...(hoverItem === "logout" &&
-              styles.logoutHover)
-          }}
-          onMouseEnter={() =>
-            setHoverItem("logout")
-          }
-          onMouseLeave={() =>
-            setHoverItem("")
-          }
+        <button
+          type="button"
+          style={styles.logout}
           onClick={logout}
         >
           Sair
-        </div>
-      </div>
+        </button>
+      </aside>
 
-    {/* CONTEÚDO PRINCIPAL */}
-<div style={styles.content}>
-  <div style={styles.navbar}>
-    <PesquisaUsuariosPerfil />
-  </div>
+      <main style={styles.content}>
+        <div style={styles.navbar}>
+          <PesquisaUsuariosPerfil />
+        </div>
 
         {carregandoPerfil ? (
           <div style={styles.estadoPerfil}>
-            Carregando seu perfil...
+            Carregando perfil...
           </div>
         ) : erroPerfil ? (
           <div style={styles.estadoPerfil}>
             <p>{erroPerfil}</p>
 
             <button
-              onClick={buscarPerfil}
+              type="button"
               style={styles.botao}
+              onClick={buscarPerfil}
             >
               Tentar novamente
             </button>
@@ -1515,92 +1528,102 @@ if (
                   style={styles.banner}
                 />
               ) : (
-                <div
-                  style={styles.bannerVazio}
-                >
+                <div style={styles.bannerVazio}>
                   <span style={styles.iconeCapa}>
                     🖼️
                   </span>
-
                   <span>
                     Adicione uma foto de capa
                   </span>
                 </div>
               )}
-             {!visualizandoOutroPerfil && (
-  <label
-    style={{
-      ...styles.changeCoverButton,
-      opacity: operacaoEmAndamento ? 0.65 : 1,
-      cursor: operacaoEmAndamento ? "wait" : "pointer"
-    }}
-  >
-    {salvandoCapa ? "Salvando capa..." : "Alterar capa"}
 
-    <input
-      type="file"
-      accept="image/*"
-      hidden
-      disabled={operacaoEmAndamento}
-      onChange={alterarFotoCapa}
-    />
-  </label>
-)}
-</div>
+              {!visualizandoOutroPerfil && (
+                <label
+                  style={{
+                    ...styles.changeCoverButton,
+                    opacity: operacaoEmAndamento
+                      ? 0.65
+                      : 1,
+                    cursor: operacaoEmAndamento
+                      ? "wait"
+                      : "pointer",
+                  }}
+                >
+                  {salvandoCapa
+                    ? "Salvando capa..."
+                    : "Alterar capa"}
 
-          {/* FOTO DE PERFIL */}
-<div style={styles.avatarArea}>
-  {visualizandoOutroPerfil ? (
-    <div>
-      {fotoPerfil ? (
-        <img
-          src={fotoPerfil}
-          alt="Foto de perfil"
-          style={styles.avatar}
-        />
-      ) : (
-        <div style={styles.avatarVazio}>
-          👤
-        </div>
-      )}
-    </div>
-  ) : (
-    <label
-      style={{
-        ...styles.avatarLabel,
-        opacity: operacaoEmAndamento ? 0.65 : 1,
-        cursor: operacaoEmAndamento ? "wait" : "pointer"
-      }}
-      title="Alterar foto de perfil"
-    >
-      {fotoPerfil ? (
-        <img
-          src={fotoPerfil}
-          alt="Foto de perfil"
-          style={styles.avatar}
-        />
-      ) : (
-        <div style={styles.avatarVazio}>
-          👤
-        </div>
-      )}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    hidden
+                    disabled={operacaoEmAndamento}
+                    onChange={alterarFotoCapa}
+                  />
+                </label>
+              )}
+            </div>
 
-      <span style={styles.avatarHint}>
-        {salvandoFoto ? "Salvando foto..." : "Alterar foto"}
-      </span>
+            {/* FOTO DO PERFIL */}
+            <div style={styles.avatarArea}>
+              {visualizandoOutroPerfil ? (
+                <div>
+                  {fotoPerfil ? (
+                    <img
+                      src={fotoPerfil}
+                      alt="Foto de perfil"
+                      style={styles.avatar}
+                    />
+                  ) : (
+                    <div style={styles.avatarVazio}>
+                      👤
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <label
+                  style={{
+                    ...styles.avatarLabel,
+                    opacity: operacaoEmAndamento
+                      ? 0.65
+                      : 1,
+                    cursor: operacaoEmAndamento
+                      ? "wait"
+                      : "pointer",
+                  }}
+                  title="Alterar foto de perfil"
+                >
+                  {fotoPerfil ? (
+                    <img
+                      src={fotoPerfil}
+                      alt="Foto de perfil"
+                      style={styles.avatar}
+                    />
+                  ) : (
+                    <div style={styles.avatarVazio}>
+                      👤
+                    </div>
+                  )}
 
-      <input
-        type="file"
-        accept="image/*"
-        hidden
-        disabled={operacaoEmAndamento}
-        onChange={alterarFotoPerfil}
-      />
-    </label>
-  )}
-</div>
+                  <span style={styles.avatarHint}>
+                    {salvandoFoto
+                      ? "Salvando foto..."
+                      : "Alterar foto"}
+                  </span>
 
-{/* INFORMAÇÕES */}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    hidden
+                    disabled={operacaoEmAndamento}
+                    onChange={alterarFotoPerfil}
+                  />
+                </label>
+              )}
+            </div>
+
+            {/* INFORMAÇÕES */}
             <div style={styles.info}>
               <div>
                 <div style={styles.nome}>
@@ -1615,20 +1638,20 @@ if (
                 </div>
               </div>
 
-             {!visualizandoOutroPerfil ? (
-  <button
-    type="button"
-    style={styles.botao}
-    onClick={abrirEdicaoPerfil}
-    disabled={operacaoEmAndamento}
-  >
-    Editar perfil
-  </button>
-) : (
-  <BotaoAmizadePerfil
-    usuarioVisitadoId={perfil.users_id}
-  />
-)}
+              {!visualizandoOutroPerfil ? (
+                <button
+                  type="button"
+                  style={styles.botao}
+                  onClick={abrirEdicaoPerfil}
+                  disabled={operacaoEmAndamento}
+                >
+                  Editar perfil
+                </button>
+              ) : (
+                <BotaoAmizadePerfil
+                  usuarioVisitadoId={perfil.users_id}
+                />
+              )}
             </div>
 
             <div style={styles.bio}>
@@ -1642,7 +1665,6 @@ if (
                 <div style={styles.statNumero}>
                   {totalPosts}
                 </div>
-
                 <div style={styles.statTexto}>
                   Posts
                 </div>
@@ -1652,7 +1674,6 @@ if (
                 <div style={styles.statNumero}>
                   0
                 </div>
-
                 <div style={styles.statTexto}>
                   Seguidores
                 </div>
@@ -1662,7 +1683,6 @@ if (
                 <div style={styles.statNumero}>
                   0
                 </div>
-
                 <div style={styles.statTexto}>
                   Seguindo
                 </div>
@@ -1675,36 +1695,53 @@ if (
                 Publicações
               </div>
 
+              {erroPosts && (
+                <div style={styles.avisoPosts}>
+                  {erroPosts}
+
+                  <button
+                    type="button"
+                    style={styles.botaoTentarNovamente}
+                    onClick={() => {
+                      cachePublicacoes = null;
+                      buscarTotalPosts(perfil.users_id);
+                    }}
+                  >
+                    Tentar novamente
+                  </button>
+                </div>
+              )}
+
               {carregandoPosts ? (
                 <div style={styles.mensagemPosts}>
                   Carregando publicações...
                 </div>
               ) : postsPerfil.length === 0 ? (
                 <div style={styles.mensagemPosts}>
-                  Nenhuma publicação ainda.
+                  {erroPosts
+                    ? "Publicações temporariamente indisponíveis."
+                    : "Nenhuma publicação ainda."}
                 </div>
               ) : (
-                postsPerfil.map(
-                  renderizarPublicacao
-                )
+                postsPerfil.map(renderizarPublicacao)
               )}
             </div>
           </div>
         ) : null}
 
-        {/* JANELA EDITAR PERFIL */}
+        {/* JANELA DE EDIÇÃO */}
         {editandoPerfil && (
           <div
             style={styles.modalOverlay}
             onClick={() => {
               if (!salvandoPerfil) {
-                setEditandoPerfil(false)
+                setEditandoPerfil(false);
               }
             }}
           >
             <form
               style={styles.modal}
-              onClick={evento =>
+              onClick={(evento) =>
                 evento.stopPropagation()
               }
               onSubmit={salvarEdicaoPerfil}
@@ -1725,10 +1762,8 @@ if (
                 type="text"
                 maxLength={100}
                 value={nomeEditado}
-                onChange={evento =>
-                  setNomeEditado(
-                    evento.target.value
-                  )
+                onChange={(evento) =>
+                  setNomeEditado(evento.target.value)
                 }
                 style={styles.campoInput}
                 disabled={salvandoPerfil}
@@ -1747,10 +1782,8 @@ if (
                 maxLength={500}
                 rows={5}
                 value={bioEditada}
-                onChange={evento =>
-                  setBioEditada(
-                    evento.target.value
-                  )
+                onChange={(evento) =>
+                  setBioEditada(evento.target.value)
                 }
                 style={styles.campoInput}
                 disabled={salvandoPerfil}
@@ -1790,9 +1823,9 @@ if (
             </form>
           </div>
         )}
-      </div>
+      </main>
     </div>
-  )
+  );
 }
 
 // =====================================================
@@ -1804,29 +1837,36 @@ const styles = {
     display: "flex",
     backgroundColor: "#f0f2f5",
     minHeight: "100vh",
-    fontFamily: "Inter, sans-serif"
+    fontFamily: "Inter, sans-serif",
   },
 
   sidebar: {
     width: 240,
+    flexShrink: 0,
     backgroundColor: "white",
     padding: 25,
     display: "flex",
     flexDirection: "column",
     justifyContent: "space-between",
-    borderRight: "1px solid #ddd"
+    borderRight: "1px solid #ddd",
   },
 
   logo: {
     fontSize: 32,
     fontWeight: "bold",
-    marginBottom: 40
+    marginBottom: 40,
+  },
+
+  logoIA: {
+    width: 32,
+    height: 32,
+    objectFit: "contain",
   },
 
   menu: {
     display: "flex",
     flexDirection: "column",
-    gap: 15
+    gap: 15,
   },
 
   menuItem: {
@@ -1835,13 +1875,15 @@ const styles = {
     cursor: "pointer",
     color: "#444",
     fontSize: 18,
-    transition: "0.2s"
+    transition: "0.2s",
+    display: "flex",
+    alignItems: "center",
+    gap: 12,
   },
 
   menuHover: {
     backgroundColor: "#edf3ff",
     color: "#1877f2",
-    transform: "translateX(5px)"
   },
 
   menuAtivo: {
@@ -1850,46 +1892,111 @@ const styles = {
     backgroundColor: "#e7f0ff",
     color: "#1877f2",
     fontSize: 18,
-    fontWeight: "bold"
+    fontWeight: "bold",
   },
 
   logout: {
     backgroundColor: "#000",
-    color: "white",
+    color: "#fff",
     border: "none",
     padding: "14px 18px",
     borderRadius: 12,
     fontSize: 18,
     cursor: "pointer",
-    transition: "0.2s",
-    textAlign: "center"
-  },
-
-  logoutHover: {
-    transform: "translateY(5px)",
-    opacity: 0.8
+    textAlign: "center",
   },
 
   content: {
     flex: 1,
     padding: 10,
-    minWidth: 0
+    minWidth: 0,
   },
 
   navbar: {
     backgroundColor: "white",
     padding: 10,
     borderRadius: 16,
-    marginBottom: 10
+    marginBottom: 10,
+  },
+
+  pesquisaArea: {
+    position: "relative",
+    width: 350,
+    maxWidth: "100%",
+    zIndex: 100,
   },
 
   search: {
-    width: 300,
-    maxWidth: "100%",
+    width: "100%",
+    boxSizing: "border-box",
     padding: 12,
     borderRadius: 30,
     border: "1px solid #ddd",
-    outline: "none"
+    outline: "none",
+    fontSize: 15,
+    backgroundColor: "white",
+  },
+
+  resultadosPesquisa: {
+    position: "absolute",
+    top: "calc(100% + 8px)",
+    left: 0,
+    width: "min(350px, 90vw)",
+    maxHeight: 350,
+    overflowY: "auto",
+    borderRadius: 14,
+    border: "1px solid #e5e7eb",
+    backgroundColor: "white",
+    boxShadow: "0 8px 25px rgba(0,0,0,0.12)",
+    zIndex: 101,
+  },
+
+  usuarioPesquisa: {
+    display: "flex",
+    alignItems: "center",
+    gap: 12,
+    padding: 12,
+    borderBottom: "1px solid #f0f0f0",
+    color: "#222",
+    textDecoration: "none",
+    cursor: "pointer",
+  },
+
+  fotoPesquisa: {
+    width: 44,
+    height: 44,
+    borderRadius: "50%",
+    objectFit: "cover",
+    flexShrink: 0,
+  },
+
+  semFotoPesquisa: {
+    width: 44,
+    height: 44,
+    borderRadius: "50%",
+    backgroundColor: "#f0f2f5",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+
+  nomePesquisa: {
+    fontSize: 14,
+    fontWeight: "bold",
+    overflowWrap: "anywhere",
+  },
+
+  usernamePesquisa: {
+    fontSize: 13,
+    color: "#777",
+    overflowWrap: "anywhere",
+  },
+
+  mensagemPesquisa: {
+    padding: 15,
+    fontSize: 14,
+    color: "#666",
   },
 
   estadoPerfil: {
@@ -1899,7 +2006,7 @@ const styles = {
     textAlign: "center",
     color: "#444",
     maxWidth: 900,
-    margin: "0 auto"
+    margin: "0 auto",
   },
 
   card: {
@@ -1908,21 +2015,20 @@ const styles = {
     overflow: "hidden",
     boxShadow: "0 4px 15px rgba(0,0,0,0.08)",
     maxWidth: 900,
-    margin: "0 auto"
+    margin: "0 auto",
   },
 
   bannerContainer: {
-    position: "relative"
+    position: "relative",
   },
 
   banner: {
     width: "100%",
     height: 260,
     objectFit: "cover",
-    display: "block"
+    display: "block",
   },
 
-  // NOVO: capa neutra para perfis sem fotografia.
   bannerVazio: {
     width: "100%",
     height: 260,
@@ -1934,11 +2040,11 @@ const styles = {
     gap: 12,
     color: "#6b7280",
     fontSize: 18,
-    textAlign: "center"
+    textAlign: "center",
   },
 
   iconeCapa: {
-    fontSize: 42
+    fontSize: 42,
   },
 
   changeCoverButton: {
@@ -1950,20 +2056,20 @@ const styles = {
     padding: "10px 14px",
     borderRadius: 10,
     cursor: "pointer",
-    fontWeight: "bold"
+    fontWeight: "bold",
   },
 
   avatarArea: {
     marginTop: -40,
     marginLeft: 30,
     position: "relative",
-    zIndex: 10
+    zIndex: 10,
   },
 
   avatarLabel: {
     display: "inline-block",
     position: "relative",
-    cursor: "pointer"
+    cursor: "pointer",
   },
 
   avatar: {
@@ -1973,10 +2079,9 @@ const styles = {
     backgroundColor: "white",
     padding: 6,
     objectFit: "cover",
-    boxShadow: "0 2px 8px rgba(0,0,0,0.2)"
+    boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
   },
 
-  // NOVO: avatar neutro para novos usuários.
   avatarVazio: {
     width: 140,
     height: 140,
@@ -1988,14 +2093,14 @@ const styles = {
     justifyContent: "center",
     fontSize: 65,
     color: "#6b7280",
-    boxShadow: "0 2px 8px rgba(0,0,0,0.2)"
+    boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
   },
 
   avatarHint: {
     display: "block",
     textAlign: "center",
     color: "#555",
-    fontSize: 13
+    fontSize: 13,
   },
 
   info: {
@@ -2004,39 +2109,77 @@ const styles = {
     alignItems: "center",
     padding: "20px 30px 0px 30px",
     gap: 16,
-    flexWrap: "wrap"
+    flexWrap: "wrap",
   },
 
   nome: {
     fontSize: 42,
     fontWeight: "bold",
     color: "#222",
-    overflowWrap: "anywhere"
+    overflowWrap: "anywhere",
   },
 
   usuario: {
     fontSize: 22,
     color: "#666",
-    marginTop: 5
+    marginTop: 5,
   },
 
   botao: {
     backgroundColor: "#000",
-    color: "white",
+    color: "#fff",
     border: "none",
     padding: "14px 24px",
     borderRadius: 14,
     fontSize: 18,
     fontWeight: "bold",
     cursor: "pointer",
-    transition: "0.2s"
+  },
+
+  botaoCinza: {
+    backgroundColor: "#e5e7eb",
+    color: "#374151",
+    fontSize: 16,
+  },
+
+  areaAmizade: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 8,
+    alignItems: "flex-start",
+  },
+
+  botoesAmizade: {
+    display: "flex",
+    gap: 10,
+    flexWrap: "wrap",
+  },
+
+  erroAmizade: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 8,
+    color: "#b42318",
+    fontSize: 13,
+    maxWidth: 280,
+  },
+
+  botaoTentarNovamente: {
+    backgroundColor: "transparent",
+    border: "1px solid #bbb",
+    borderRadius: 8,
+    padding: "8px 12px",
+    color: "#333",
+    cursor: "pointer",
+    alignSelf: "flex-start",
+    fontSize: 13,
   },
 
   bio: {
     fontSize: 24,
     color: "#333",
     padding: "20px 30px",
-    overflowWrap: "anywhere"
+    overflowWrap: "anywhere",
   },
 
   stats: {
@@ -2044,42 +2187,52 @@ const styles = {
     justifyContent: "space-around",
     borderTop: "1px solid #eee",
     marginTop: 10,
-    padding: 30
+    padding: 30,
   },
 
   statBox: {
-    textAlign: "center"
+    textAlign: "center",
   },
 
   statNumero: {
     fontSize: 32,
     fontWeight: "bold",
-    color: "#222"
+    color: "#222",
   },
 
   statTexto: {
     marginTop: 5,
     color: "#666",
-    fontSize: 18
+    fontSize: 18,
   },
 
   publicacoes: {
     borderTop: "1px solid #eee",
-    padding: 30
+    padding: 30,
   },
 
   tituloPublicacoes: {
     fontSize: 28,
     fontWeight: "bold",
     color: "#222",
-    marginBottom: 20
+    marginBottom: 20,
+  },
+
+  avisoPosts: {
+    color: "#92400e",
+    fontSize: 14,
+    marginBottom: 18,
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "flex-start",
+    gap: 8,
   },
 
   mensagemPosts: {
     textAlign: "center",
     color: "#666",
     fontSize: 18,
-    padding: 30
+    padding: 30,
   },
 
   postCard: {
@@ -2087,14 +2240,14 @@ const styles = {
     borderRadius: 16,
     padding: 20,
     marginBottom: 20,
-    border: "1px solid #eee"
+    border: "1px solid #eee",
   },
 
   postTexto: {
     fontSize: 20,
     color: "#222",
     lineHeight: 1.5,
-    whiteSpace: "pre-wrap"
+    whiteSpace: "pre-wrap",
   },
 
   postImagem: {
@@ -2102,7 +2255,7 @@ const styles = {
     maxHeight: 600,
     objectFit: "cover",
     borderRadius: 12,
-    display: "block"
+    display: "block",
   },
 
   postVideo: {
@@ -2111,7 +2264,7 @@ const styles = {
     objectFit: "contain",
     borderRadius: 12,
     display: "block",
-    backgroundColor: "#000"
+    backgroundColor: "#000",
   },
 
   modalOverlay: {
@@ -2122,7 +2275,7 @@ const styles = {
     justifyContent: "center",
     alignItems: "center",
     zIndex: 1000,
-    padding: 16
+    padding: 16,
   },
 
   modal: {
@@ -2134,17 +2287,17 @@ const styles = {
     display: "flex",
     flexDirection: "column",
     gap: 12,
-    boxShadow: "0 10px 35px rgba(0,0,0,0.2)"
+    boxShadow: "0 10px 35px rgba(0,0,0,0.2)",
   },
 
   modalTitulo: {
     margin: "0 0 10px",
-    fontSize: 26
+    fontSize: 26,
   },
 
   campoLabel: {
     fontWeight: "bold",
-    fontSize: 16
+    fontSize: 16,
   },
 
   campoInput: {
@@ -2153,12 +2306,12 @@ const styles = {
     padding: 12,
     border: "1px solid #ccc",
     borderRadius: 10,
-    font: "inherit"
+    font: "inherit",
   },
 
   erroEdicao: {
     color: "#b42318",
-    margin: 0
+    margin: 0,
   },
 
   modalBotoes: {
@@ -2166,7 +2319,7 @@ const styles = {
     justifyContent: "flex-end",
     gap: 10,
     flexWrap: "wrap",
-    marginTop: 12
+    marginTop: 12,
   },
 
   botaoCancelar: {
@@ -2176,7 +2329,6 @@ const styles = {
     padding: "14px 24px",
     borderRadius: 14,
     fontSize: 18,
-    cursor: "pointer"
-  }
-}
-
+    cursor: "pointer",
+  },
+};
