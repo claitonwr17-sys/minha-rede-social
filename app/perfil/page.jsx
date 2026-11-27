@@ -1028,6 +1028,137 @@ function SolicitacoesRecebidasPerfil() {
   );
 }
 
+function ListaAmigosPerfil({ usuarioId }) {
+  const [amigos, setAmigos] = useState([]);
+  const [carregando, setCarregando] = useState(true);
+  const [erro, setErro] = useState("");
+  const [tentativa, setTentativa] = useState(0);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    async function carregarAmigos() {
+      try {
+        setCarregando(true);
+        setErro("");
+
+        const token = localStorage.getItem("token");
+
+        if (!token) {
+          throw new Error("Faça login novamente.");
+        }
+
+        const resposta = await fetch(
+          `${XANO_BASE}/listar_amigos_perfil?usuario_id=${encodeURIComponent(usuarioId)}`,
+          {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              Accept: "application/json",
+            },
+            signal: controller.signal,
+            cache: "no-store",
+          }
+        );
+
+        if (!resposta.ok) {
+          throw new Error(
+            resposta.status === 429
+              ? "O Xano está limitando temporariamente as consultas."
+              : `Erro ao carregar amigos: ${resposta.status}`
+          );
+        }
+
+        const dados = await resposta.json();
+
+        if (controller.signal.aborted) return;
+
+        if (!Array.isArray(dados)) {
+          throw new Error("O Xano não retornou uma lista válida.");
+        }
+
+        // Aceita tanto [17] quanto [[17]].
+        const ids = [
+          ...new Set(
+            dados
+              .flat(Infinity)
+              .map(Number)
+              .filter((id) => Number.isInteger(id) && id > 0)
+          ),
+        ];
+
+        setAmigos(ids);
+      } catch (error) {
+        if (controller.signal.aborted) return;
+
+        console.error("Erro ao listar amigos:", error);
+        setErro(
+          error.message || "Não foi possível carregar os amigos."
+        );
+      } finally {
+        if (!controller.signal.aborted) {
+          setCarregando(false);
+        }
+      }
+    }
+
+    if (usuarioId) {
+      carregarAmigos();
+    }
+
+    return () => controller.abort();
+  }, [usuarioId, tentativa]);
+
+  return (
+    <div style={{ padding: "16px 0" }}>
+      {carregando ? (
+        <p>Carregando amigos...</p>
+      ) : (
+        <>
+          {!erro && amigos.length === 0 && (
+            <p style={{ color: "#666" }}>Nenhum amigo encontrado.</p>
+          )}
+
+          {amigos.map((amigoId) => (
+            <a
+              key={amigoId}
+              href={`/perfil?users_id=${amigoId}`}
+              style={{
+                display: "block",
+                padding: "12px 0",
+                color: "#222",
+                textDecoration: "none",
+                borderBottom: "1px solid #eee",
+              }}
+            >
+              👤 Usuário #{amigoId}
+            </a>
+          ))}
+        </>
+      )}
+
+      {erro && (
+        <div style={{ color: "#b42318" }}>
+          <p>{erro}</p>
+          <button
+            type="button"
+            onClick={() => setTentativa((atual) => atual + 1)}
+            style={{
+              padding: "8px 12px",
+              borderRadius: 8,
+              border: "1px solid #ccc",
+              background: "#fff",
+              cursor: "pointer",
+            }}
+          >
+            Tentar novamente
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function Perfil() {
   const router = useRouter();
 
@@ -1044,6 +1175,7 @@ export default function Perfil() {
   const [postsPerfil, setPostsPerfil] = useState([]);
   const [totalAmigos, setTotalAmigos] = useState(null);
 const [erroAmigos, setErroAmigos] = useState("");
+const [mostrarListaAmigos, setMostrarListaAmigos] = useState(false);
   const [carregandoPosts, setCarregandoPosts] =
     useState(true);
   const [erroPosts, setErroPosts] = useState("");
@@ -1979,7 +2111,8 @@ async function buscarTotalAmigos(usuarioId) {
 {!visualizandoOutroPerfil && (
   <SolicitacoesRecebidasPerfil />
 )}
-            {/* ESTATÍSTICAS */}
+      
+{/* ESTATÍSTICAS */}
 <div style={styles.stats}>
   <div style={styles.statBox}>
     <div style={styles.statNumero}>
@@ -1992,13 +2125,31 @@ async function buscarTotalAmigos(usuarioId) {
   </div>
 
   <div style={styles.statBox}>
-    <div style={styles.statNumero}>
-      {totalAmigos === null ? "—" : totalAmigos}
-    </div>
+    <button
+      type="button"
+      onClick={() =>
+        setMostrarListaAmigos((atual) => !atual)
+      }
+      aria-expanded={mostrarListaAmigos}
+      disabled={totalAmigos === null}
+      style={{
+        background: "transparent",
+        border: "none",
+        cursor:
+          totalAmigos === null ? "default" : "pointer",
+        font: "inherit",
+        padding: 0,
+        color: "inherit",
+      }}
+    >
+      <div style={styles.statNumero}>
+        {totalAmigos === null ? "—" : totalAmigos}
+      </div>
 
-    <div style={styles.statTexto}>
-      Amigos
-    </div>
+      <div style={styles.statTexto}>
+        Amigos
+      </div>
+    </button>
 
     {erroAmigos && (
       <div
@@ -2015,7 +2166,24 @@ async function buscarTotalAmigos(usuarioId) {
   </div>
 </div>
 
+{/* LISTA DE AMIGOS */}
+{mostrarListaAmigos && perfil && (
+  <section
+    style={{
+      padding: "20px 30px",
+      borderTop: "1px solid #eee",
+    }}
+  >
+    <h2 style={{ fontSize: 24, marginBottom: 12 }}>
+      🤝 Amigos
+    </h2>
+
+    <ListaAmigosPerfil usuarioId={perfil.users_id} />
+  </section>
+)}
+
 {/* PUBLICAÇÕES */}
+
 
             {/* PUBLICAÇÕES */}
             <div style={styles.publicacoes}>
