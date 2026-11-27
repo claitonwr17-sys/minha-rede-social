@@ -771,6 +771,263 @@ function BotaoAmizadePerfil({ usuarioVisitadoId }) {
 // PÁGINA PERFIL
 // =====================================================
 
+function SolicitacoesRecebidasPerfil() {
+  const [solicitacoes, setSolicitacoes] = useState([]);
+  const [carregando, setCarregando] = useState(true);
+  const [erro, setErro] = useState("");
+  const [processandoId, setProcessandoId] = useState(null);
+  const [tentativa, setTentativa] = useState(0);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    async function carregarSolicitacoes() {
+      try {
+        setCarregando(true);
+        setErro("");
+
+        const token = localStorage.getItem("token");
+
+        if (!token) {
+          throw new Error("Faça login novamente.");
+        }
+
+        const resposta = await fetch(
+          `${XANO_BASE}/listar_solicitacoes_recebidas`,
+          {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              Accept: "application/json",
+            },
+            signal: controller.signal,
+            cache: "no-store",
+          }
+        );
+
+        if (!resposta.ok) {
+          throw new Error(
+            resposta.status === 429
+              ? "O Xano está limitando temporariamente as consultas."
+              : `Erro ao consultar solicitações: ${resposta.status}`
+          );
+        }
+
+        const dados = await resposta.json();
+
+        if (controller.signal.aborted) return;
+
+        const lista = Array.isArray(dados)
+          ? dados
+          : Array.isArray(dados?.items)
+          ? dados.items
+          : [];
+
+        setSolicitacoes(lista);
+      } catch (error) {
+        if (controller.signal.aborted) return;
+
+        console.error("Erro nas solicitações:", error);
+        setErro(error.message || "Erro ao carregar solicitações.");
+      } finally {
+        if (!controller.signal.aborted) {
+          setCarregando(false);
+        }
+      }
+    }
+
+    carregarSolicitacoes();
+
+    return () => controller.abort();
+  }, [tentativa]);
+
+  async function responderSolicitacao(solicitacao, acao) {
+    if (processandoId !== null) return;
+
+    try {
+      setProcessandoId(solicitacao.id);
+      setErro("");
+
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+        throw new Error("Faça login novamente.");
+      }
+
+      const resposta = await fetch(
+        `${XANO_BASE}/responder_solicitacao_amizade`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+          body: JSON.stringify({
+            solicitacao_id: Number(solicitacao.id),
+            acao,
+          }),
+        }
+      );
+
+      if (!resposta.ok) {
+        throw new Error(
+          resposta.status === 429
+            ? "O Xano está limitando as requisições. Tente novamente mais tarde."
+            : `Não foi possível responder à solicitação. Código: ${resposta.status}`
+        );
+      }
+
+      // Remove da lista apenas depois da confirmação do Xano.
+      setSolicitacoes((atual) =>
+        atual.filter(
+          (item) => Number(item.id) !== Number(solicitacao.id)
+        )
+      );
+    } catch (error) {
+      console.error("Erro ao responder amizade:", error);
+      setErro(error.message || "Não foi possível responder.");
+    } finally {
+      setProcessandoId(null);
+    }
+  }
+
+  return (
+    <section
+      style={{
+        padding: 24,
+        borderTop: "1px solid #eee",
+      }}
+    >
+      <h2
+        style={{
+          margin: "0 0 16px",
+          fontSize: 24,
+          color: "#222",
+        }}
+      >
+        🤝 Solicitações de amizade
+      </h2>
+
+      {carregando ? (
+        <p>Carregando solicitações...</p>
+      ) : erro && solicitacoes.length === 0 ? null : (
+        <>
+          {solicitacoes.length === 0 ? (
+            <p style={{ color: "#666" }}>
+              Nenhuma solicitação de amizade pendente.
+            </p>
+          ) : (
+            solicitacoes.map((solicitacao) => (
+              <div
+                key={solicitacao.id}
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  gap: 16,
+                  padding: "16px 0",
+                  borderBottom: "1px solid #eee",
+                  flexWrap: "wrap",
+                }}
+              >
+                <div>
+                  <a
+                    href={`/perfil?users_id=${encodeURIComponent(
+                      solicitacao.solicitante_id
+                    )}`}
+                    style={{
+                      color: "#222",
+                      fontWeight: "bold",
+                      textDecoration: "none",
+                    }}
+                  >
+                    👤 Usuário #{solicitacao.solicitante_id}
+                  </a>
+
+                  <p
+                    style={{
+                      margin: "6px 0 0",
+                      color: "#666",
+                      fontSize: 14,
+                    }}
+                  >
+                    Enviou uma solicitação de amizade
+                  </p>
+                </div>
+
+                <div
+                  style={{
+                    display: "flex",
+                    gap: 8,
+                  }}
+                >
+                  <button
+                    type="button"
+                    disabled={processandoId !== null}
+                    onClick={() =>
+                      responderSolicitacao(solicitacao, "aceitar")
+                    }
+                    style={{
+                      padding: "10px 16px",
+                      background: "#111",
+                      color: "#fff",
+                      border: "none",
+                      borderRadius: 10,
+                      cursor: "pointer",
+                    }}
+                  >
+                    {processandoId === solicitacao.id
+                      ? "Processando..."
+                      : "✓ Aceitar"}
+                  </button>
+
+                  <button
+                    type="button"
+                    disabled={processandoId !== null}
+                    onClick={() =>
+                      responderSolicitacao(solicitacao, "recusar")
+                    }
+                    style={{
+                      padding: "10px 16px",
+                      background: "#e5e7eb",
+                      color: "#333",
+                      border: "none",
+                      borderRadius: 10,
+                      cursor: "pointer",
+                    }}
+                  >
+                    Recusar
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+        </>
+      )}
+
+      {erro && (
+        <div style={{ marginTop: 12, color: "#b42318" }}>
+          <p>{erro}</p>
+          <button
+            type="button"
+            onClick={() => setTentativa((valor) => valor + 1)}
+            style={{
+              padding: "8px 12px",
+              border: "1px solid #ccc",
+              background: "white",
+              borderRadius: 8,
+              cursor: "pointer",
+            }}
+          >
+            Tentar novamente
+          </button>
+        </div>
+      )}
+    </section>
+  );
+}
+
 export default function Perfil() {
   const router = useRouter();
 
@@ -1658,7 +1915,10 @@ export default function Perfil() {
               {perfil.bio?.trim() ||
                 "Nenhuma biografia adicionada."}
             </div>
-
+            {/* SOLICITAÇÕES DE AMIZADE RECEBIDAS */}
+{!visualizandoOutroPerfil && (
+  <SolicitacoesRecebidasPerfil />
+)}
             {/* ESTATÍSTICAS */}
             <div style={styles.stats}>
               <div style={styles.statBox}>
