@@ -1042,6 +1042,8 @@ export default function Perfil() {
 
   const [totalPosts, setTotalPosts] = useState(0);
   const [postsPerfil, setPostsPerfil] = useState([]);
+  const [totalAmigos, setTotalAmigos] = useState(null);
+const [erroAmigos, setErroAmigos] = useState("");
   const [carregandoPosts, setCarregandoPosts] =
     useState(true);
   const [erroPosts, setErroPosts] = useState("");
@@ -1149,12 +1151,15 @@ export default function Perfil() {
       );
 
       // Carrega publicações separadamente.
-      // A falha nas publicações não impede
-      // a exibição do perfil.
-      buscarTotalPosts(
-        dadosPerfil.users_id,
-        carregamentoId
-      );
+// A falha nas publicações não impede
+// a exibição do perfil.
+buscarTotalPosts(
+  dadosPerfil.users_id,
+  carregamentoId
+);
+
+// Consultar a quantidade real de amigos
+buscarTotalAmigos(dadosPerfil.users_id);
     } catch (erro) {
       if (carregamentoId !== carregamentoIdRef.current) {
         return;
@@ -1176,6 +1181,61 @@ export default function Perfil() {
       }
     }
   }
+   
+async function buscarTotalAmigos(usuarioId) {
+  try {
+    setTotalAmigos(null);
+    setErroAmigos("");
+
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      throw new Error("Faça login novamente.");
+    }
+
+    const resposta = await fetch(
+      `${XANO_BASE}/contar_amigos_perfil?usuario_id=${encodeURIComponent(usuarioId)}`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/json",
+        },
+        cache: "no-store",
+      }
+    );
+
+    if (!resposta.ok) {
+      throw new Error(
+        resposta.status === 429
+          ? "O Xano está limitando temporariamente as consultas."
+          : `Erro ao consultar amigos: ${resposta.status}`
+      );
+    }
+
+    const dados = await resposta.json();
+
+    // O endpoint retorna diretamente um número.
+    const quantidade = Number(dados);
+
+    if (!Number.isInteger(quantidade) || quantidade < 0) {
+      throw new Error(
+        "O Xano não retornou uma quantidade válida de amigos."
+      );
+    }
+
+    setTotalAmigos(quantidade);
+  } catch (erro) {
+    console.error("Erro ao contar amigos:", erro);
+
+    setErroAmigos(
+      erro.message || "Não foi possível contar os amigos."
+    );
+
+    // Mantém null para não mostrar zero incorretamente.
+    setTotalAmigos(null);
+  }
+}
 
   // =====================================================
   // BUSCAR PUBLICAÇÕES
@@ -1920,34 +1980,42 @@ export default function Perfil() {
   <SolicitacoesRecebidasPerfil />
 )}
             {/* ESTATÍSTICAS */}
-            <div style={styles.stats}>
-              <div style={styles.statBox}>
-                <div style={styles.statNumero}>
-                  {totalPosts}
-                </div>
-                <div style={styles.statTexto}>
-                  Posts
-                </div>
-              </div>
+<div style={styles.stats}>
+  <div style={styles.statBox}>
+    <div style={styles.statNumero}>
+      {totalPosts}
+    </div>
 
-              <div style={styles.statBox}>
-                <div style={styles.statNumero}>
-                  0
-                </div>
-                <div style={styles.statTexto}>
-                  Seguidores
-                </div>
-              </div>
+    <div style={styles.statTexto}>
+      Posts
+    </div>
+  </div>
 
-              <div style={styles.statBox}>
-                <div style={styles.statNumero}>
-                  0
-                </div>
-                <div style={styles.statTexto}>
-                  Seguindo
-                </div>
-              </div>
-            </div>
+  <div style={styles.statBox}>
+    <div style={styles.statNumero}>
+      {totalAmigos === null ? "—" : totalAmigos}
+    </div>
+
+    <div style={styles.statTexto}>
+      Amigos
+    </div>
+
+    {erroAmigos && (
+      <div
+        style={{
+          color: "#b42318",
+          fontSize: 12,
+          marginTop: 6,
+          maxWidth: 180,
+        }}
+      >
+        {erroAmigos}
+      </div>
+    )}
+  </div>
+</div>
+
+{/* PUBLICAÇÕES */}
 
             {/* PUBLICAÇÕES */}
             <div style={styles.publicacoes}>
